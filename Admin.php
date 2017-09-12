@@ -195,7 +195,7 @@ class Admin extends Module {
 	public function getController(array $request, $rule){
 		$config = $this->retrieveConfig();
 
-		if(!isset($config['url'][$rule]) or strpos(implode('/', $request), $config['url'][$rule]['path'])!==0)
+		if(!isset($config['url'][$rule]) or (!empty($config['url'][$rule]['path']) and strpos(implode('/', $request), $config['url'][$rule]['path'])!==0))
 			return false;
 
 		$this->url = $config['url'][$rule]['path'];
@@ -233,13 +233,16 @@ class Admin extends Module {
 	}
 
 	/**
-	 * Given the real request url, strips the first part (the admin path) to return the request to be parsed by the Admin module
+	 * Given the real request url, strips the first part (the admin path) to return the request to be parsed by the Admin module (returns false on failure)
 	 *
-	 * @param $request
-	 * @param $path
-	 * @return bool
+	 * @param array $request
+	 * @param string $path
+	 * @return array|bool
 	 */
-	private function getAdminRequest($request, $path){
+	private function getAdminRequest(array $request, $path){
+		if(empty($path))
+			return $request;
+
 		$path = explode('/', $path);
 		foreach($path as $p){
 			$shift = array_shift($request);
