@@ -10,7 +10,8 @@ class AdminController extends Controller {
 	protected function customize(){}
 
 	public function init(){
-		$this->viewOptions['cache'] = false;
+		$this->viewOptions['cache'] = false; // TODO: recache templates on menu edit
+
 		if(!$this->model->isLoaded('Admin'))
 			$this->model->error('Admin controllers can be accessed only through Admin module.');
 
