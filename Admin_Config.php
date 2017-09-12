@@ -186,9 +186,11 @@ $config = '.var_export($config, true).';
 			],
 		];
 
-		foreach($config['url'] as $idx=>$p){
-			$ret['rules'][$idx] = $p['path'];
-			$this->parseControllers($p['pages'], $ret['controllers']);
+		if(isset($config['url'])){
+			foreach($config['url'] as $idx=>$p){
+				$ret['rules'][$idx] = $p['path'];
+				$this->parseControllers($p['pages'], $ret['controllers']);
+			}
 		}
 
 		return $ret;
