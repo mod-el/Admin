@@ -813,7 +813,7 @@ class Admin extends Module {
 	public function getUrl($controller=false, $id=false, array $tags=[], array $opt=[]){
 		switch($controller){
 			case 'AdminLogin':
-				return $this->url.'/login';
+				return ($this->url ? $this->url.'/' : '').'login';
 				break;
 			default:
 				return false;
