@@ -882,6 +882,12 @@ class Admin extends Module {
 						'action' => 'save',
 					];
 				}
+				if(isset($request[2]) and $this->canUser('C')){
+					$actions['duplicate'] = [
+						'text' => 'Duplica',
+						'action' => 'duplicate',
+					];
+				}
 				break;
 		}
 
@@ -1154,5 +1160,12 @@ class Admin extends Module {
 		if(!$this->template)
 			return;
 		$this->template->renderSublist($name, $options);
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getUrlPrefix(){
+		return $this->model->prefix().($this->url ? $this->url.'/' : '');
 	}
 }

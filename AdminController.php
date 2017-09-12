@@ -195,6 +195,18 @@ class AdminController extends Controller {
 							$this->model->sendJSON(['status' => 'err', 'err' => getErr($e)]);
 						}
 						break;
+					case 'duplicate':
+						try{
+							if(!$this->model->element or !$this->model->element->exists())
+								$this->model->error('Error: attempting to duplicate a non existing element.');
+
+							$newElement = $this->model->element->duplicate();
+							$this->model->redirect($this->model->_Admin->getUrlPrefix().$this->model->_Admin->request[0].'/edit/'.$newElement['id'].'?duplicated');
+						} catch (\Exception $e) {
+							$err = getErr($e);
+							die($err);
+						}
+						break;
 					default:
 						if (!$this->model->isCLI() and method_exists($templateModule, $request[1])) {
 							$this->viewOptions = array_merge($this->viewOptions, call_user_func([$templateModule, $request[1]]));
