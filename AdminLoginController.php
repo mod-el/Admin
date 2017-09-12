@@ -16,7 +16,7 @@ class AdminLoginController extends \Model\Controller {
 		switch($this->model->_Admin->request[0]){
 			case 'login':
 				if($user->logged()){
-					$this->model->redirect($this->model->prefix().$this->model->_Admin->url);
+					$this->model->redirect($this->model->_Admin->getUrlPrefix());
 					die();
 				}
 
@@ -38,7 +38,7 @@ class AdminLoginController extends \Model\Controller {
 
 				if(isset($_POST['username'], $_POST['password'])){
 					if($user->login($_POST['username'], $_POST['password'])){
-						$this->model->redirect($this->model->prefix().$this->model->_Admin->url);
+						$this->model->redirect($this->model->_Admin->getUrlPrefix());
 					}else{
 						$this->viewOptions['errors'][] = 'Wrong data';
 					}
