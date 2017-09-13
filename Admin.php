@@ -52,8 +52,8 @@ class Admin extends Module {
 		$this->model->load('Paginator');
 
 		$this->options = array_merge([
-			'element' => false,
-			'table' => false,
+			'element' => null,
+			'table' => null,
 			'columns' => [],
 			'primary' => 'id',
 			'where' => [],
@@ -79,6 +79,10 @@ class Admin extends Module {
 
 			if(!$this->options['table'])
 				$this->model->error('Can\'t retrieve table name from the provided element.');
+
+			if(!$this->options['element'])
+				$this->options['element'] = '\\Model\\Element';
+
 			$tableModel = $this->model->_Db->getTable($this->options['table']);
 			if(!$tableModel)
 				$this->model->error('Table model not found, please generate cache.');
@@ -177,7 +181,7 @@ class Admin extends Module {
 				$elId = false;
 			}
 
-			$element = $this->model->_ORM->loadMainElement($this->options['element'], $elId, ['table'=>$this->options['table']]);
+			$element = $this->model->_ORM->loadMainElement($this->options['element'], $elId, ['table' => $this->options['table']]);
 			if($element)
 				$this->form = $element->getForm();
 		}
@@ -390,6 +394,7 @@ class Admin extends Module {
 			'joins' => $sortingRules['joins'],
 			'order_by' => $sortingRules['order_by'],
 			'limit' => $limit,
+			'table' => $this->options['table'],
 		];
 
 		// If a Element type is specified, I retrieve them through ORM module, otherwise I just execute a select query
