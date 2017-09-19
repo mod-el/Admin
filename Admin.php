@@ -754,6 +754,13 @@ class Admin extends Module {
 				'sortBy' => [],
 				'html' => !$this->model->isCLI(),
 			];
+
+			$defaultFilters = $this->customFiltersForm->getDataset();
+			foreach($defaultFilters as $k => $d){
+				$v = $d->getValue();
+				if($v)
+					$options['filters'][] = [$k, $v];
+			}
 		}
 
 		return $options;
