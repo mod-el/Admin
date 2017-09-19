@@ -793,7 +793,7 @@ class Admin extends Module {
 
 		if(isset($options['callback'])){
 			$this->customFiltersCallbacks[$name] = $options['callback'];
-		}else{
+		}elseif(!isset($options['admin-type'])){
 			$this->customFiltersCallbacks[$name] = function($v) use($d){
 				return [
 					[$d->options['field'], '=', $v],
