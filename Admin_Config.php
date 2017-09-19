@@ -124,7 +124,7 @@ $config = '.var_export($config, true).';
 	 */
 	public function install(array $data = []){
 		if(empty($data))
-			return false;
+			return true;
 
 		if(isset($data['path'], $data['table'], $data['username'], $data['password']) and $data['table']){
 			if(isset($data['make-account']) and $data['password']!=$data['repassword']){
