@@ -177,6 +177,8 @@ class Admin extends Module {
 					die('Element id must be numeric');
 
 				$elId = (int) $this->request[2];
+				if($elId<=0)
+					$elId = false;
 			}else{
 				$elId = false;
 			}
