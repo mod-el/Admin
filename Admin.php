@@ -279,6 +279,22 @@ class Admin extends Module {
 	}
 
 	/**
+	 * Magic method: it is possible to call template methods via this module
+	 *
+	 * @param string $name
+	 * @param array $arguments
+	 * @return mixed
+	 */
+	public function __call($name, $arguments){
+		if(method_exists($this->template, $name)){
+			return call_user_func_array([$this->template, $name], $arguments);
+		}else{
+			$this->model->error('Non existing method '.$name.' in Admin module.');
+			return null;
+		}
+	}
+
+	/**
 	 * Removes all unnecessary characters of a label to generate a column id
 	 *
 	 * @param string $k
