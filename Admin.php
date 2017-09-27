@@ -177,6 +177,8 @@ class Admin extends Module {
 					die('Element id must be numeric');
 
 				$elId = (int) $this->request[2];
+				if($elId<=0)
+					$elId = false;
 			}else{
 				$elId = false;
 			}
@@ -274,6 +276,22 @@ class Admin extends Module {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Magic method: it is possible to call template methods via this module
+	 *
+	 * @param string $name
+	 * @param array $arguments
+	 * @return mixed
+	 */
+	public function __call($name, $arguments){
+		if(method_exists($this->template, $name)){
+			return call_user_func_array([$this->template, $name], $arguments);
+		}else{
+			$this->model->error('Non existing method '.$name.' in Admin module.');
+			return null;
+		}
 	}
 
 	/**
