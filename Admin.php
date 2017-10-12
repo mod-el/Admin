@@ -702,27 +702,31 @@ class Admin extends Module {
 							],
 						];
 					}
-				}elseif($d->options['type']=='instant-search'){
-					$options = $d->options['ra_options'];
-					if(isset($options['table'], $options['field'])){
-						if(!is_array($options['field']))
-							$options['field'] = [$options['field']];
+				}elseif($d->options['type']==='instant-search'){
+					if(isset($d->options['table'], $d->options['text-field'])){
+						if(!is_array($d->options['text-field']))
+							$d->options['text-field'] = [$d->options['text-field']];
 
-						$order_by = $options['field'];
+						$order_by = $d->options['text-field'];
 						foreach($order_by as &$f){
 							$f = 'ord'.$idx.'_'.$f.' '.$dir;
 						}
 						unset($f);
 
 						$join_fields = array();
-						foreach($options['field'] as $f){
+						foreach($d->options['text-field'] as $f){
 							$join_fields[$f] = 'ord'.$idx.'_'.$f;
 						}
 
 						return [
-							'order_by'=>implode(',', $order_by),
-							'joins'=>[
-								['type'=>'LEFT', 'table'=>$options['table'], 'fields'=>$join_fields],
+							'order_by' => implode(',', $order_by),
+							'joins' => [
+								[
+									'type' => 'LEFT',
+									'table' => $d->options['table'],
+									'fields' => $join_fields,
+									'on' => $d->options['field'],
+								],
 							],
 						];
 					}
@@ -1066,7 +1070,7 @@ class Admin extends Module {
 
 		$dataset = $this->form->getDataset();
 		foreach($dataset as $k => $d){
-			$arr['data'][$k] = $d->getValue(false);
+			$arr['data'][$k] = $d->getJsValue(false);
 		}
 
 		foreach($this->sublists as $s){
