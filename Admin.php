@@ -898,7 +898,7 @@ class Admin extends Module {
 				'action' => 'new',
 			];
 		}
-		if($this->canUser('D') and isset($request[2])){
+		if($this->canUser('D')){
 			$actions['delete'] = [
 				'text' => 'Elimina',
 				'action' => 'delete',
