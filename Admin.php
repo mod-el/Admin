@@ -80,9 +80,6 @@ class Admin extends Module {
 			if(!$this->options['table'])
 				$this->model->error('Can\'t retrieve table name from the provided element.');
 
-			if(!$this->options['element'])
-				$this->options['element'] = '\\Model\\Element';
-
 			$tableModel = $this->model->_Db->getTable($this->options['table']);
 			if(!$tableModel)
 				$this->model->error('Table model not found, please generate cache.');
@@ -183,7 +180,7 @@ class Admin extends Module {
 				$elId = false;
 			}
 
-			$element = $this->model->_ORM->loadMainElement($this->options['element'], $elId, ['table' => $this->options['table']]);
+			$element = $this->model->_ORM->loadMainElement($this->options['element'] ?: '\\Model\\Element', $elId, ['table' => $this->options['table']]);
 			if($element)
 				$this->form = $element->getForm();
 		}
