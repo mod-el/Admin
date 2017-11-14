@@ -1077,26 +1077,8 @@ class Admin extends Module {
 			$arr['children'][$s['name'].'-'.$s['options']['cont']] = [];
 			foreach($element->{$s['name']} as $chId => $ch){
 				$chArr = [];
-				$form = $ch->getForm();
-				if(count($s['options']['fields'])>0){
-					$newForm = clone $form;
-					$newForm->clear();
-
-					$keys = [];
-					foreach($s['options']['fields'] as $f => $fOpt){
-						if(is_numeric($f)){
-							$f = $fOpt;
-							$fOpt = [];
-						}
-
-						$keys[] = $f;
-						$newForm->add($form[$f], ['attributes'=>$fOpt]);
-					}
-
-					$form = $newForm;
-				}else{
-					$keys = $ch->getDataKeys();
-				}
+				$form = $this->getSublistRowForm($ch, $s['options']);
+				$keys = array_keys($form->getDataset());
 
 				foreach($keys as $k){
 					$chArr[$k] = $form[$k]->getValue();
@@ -1107,6 +1089,41 @@ class Admin extends Module {
 		}
 
 		return $arr;
+	}
+
+	/**
+	 * Returns the custom form of a single sublist row
+	 *
+	 * @param Element $el
+	 * @param array $options
+	 * @return Form
+	 */
+	public function getSublistRowForm(Element $el, array $options){
+		$form = $el->getForm();
+		if(count($options['fields'])>0){
+			$newForm = clone $form;
+			$newForm->clear();
+
+			$keys = [];
+			foreach($options['fields'] as $f => $fOpt){
+				if(!is_string($fOpt) and is_callable($fOpt)){
+					$fOpt = [
+						'type' => 'custom',
+						'custom' => $fOpt,
+					];
+				}elseif(is_numeric($f)){
+					$f = $fOpt;
+					$fOpt = [];
+				}
+
+				$keys[] = $f;
+				$newForm->add($form[$f], $fOpt);
+			}
+
+			$form = $newForm;
+		}
+
+		return $form;
 	}
 
 	/**
@@ -1193,6 +1210,16 @@ class Admin extends Module {
 	public function renderSublist($name, array $options = []){
 		if(!$this->template)
 			return;
+
+		$defaultOptions = [];
+		foreach($this->sublists as $s){
+			if($s['name']===$name){
+				$defaultOptions = $s['options'];
+				break;
+			}
+		}
+		$options = array_merge($defaultOptions, $options);
+
 		$this->template->renderSublist($name, $options);
 	}
 
