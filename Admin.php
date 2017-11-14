@@ -1117,7 +1117,7 @@ class Admin extends Module {
 				}
 
 				$keys[] = $f;
-				$newForm->add($form[$f], $fOpt);
+				$newForm->add(isset($form[$f]) ? $form[$f] : $f, $fOpt);
 			}
 
 			$form = $newForm;
