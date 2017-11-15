@@ -12,8 +12,8 @@ class Admin_Config extends Module_Config {
 	 * @return bool
 	 */
 	public function saveConfig($type, array $dati){
-		if(!is_dir(INCLUDE_PATH.'data'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin'))
-			mkdir(INCLUDE_PATH.'data'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin');
+		if(!is_dir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin'))
+			mkdir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin');
 
 		$config = $this->retrieveConfig();
 		if(isset($config['url'])){
@@ -56,7 +56,7 @@ class Admin_Config extends Module_Config {
 
 		$this->setPaths($paths);
 
-		$configFile = INCLUDE_PATH.'data'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin'.DIRECTORY_SEPARATOR.'config.php';
+		$configFile = INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin'.DIRECTORY_SEPARATOR.'config.php';
 
 		return (bool) file_put_contents($configFile, '<?php
 $config = '.var_export($config, true).';
@@ -73,10 +73,10 @@ $config = '.var_export($config, true).';
 			if(empty($p))
 				continue;
 
-			if(!is_dir(INCLUDE_PATH.'data'.DIRECTORY_SEPARATOR.'controllers'.DIRECTORY_SEPARATOR.$p))
-				mkdir(INCLUDE_PATH.'data'.DIRECTORY_SEPARATOR.'controllers'.DIRECTORY_SEPARATOR.$p);
-			if(!is_dir(INCLUDE_PATH.'data'.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.$p))
-				mkdir(INCLUDE_PATH.'data'.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.$p);
+			if(!is_dir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'controllers'.DIRECTORY_SEPARATOR.$p))
+				mkdir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'controllers'.DIRECTORY_SEPARATOR.$p);
+			if(!is_dir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.$p))
+				mkdir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.$p);
 		}
 	}
 

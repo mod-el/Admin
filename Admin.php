@@ -229,7 +229,7 @@ class Admin extends Module {
 		if(!$controller)
 			return false;
 
-		$folder = ($this->url and file_exists(INCLUDE_PATH.'data'.DIRECTORY_SEPARATOR.'controllers'.DIRECTORY_SEPARATOR.$this->url.DIRECTORY_SEPARATOR.$controller.'Controller.php')) ? $this->url.DIRECTORY_SEPARATOR : '';
+		$folder = ($this->url and file_exists(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'controllers'.DIRECTORY_SEPARATOR.$this->url.DIRECTORY_SEPARATOR.$controller.'Controller.php')) ? $this->url.DIRECTORY_SEPARATOR : '';
 		return [
 			'controller' => $folder.$controller,
 		];
