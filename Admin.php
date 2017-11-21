@@ -162,7 +162,7 @@ class Admin extends Module {
 			}
 			$this->options['columns'] = $new_fields;
 
-			$this->paginator = new Paginator();
+			$this->paginator = new \Model\Paginator\Paginator();
 
 			$this->customFiltersForm = new Form([
 				'table' => $this->options['table'],
