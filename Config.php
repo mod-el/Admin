@@ -1,7 +1,8 @@
-<?php
-namespace Model;
+<?php namespace Model\Admin;
 
-class Admin_Config extends Module_Config {
+use Model\Core\Module_Config;
+
+class Config extends Module_Config {
 	public $configurable = true;
 
 	/**
@@ -180,8 +181,8 @@ $config = '.var_export($config, true).';
 		$config = $this->retrieveConfig();
 
 		$ret = [
-			'rules'=>[],
-			'controllers'=>[
+			'rules' => [],
+			'controllers' => [
 				'AdminLogin',
 			],
 		];
@@ -220,12 +221,12 @@ $config = '.var_export($config, true).';
 	public function searchTemplates(){
 		$templates = [];
 
-		$dirs = glob(INCLUDE_PATH.'model/*');
+		$dirs = glob(INCLUDE_PATH.'model'.DIRECTORY_SEPARATOR.'*');
 		foreach($dirs as $f){
-			if(is_dir($f) and file_exists($f.'/model.php')){
-				require($f.'/model.php');
-				if(isset($moduleData, $moduleData['is-admin-template']) and $moduleData['is-admin-template']){
-					$name = explode('/', $f);
+			if(is_dir($f) and file_exists($f.DIRECTORY_SEPARATOR.'manifest.json')){
+				$moduleData = json_decode(file_get_contents($f.DIRECTORY_SEPARATOR.'manifest.json'), true);
+				if($moduleData and isset($moduleData['is-admin-template']) and $moduleData['is-admin-template']){
+					$name = explode(DIRECTORY_SEPARATOR, $f);
 					$name = end($name);
 					$templates[$name] = $moduleData['name'];
 				}

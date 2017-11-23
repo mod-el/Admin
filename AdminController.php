@@ -1,5 +1,7 @@
-<?php
-namespace Model;
+<?php namespace Model\Admin;
+
+use Model\Core\Controller;
+use Model\ORM\Element;
 
 class AdminController extends Controller {
 	protected $options = [
