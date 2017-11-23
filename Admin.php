@@ -1,5 +1,10 @@
-<?php
-namespace Model;
+<?php namespace Model\Admin;
+
+use Model\Core\Module;
+use Model\Form\Form;
+use Model\Form\MField;
+use Model\ORM\Element;
+use Model\Paginator\Paginator;
 
 class Admin extends Module {
 	/** @var string */
@@ -81,7 +86,7 @@ class Admin extends Module {
 				$this->model->error('Can\'t retrieve table name from the provided element.');
 
 			if(!$this->options['element'])
-				$this->options['element'] = '\\Model\\Element';
+				$this->options['element'] = '\\Model\\ORM\\Element';
 
 			$tableModel = $this->model->_Db->getTable($this->options['table']);
 			if(!$tableModel)
@@ -165,7 +170,7 @@ class Admin extends Module {
 			}
 			$this->options['columns'] = $new_fields;
 
-			$this->paginator = new \Model\Paginator\Paginator();
+			$this->paginator = new Paginator();
 
 			$this->customFiltersForm = new Form([
 				'table' => $this->options['table'],
@@ -217,13 +222,13 @@ class Admin extends Module {
 				case 'login':
 				case 'logout':
 					return [
-						'controller' => 'AdminLogin',
+						'controller' => '\\Model\\Admin\\AdminLogin',
 					];
 					break;
 			}
 		}else{
 			return [
-				'controller' => 'Model\\Admin',
+				'controller' => '\\Model\\Admin\\Admin',
 			];
 		}
 
@@ -874,8 +879,8 @@ class Admin extends Module {
 			}
 		}
 
-		if(isset(Globals::$data['adminAdditionalPages']))
-			$pages = array_merge($pages, Globals::$data['adminAdditionalPages']);
+		if(isset(\Model\Core\Globals::$data['adminAdditionalPages']))
+			$pages = array_merge($pages, \Model\Core\Globals::$data['adminAdditionalPages']);
 
 		return $pages;
 	}

@@ -1,5 +1,8 @@
-<?php
-class AdminLoginController extends \Model\Controller {
+<?php namespace Model\Admin;
+
+use Model\Core\Controller;
+
+class AdminLoginController extends Controller {
 	function index(){
 		$this->model->_Admin->init(false);
 		$user = $this->model->getModule('User', 'Admin');
