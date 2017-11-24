@@ -51,7 +51,7 @@ class AdminController extends Controller {
 
 				switch ($request[1]) {
 					case '':
-						if(!$this->model->_Admin->canUser('L', false, $this->model->element))
+						if(!$this->model->_Admin->canUser('L', null, $this->model->element))
 							$this->model->error('You have not the permissions to view this page.');
 
 						if(!(isset($this->options['table']) and $this->options['table']) and !(isset($this->options['element']) and $this->options['element']))
@@ -119,7 +119,7 @@ class AdminController extends Controller {
 								$this->model->_Admin->form = $element->getForm();
 								$this->customize();
 
-								if (!$this->model->_Admin->canUser('D', false, $element))
+								if (!$this->model->_Admin->canUser('D', null, $element))
 									$this->model->error('Can\'t delete, permission denied.');
 
 								if ($this->beforeDelete($element)) {
@@ -154,7 +154,7 @@ class AdminController extends Controller {
 							if(!$this->model->element)
 								$this->model->error('Element does not exist');
 
-							if (!$this->model->_Admin->canUser('U', false, $this->model->element))
+							if (!$this->model->_Admin->canUser('U', null, $this->model->element))
 								$this->model->error('Can\'t save, permission denied.');
 
 							if(isset($_GET['instant'])){

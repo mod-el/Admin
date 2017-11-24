@@ -1065,7 +1065,7 @@ class Admin extends Module {
 		if(!$element)
 			$this->model->error('Element does not exist.');
 
-		if(!$this->canUser('R', false, $element))
+		if(!$this->canUser('R', null, $element))
 			$this->model->error('Can\'t read, permission denied.');
 
 		$arr = [
