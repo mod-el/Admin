@@ -51,7 +51,7 @@ class AdminController extends Controller {
 
 				switch ($request[1]) {
 					case '':
-						if(!$this->model->_Admin->canUser('L', null, $this->model->element))
+						if(!$this->model->_Admin->canUser('L'))
 							$this->model->error('You have not the permissions to view this page.');
 
 						if(!(isset($this->options['table']) and $this->options['table']) and !(isset($this->options['element']) and $this->options['element']))
