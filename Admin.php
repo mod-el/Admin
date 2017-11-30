@@ -146,14 +146,15 @@ class Admin extends Module {
 					$f['field'] = $k;
 
 				$f = array_merge(array(
-					'label'=>$k,
-					'field'=>false,
-					'display'=>false,
-					'empty'=>'',
-					'editable'=>false,
-					'clickable'=>true,
-					'print'=>true,
-					'total'=>false,
+					'label' => $k,
+					'field' => false,
+					'display' => false,
+					'empty' => '',
+					'editable' => false,
+					'clickable' => true,
+					'print' => true,
+					'total' => false,
+					'price' => false,
 				), $f);
 
 				if(is_string($f['display']) and !$f['field'] and $f['display'])
@@ -466,7 +467,7 @@ class Admin extends Module {
 		foreach($this->options['columns'] as $k=>$c){
 			if($c['total'] and $c['field']){
 				$totals[$k] = $this->model->_Db->select($this->options['table'], $where, [
-					'sum'=>$c['field'],
+					'sum' => $c['field'],
 				]);
 			}
 		}
