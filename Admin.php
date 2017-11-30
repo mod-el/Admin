@@ -30,6 +30,11 @@ class Admin extends Module {
 	/** @var Module */
 	public $template;
 
+	/**
+	 * @param mixed $options
+	 * @return bool
+	 * @throws \Model\Core\ZkException
+	 */
 	public function init($options){
 		if($options===[])
 			return false;
@@ -141,14 +146,15 @@ class Admin extends Module {
 					$f['field'] = $k;
 
 				$f = array_merge(array(
-					'label'=>$k,
-					'field'=>false,
-					'display'=>false,
-					'empty'=>'',
-					'editable'=>false,
-					'clickable'=>true,
-					'print'=>true,
-					'total'=>false,
+					'label' => $k,
+					'field' => false,
+					'display' => false,
+					'empty' => '',
+					'editable' => false,
+					'clickable' => true,
+					'print' => true,
+					'total' => false,
+					'price' => false,
 				), $f);
 
 				if(is_string($f['display']) and !$f['field'] and $f['display'])
@@ -289,6 +295,7 @@ class Admin extends Module {
 	 * @param string $name
 	 * @param array $arguments
 	 * @return mixed
+	 * @throws \Model\Core\ZkException
 	 */
 	public function __call($name, $arguments){
 		if(method_exists($this->template, $name)){
@@ -324,6 +331,7 @@ class Admin extends Module {
 	 *
 	 * @param array $options
 	 * @return array
+	 * @throws \Model\Core\ZkException
 	 */
 	public function getList(array $options=[]){
 		$options = array_merge([
@@ -459,7 +467,7 @@ class Admin extends Module {
 		foreach($this->options['columns'] as $k=>$c){
 			if($c['total'] and $c['field']){
 				$totals[$k] = $this->model->_Db->select($this->options['table'], $where, [
-					'sum'=>$c['field'],
+					'sum' => $c['field'],
 				]);
 			}
 		}
@@ -502,6 +510,7 @@ class Admin extends Module {
 	 * @param Element $el
 	 * @param array $cOpt
 	 * @return array
+	 * @throws \Model\Core\ZkException
 	 */
 	private function getElementColumn(Element $el, array $cOpt){
 		$config = $this->retrieveConfig();
@@ -546,6 +555,7 @@ class Admin extends Module {
 	 *
 	 * @param array $f
 	 * @return bool|array
+	 * @throws \Model\Core\ZkException
 	 */
 	private function getWhereFromFilter(array $f){
 		if(!is_array($f) or count($f)<2 or count($f)>3)
@@ -632,6 +642,7 @@ class Admin extends Module {
 	 *
 	 * @param array $sortBy
 	 * @return array
+	 * @throws \Model\Core\ZkException
 	 */
 	private function getSortingRules(array $sortBy){
 		$joins = array();
@@ -809,6 +820,7 @@ class Admin extends Module {
 	 * @param string $name
 	 * @param array $options
 	 * @return MField|bool
+	 * @throws \Model\Core\ZkException
 	 */
 	public function filter($name, array $options=[]){
 		if(isset($this->customFiltersCallbacks[$name]))
@@ -940,6 +952,7 @@ class Admin extends Module {
 	 * @param string $page
 	 * @param Element $el
 	 * @return bool
+	 * @throws \Model\Core\ZkException
 	 */
 	public function canUser($what, $page = null, Element $el = null){
 		if($page===null)
@@ -1138,6 +1151,7 @@ class Admin extends Module {
 	 * @param array $data
 	 * @param array $instant
 	 * @return array|bool
+	 * @throws \Model\Core\ZkException
 	 */
 	public function saveElementViaInstant(array $data, array $instant = []){
 		$this->model->on('Db_update', function($e) use($instant){
