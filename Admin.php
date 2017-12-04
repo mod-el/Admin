@@ -70,7 +70,8 @@ class Admin extends Module {
 			'order_by' => false,
 			'columns-callback' => false,
 			'perPage' => 20,
-			'privileges'=>[],
+			'privileges' => [],
+			'joins' => [],
 		], $options);
 
 		$this->options['privileges'] = array_merge([
@@ -333,7 +334,7 @@ class Admin extends Module {
 	 * @return array
 	 * @throws \Model\Core\ZkException
 	 */
-	public function getList(array $options=[]){
+	public function getList(array $options = []){
 		$options = array_merge([
 			'p' => 1,
 			'perPage' => $this->options['perPage'],
@@ -407,7 +408,9 @@ class Admin extends Module {
 		}
 
 		// Count how many total elements there are
-		$count = $this->model->_Db->count($this->options['table'], $where);
+		$count = $this->model->_Db->count($this->options['table'], $where, [
+			'joins' => $this->options['joins'],
+		]);
 
 		// I pass the parameters to the paginator, so that it will calculate the total number of pages and the start limit
 		$this->paginator->setOptions([
@@ -418,7 +421,7 @@ class Admin extends Module {
 		$limit = $options['perPage'] ? $this->paginator->getStartLimit().','.$options['perPage'] : null;
 
 		// Get the rules to apply to the query, in order to sort as requested (what joins do I need to make and what order by clause I need to use)
-		$sortingRules = $this->getSortingRules($options['sortBy']);
+		$sortingRules = $this->getSortingRules($options['sortBy'], $this->options['joins']);
 
 		$queryOptions = [
 			'stream' => true,
@@ -641,16 +644,15 @@ class Admin extends Module {
 	 * In this method, I look through the provided fields and try to guess what joins I need to perform
 	 *
 	 * @param array $sortBy
+	 * @param array $joins
 	 * @return array
 	 * @throws \Model\Core\ZkException
 	 */
-	private function getSortingRules(array $sortBy){
-		$joins = array();
-
+	private function getSortingRules(array $sortBy, array $joins){
 		if($sortBy){
-			$order_by = array();
+			$order_by = [];
 
-			foreach($sortBy as $idx=>$sort){
+			foreach($sortBy as $idx => $sort){
 				if(!is_array($sort) or count($sort)!=2 or !in_array(strtolower($sort[1]), ['asc', 'desc']))
 					$this->model->error('Wrong "sortBy" format!');
 				if(!isset($this->options['columns'][$sort[0]]))
@@ -671,7 +673,10 @@ class Admin extends Module {
 			$order_by = $this->options['order_by'];
 		}
 
-		return ['order_by'=>$order_by, 'joins'=>$joins];
+		return [
+			'order_by' => $order_by,
+			'joins' => $joins,
+		];
 	}
 
 	/**
@@ -686,15 +691,21 @@ class Admin extends Module {
 	private function getSortingRulesFor(array $column, $dir, $idx){
 		if(!is_string($column['display']) and is_callable($column['display'])){
 			if($column['field'] and is_string($column['field'])){
-				return ['order_by'=>$column['field'].' '.$dir, 'joins'=>[]];
+				return [
+					'order_by' => $column['field'].' '.$dir,
+					'joins' => [],
+				];
 			}
 		}else{
 			if(isset($this->form[$column['display']])){
 				$d = $this->form[$column['display']];
-				if(in_array($d->options['type'], array('select', 'radio', 'select-cascade'))){
+				if(in_array($d->options['type'], ['select', 'radio', 'select-cascade'])){
 					$tableModel = $this->model->_Db->getTable($this->options['table']);
 					if($tableModel and isset($tableModel->columns[$d->options['field']]) and $tableModel->columns[$d->options['field']]['type']=='enum'){
-						return ['order_by'=>$d->options['field'].' '.$dir, 'joins'=>[]];
+						return [
+							'order_by' => $d->options['field'].' '.$dir,
+							'joins' => [],
+						];
 					}
 
 					if($d->options['table'] and $d->options['text-field']){
@@ -712,9 +723,13 @@ class Admin extends Module {
 							$join_fields[$tf] = 'ord'.$idx.'_'.$cf.'_'.$tf;
 						}
 						return [
-							'order_by'=>implode(',', $order_by),
-							'joins'=>[
-								['type'=>'LEFT', 'table'=>$d->options['table'], 'fields'=>$join_fields],
+							'order_by' => implode(',', $order_by),
+							'joins' => [
+								[
+									'type' => 'LEFT',
+									'table' => $d->options['table'],
+									'fields' => $join_fields,
+								],
 							],
 						];
 					}
@@ -747,11 +762,17 @@ class Admin extends Module {
 						];
 					}
 				}else{
-					return ['order_by'=>$d->options['field'].' '.$dir, 'joins'=>[]];
+					return [
+						'order_by' => $d->options['field'].' '.$dir,
+						'joins' => [],
+					];
 				}
 				return false;
 			}elseif(is_string($column['display'])){
-				return ['order_by'=>$column['display'].' '.$dir, 'joins'=>[]];
+				return [
+					'order_by' => $column['display'].' '.$dir,
+					'joins' => [],
+				];
 			}
 		}
 		return false;
