@@ -779,7 +779,7 @@ class Admin extends Module {
 	}
 
 	/**
-	 * sId (for storing and retrieving list options, hence mantaining the page settings on refreshing) is either passed via input parameters or a new one is calculated
+	 * sId (for storing and retrieving list options, hence maintaining the page settings on refreshing) is either passed via input parameters or a new one is calculated
 	 *
 	 * @return int
 	 */
