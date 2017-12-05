@@ -923,6 +923,7 @@ class Admin extends Module {
 	 *
 	 * @param array $request
 	 * @return array
+	 * @throws \Model\Core\ZkException
 	 */
 	public function getActions(array $request = null){
 		if($request===null)
