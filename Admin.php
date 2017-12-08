@@ -1271,6 +1271,7 @@ class Admin extends Module {
 
 	/**
 	 * @return string
+	 * @throws \Model\Core\ZkException
 	 */
 	public function getUrlPrefix(){
 		return $this->model->prefix().($this->url ? $this->url.'/' : '');

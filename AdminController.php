@@ -9,8 +9,12 @@ class AdminController extends Controller {
 	];
 
 	protected function options(){}
+
 	protected function customize(){}
 
+	/**
+	 * @throws \Model\Core\ZkException
+	 */
 	public function init(){
 		$this->viewOptions['cache'] = false; // TODO: recache templates on menu edit
 
@@ -231,9 +235,17 @@ class AdminController extends Controller {
 		}
 	}
 
+	/**
+	 * @param Element $element
+	 * @return bool
+	 */
 	protected function beforeDelete(Element $element){
 		return true;
 	}
 
+	/**
+	 * @param int $id
+	 * @param Element $element
+	 */
 	protected function afterDelete($id, Element $element){}
 }
