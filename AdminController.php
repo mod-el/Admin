@@ -5,7 +5,7 @@ use Model\ORM\Element;
 
 class AdminController extends Controller {
 	protected $options = [
-		'table' => false,
+		'table' => null,
 	];
 
 	protected function options(){}
@@ -54,43 +54,45 @@ class AdminController extends Controller {
 						if(!$this->model->_Admin->canUser('L'))
 							$this->model->error('You have not the permissions to view this page.');
 
-						if(!(isset($this->options['table']) and $this->options['table']) and !(isset($this->options['element']) and $this->options['element']))
-							break;
-
 						$sId = $this->model->_Admin->getSessionId();
-						$options = $this->model->_Admin->getListOptions($sId);
 
-						if ($this->model->getInput('p'))
-							$options['p'] = (int)$this->model->getInput('p');
+						if((isset($this->options['table']) and $this->options['table']) or (isset($this->options['element']) and $this->options['element'])){
+							$options = $this->model->_Admin->getListOptions($sId);
 
-						if ($this->model->getInput('nopag')){
-							$options['p'] = 1;
-							$options['perPage'] = 0;
+							if ($this->model->getInput('p'))
+								$options['p'] = (int)$this->model->getInput('p');
+
+							if ($this->model->getInput('nopag')){
+								$options['p'] = 1;
+								$options['perPage'] = 0;
+							}else{
+								$options['perPage'] = isset($this->options['perPage']) ? $this->options['perPage'] : 20;
+							}
+
+							if ($this->model->getInput('filters')) {
+								$options['filters'] = json_decode($this->model->getInput('filters'), true);
+								if (!$options['filters'])
+									$options['filters'] = [];
+							}
+
+							if ($this->model->getInput('search-columns')) {
+								$options['search-columns'] = json_decode($this->model->getInput('search-columns'), true);
+								if (!$options['search-columns'])
+									$options['search-columns'] = [];
+							}
+
+							if ($this->model->getInput('sortBy')) {
+								$options['sortBy'] = json_decode($this->model->getInput('sortBy'), true);
+								if (!$options['sortBy'])
+									$options['sortBy'] = [];
+							}
+
+							$this->model->_Admin->setListOptions($sId, $options);
+
+							$list = $this->model->_Admin->getList($options);
 						}else{
-							$options['perPage'] = isset($this->options['perPage']) ? $this->options['perPage'] : 20;
+							$list = [];
 						}
-
-						if ($this->model->getInput('filters')) {
-							$options['filters'] = json_decode($this->model->getInput('filters'), true);
-							if (!$options['filters'])
-								$options['filters'] = [];
-						}
-
-						if ($this->model->getInput('search-columns')) {
-							$options['search-columns'] = json_decode($this->model->getInput('search-columns'), true);
-							if (!$options['search-columns'])
-								$options['search-columns'] = [];
-						}
-
-						if ($this->model->getInput('sortBy')) {
-							$options['sortBy'] = json_decode($this->model->getInput('sortBy'), true);
-							if (!$options['sortBy'])
-								$options['sortBy'] = [];
-						}
-
-						$this->model->_Admin->setListOptions($sId, $options);
-
-						$list = $this->model->_Admin->getList($options);
 
 						$list['sId'] = $sId;
 						$list['actions'] = $this->model->_Admin->getActions();
