@@ -814,11 +814,13 @@ class Admin extends Module {
 				'html' => !$this->model->isCLI(),
 			];
 
-			$defaultFilters = $this->customFiltersForm->getDataset();
-			foreach($defaultFilters as $k => $d){
-				$v = $d->getValue();
-				if($v)
-					$options['filters'][] = [$k, $v];
+			if($this->customFiltersForm){
+				$defaultFilters = $this->customFiltersForm->getDataset();
+				foreach($defaultFilters as $k => $d){
+					$v = $d->getValue();
+					if($v)
+						$options['filters'][] = [$k, $v];
+				}
 			}
 		}
 
@@ -930,6 +932,9 @@ class Admin extends Module {
 			$request = $this->request;
 
 		$actions = [];
+
+		if(!(isset($this->options['table']) and $this->options['table']) and !(isset($this->options['element']) and $this->options['element']))
+			return [];
 
 		if($this->canUser('C')){
 			$actions['new'] = [
@@ -1266,6 +1271,7 @@ class Admin extends Module {
 
 	/**
 	 * @return string
+	 * @throws \Model\Core\ZkException
 	 */
 	public function getUrlPrefix(){
 		return $this->model->prefix().($this->url ? $this->url.'/' : '');
