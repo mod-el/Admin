@@ -41,10 +41,6 @@ class AdminController extends Controller {
 					$this->model->error('No template module was defined in the configuration.');
 
 				$templateModule = $this->model->load($config['template']);
-				$templateViewOptions = $templateModule->getViewOptions($config);
-				if($this->viewOptions['template']!==false)
-					unset($templateViewOptions['template']);
-				$this->viewOptions = array_merge($this->viewOptions, $templateViewOptions);
 				$this->model->_Admin->template = $templateModule;
 			}
 
@@ -105,8 +101,10 @@ class AdminController extends Controller {
 							$this->model->sendJSON($list);
 						} else {
 							$templateViewOptions = $templateModule->respond($request, $list);
-							if($this->viewOptions['template'])
+							if($this->viewOptions['template']){
 								unset($templateViewOptions['template']);
+								unset($templateViewOptions['template-module']);
+							}
 							$this->viewOptions = array_merge($this->viewOptions, $templateViewOptions);
 						}
 						break;
@@ -151,6 +149,13 @@ class AdminController extends Controller {
 						if ($this->model->isCLI()) {
 							$arr = $this->model->_Admin->getEditArray();
 							$this->model->sendJSON($arr);
+						}else{
+							$templateViewOptions = $templateModule->respond($request);
+							if($this->viewOptions['template']){
+								unset($templateViewOptions['template']);
+								unset($templateViewOptions['template-module']);
+							}
+							$this->viewOptions = array_merge($this->viewOptions, $templateViewOptions);
 						}
 						break;
 					case 'save':
@@ -232,6 +237,9 @@ class AdminController extends Controller {
 						}
 						break;
 				}
+			}else{
+				$templateViewOptions = $templateModule->respond($request);
+				$this->viewOptions = array_merge($this->viewOptions, $templateViewOptions);
 			}
 		} catch (\Exception $e) {
 			die(getErr($e));

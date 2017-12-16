@@ -13,7 +13,7 @@ class AdminLoginController extends Controller {
 				$this->model->error('No template module was defined in the configuration.');
 
 			$templateModule = $this->model->load($config['template']);
-			$this->viewOptions = array_merge($this->viewOptions, $templateModule->getViewOptions($config));
+			$this->viewOptions = array_merge($this->viewOptions, $templateModule->respond($this->model->_Admin->request));
 		}
 
 		switch($this->model->_Admin->request[0]){
