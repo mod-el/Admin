@@ -105,7 +105,7 @@ class AdminController extends Controller {
 							$this->model->sendJSON($list);
 						} else {
 							$templateViewOptions = $templateModule->respond($request, $list);
-							if($this->viewOptions['template']!==false)
+							if($this->viewOptions['template'])
 								unset($templateViewOptions['template']);
 							$this->viewOptions = array_merge($this->viewOptions, $templateViewOptions);
 						}
