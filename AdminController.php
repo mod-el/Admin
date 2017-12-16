@@ -123,7 +123,6 @@ class AdminController extends Controller {
 								]);
 
 								$this->model->_Admin->form = $element->getForm();
-								$this->customize();
 
 								if (!$this->model->_Admin->canUser('D', null, $element))
 									$this->model->error('Can\'t delete, permission denied.');
