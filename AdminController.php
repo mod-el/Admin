@@ -117,9 +117,8 @@ class AdminController extends Controller {
 							$this->model->_Db->beginTransaction();
 
 							foreach ($ids as $id) {
-								$element = new $this->model->_Admin->options['element']($id, [
+								$element = $this->model->_ORM->one($this->model->_Admin->options['element'], $id, [
 									'table' => $this->model->_Admin->options['table'],
-									'model' => $this->model,
 									'primary' => $this->model->_Admin->options['primary'],
 								]);
 
