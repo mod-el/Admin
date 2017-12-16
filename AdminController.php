@@ -104,7 +104,10 @@ class AdminController extends Controller {
 						if ($this->model->isCLI()) {
 							$this->model->sendJSON($list);
 						} else {
-							$this->viewOptions = array_merge($this->viewOptions, $templateModule->respond($request, $list));
+							$templateViewOptions = $templateModule->respond($request, $list);
+							if($this->viewOptions['template'])
+								unset($templateViewOptions['template']);
+							$this->viewOptions = array_merge($this->viewOptions, $templateViewOptions);
 						}
 						break;
 					case 'delete':

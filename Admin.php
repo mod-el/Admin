@@ -83,10 +83,8 @@ class Admin extends Module {
 		], $this->options['privileges']);
 
 		if($this->options['table'] or $this->options['element']){
-			if($this->options['element'] and !$this->options['table']){
-				$element = $this->options['element'];
-				$this->options['table'] = $element::$table;
-			}
+			if($this->options['element'] and !$this->options['table'])
+				$this->options['table'] = $this->model->_ORM->getTableFor($this->options['element']);
 
 			if(!$this->options['table'])
 				$this->model->error('Can\'t retrieve table name from the provided element.');
