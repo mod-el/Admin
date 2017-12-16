@@ -11,6 +11,7 @@ class Config extends Module_Config {
 	 * @param string $type
 	 * @param array $dati
 	 * @return bool
+	 * @throws \Model\Core\ZkException
 	 */
 	public function saveConfig($type, array $dati){
 		if(!is_dir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin'))
@@ -76,8 +77,6 @@ $config = '.var_export($config, true).';
 
 			if(!is_dir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'controllers'.DIRECTORY_SEPARATOR.$p))
 				mkdir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'controllers'.DIRECTORY_SEPARATOR.$p);
-			if(!is_dir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.$p))
-				mkdir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.$p);
 		}
 	}
 
@@ -86,6 +85,7 @@ $config = '.var_export($config, true).';
 	 *
 	 * @param array $pages
 	 * @return array
+	 * @throws \Model\Core\ZkException
 	 */
 	private function parsePages(array $pages){
 		foreach($pages as &$p){
@@ -116,12 +116,13 @@ $config = '.var_export($config, true).';
 	public function getTemplate(array $request){
 		if(!in_array($request[2], ['init', 'config']))
 			return null;
-		return INCLUDE_PATH.'model'.DIRECTORY_SEPARATOR.'Admin'.DIRECTORY_SEPARATOR.'templates'.DIRECTORY_SEPARATOR.$request[2];
+		return $request[2];
 	}
 
 	/**
 	 * @param array $data
 	 * @return mixed
+	 * @throws \Model\Core\ZkException
 	 */
 	public function install(array $data = []){
 		if(empty($data))
