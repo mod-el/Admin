@@ -1075,6 +1075,7 @@ class Admin extends Module {
 	 * @param string $name
 	 * @param array $options
 	 * @return MField|bool
+	 * @throws \Model\Core\Exception
 	 */
 	public function field($name, $options = []){
 		if(!$this->form)
@@ -1139,6 +1140,7 @@ class Admin extends Module {
 	 * @param Element $el
 	 * @param array $options
 	 * @return Form
+	 * @throws \Model\Core\Exception
 	 */
 	public function getSublistRowForm(Element $el, array $options){
 		$form = $el->getForm();
