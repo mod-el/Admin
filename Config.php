@@ -11,7 +11,7 @@ class Config extends Module_Config {
 	 * @param string $type
 	 * @param array $dati
 	 * @return bool
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	public function saveConfig($type, array $dati){
 		if(!is_dir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin'))
@@ -85,7 +85,7 @@ $config = '.var_export($config, true).';
 	 *
 	 * @param array $pages
 	 * @return array
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	private function parsePages(array $pages){
 		foreach($pages as &$p){
@@ -122,7 +122,7 @@ $config = '.var_export($config, true).';
 	/**
 	 * @param array $data
 	 * @return mixed
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	public function install(array $data = []){
 		if(empty($data))
