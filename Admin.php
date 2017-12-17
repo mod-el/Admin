@@ -33,7 +33,7 @@ class Admin extends Module {
 	/**
 	 * @param mixed $options
 	 * @return bool
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	public function init($options){
 		if($options===[])
@@ -227,13 +227,13 @@ class Admin extends Module {
 				case 'login':
 				case 'logout':
 					return [
-						'controller' => '\\Model\\Admin\\AdminLogin',
+						'controller' => 'AdminLogin',
 					];
 					break;
 			}
 		}else{
 			return [
-				'controller' => '\\Model\\Admin\\Admin',
+				'controller' => 'Admin',
 			];
 		}
 
@@ -242,9 +242,8 @@ class Admin extends Module {
 		if(!$controller)
 			return false;
 
-		$folder = ($this->url and file_exists(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'controllers'.DIRECTORY_SEPARATOR.$this->url.DIRECTORY_SEPARATOR.$controller.'Controller.php')) ? $this->url.DIRECTORY_SEPARATOR : '';
 		return [
-			'controller' => $folder.$controller,
+			'controller' => 'Admin\\'.$controller,
 		];
 	}
 
@@ -294,7 +293,7 @@ class Admin extends Module {
 	 * @param string $name
 	 * @param array $arguments
 	 * @return mixed
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	public function __call($name, $arguments){
 		if(method_exists($this->template, $name)){
@@ -330,7 +329,7 @@ class Admin extends Module {
 	 *
 	 * @param array $options
 	 * @return array
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	public function getList(array $options = []){
 		$options = array_merge([
@@ -511,7 +510,7 @@ class Admin extends Module {
 	 * @param Element $el
 	 * @param array $cOpt
 	 * @return array
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	private function getElementColumn(Element $el, array $cOpt){
 		$config = $this->retrieveConfig();
@@ -556,7 +555,7 @@ class Admin extends Module {
 	 *
 	 * @param array $f
 	 * @return bool|array
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	private function getWhereFromFilter(array $f){
 		if(!is_array($f) or count($f)<2 or count($f)>3)
@@ -644,7 +643,7 @@ class Admin extends Module {
 	 * @param array $sortBy
 	 * @param array $joins
 	 * @return array
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	private function getSortingRules(array $sortBy, array $joins){
 		if($sortBy){
@@ -841,7 +840,7 @@ class Admin extends Module {
 	 * @param string $name
 	 * @param array $options
 	 * @return MField|bool
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	public function filter($name, array $options=[]){
 		if(isset($this->customFiltersCallbacks[$name]))
@@ -923,7 +922,7 @@ class Admin extends Module {
 	 *
 	 * @param array $request
 	 * @return array
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	public function getActions(array $request = null){
 		if($request===null)
@@ -977,7 +976,7 @@ class Admin extends Module {
 	 * @param string $page
 	 * @param Element $el
 	 * @return bool
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	public function canUser($what, $page = null, Element $el = null){
 		if($page===null)
@@ -1176,7 +1175,7 @@ class Admin extends Module {
 	 * @param array $data
 	 * @param array $instant
 	 * @return array|bool
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	public function saveElementViaInstant(array $data, array $instant = []){
 		$this->model->on('Db_update', function($e) use($instant){
@@ -1269,7 +1268,7 @@ class Admin extends Module {
 
 	/**
 	 * @return string
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	public function getUrlPrefix(){
 		return $this->model->prefix().($this->url ? $this->url.'/' : '');

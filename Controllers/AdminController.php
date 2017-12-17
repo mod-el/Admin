@@ -1,4 +1,4 @@
-<?php namespace Model\Admin;
+<?php namespace Model\Admin\Controllers;
 
 use Model\Core\Controller;
 use Model\ORM\Element;
@@ -13,7 +13,7 @@ class AdminController extends Controller {
 	protected function customize(){}
 
 	/**
-	 * @throws \Model\Core\ZkException
+	 * @throws \Model\Core\Exception
 	 */
 	public function init(){
 		$this->viewOptions['cache'] = false; // TODO: recache templates on menu edit

@@ -1,4 +1,4 @@
-<?php namespace Model\Admin;
+<?php namespace Model\Admin\Controllers;
 
 use Model\Core\Controller;
 
