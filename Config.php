@@ -52,32 +52,11 @@ class Config extends Module_Config {
 		if(isset($dati['stringaLogin1'])) $config['stringaLogin1'] = $dati['stringaLogin1'];
 		if(isset($dati['stringaLogin2'])) $config['stringaLogin2'] = $dati['stringaLogin2'];
 
-		$paths = array();
-		foreach($config['url'] as $url)
-			$paths[] = $url['path'];
-
-		$this->setPaths($paths);
-
 		$configFile = INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin'.DIRECTORY_SEPARATOR.'config.php';
 
 		return (bool) file_put_contents($configFile, '<?php
 $config = '.var_export($config, true).';
 ');
-	}
-
-	/**
-	 * Creates the folders needed for the Admin to work properly
-	 *
-	 * @param array $paths
-	 */
-	private function setPaths(array $paths){
-		foreach($paths as $p){
-			if(empty($p))
-				continue;
-
-			if(!is_dir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'controllers'.DIRECTORY_SEPARATOR.$p))
-				mkdir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'controllers'.DIRECTORY_SEPARATOR.$p);
-		}
 	}
 
 	/**
