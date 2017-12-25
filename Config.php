@@ -162,7 +162,7 @@ $config = '.var_export($config, true).';
 	}
 
 	/**
-	 * Rule for API actions
+	 * Admin pages rules
 	 *
 	 * @return array
 	 */
