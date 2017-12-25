@@ -52,6 +52,15 @@ class Config extends Module_Config {
 		if(isset($dati['stringaLogin1'])) $config['stringaLogin1'] = $dati['stringaLogin1'];
 		if(isset($dati['stringaLogin2'])) $config['stringaLogin2'] = $dati['stringaLogin2'];
 
+		if($this->model->isLoaded('Output')){
+			$headerTemplate = $this->model->_Output->findTemplateFile('header', $config['template']);
+			if($headerTemplate)
+				$this->model->_Output->removeFileFromCache($headerTemplate['path']);
+			$footerTemplate = $this->model->_Output->findTemplateFile('footer', $config['template']);
+			if($footerTemplate)
+				$this->model->_Output->removeFileFromCache($footerTemplate['path']);
+		}
+
 		$configFile = INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin'.DIRECTORY_SEPARATOR.'config.php';
 
 		return (bool) file_put_contents($configFile, '<?php
@@ -153,7 +162,7 @@ $config = '.var_export($config, true).';
 	}
 
 	/**
-	 * Rule for API actions
+	 * Admin pages rules
 	 *
 	 * @return array
 	 */
