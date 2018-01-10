@@ -1117,17 +1117,26 @@ class Admin extends Module {
 		}
 
 		foreach($this->sublists as $s){
-			$arr['children'][$s['name'].'-'.$s['options']['cont']] = [];
+			$options = $element->getChildrenOptions($s['name']);
+			if(!$options)
+				$this->model->error($s['name'].' is not a children list of the element!');
+
+			$arr['children'][$s['name'].'-'.$s['options']['cont']] = [
+				'primary' => $options['primary'],
+				'list' => [],
+			];
+
 			foreach($element->{$s['name']} as $chId => $ch){
 				$chArr = [];
 				$form = $this->getSublistRowForm($ch, $s['options']);
 				$keys = array_keys($form->getDataset());
 
+				$chArr[$options['primary']] = $ch[$options['primary']];
 				foreach($keys as $k){
 					$chArr[$k] = $form[$k]->getValue();
 				}
 
-				$arr['children'][$s['name'].'-'.$s['options']['cont']][$chId] = $chArr;
+				$arr['children'][$s['name'].'-'.$s['options']['cont']]['list'][] = $chArr;
 			}
 		}
 
