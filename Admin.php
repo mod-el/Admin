@@ -1133,7 +1133,7 @@ class Admin extends Module {
 
 				$chArr[$options['primary']] = $ch[$options['primary']];
 				foreach($keys as $k){
-					$chArr[$k] = $form[$k]->getValue();
+					$chArr[$k] = $form[$k]->getJsValue(false);
 				}
 
 				$arr['children'][$s['name'].'-'.$s['options']['cont']]['list'][] = $chArr;
