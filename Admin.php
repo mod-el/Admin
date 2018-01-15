@@ -1107,7 +1107,9 @@ class Admin extends Module {
 			$this->model->error('Can\'t read, permission denied.');
 
 		$arr = [
-			'data' => [],
+			'data' => [
+				'_model_version' => $this->model->_Db->getVersionLock($element->getTable(), $element['id']),
+			],
 			'children' => [],
 		];
 
@@ -1227,11 +1229,13 @@ class Admin extends Module {
 	 * Saves the data in the current element
 	 *
 	 * @param array $data
+	 * @param int $versionLock
 	 * @return bool|int
 	 */
-	public function saveElement(array $data){
+	public function saveElement(array $data, int $versionLock = null){
 		return $this->model->element->save($data, [
 			'children' => true,
+			'version' => $versionLock,
 		]);
 	}
 

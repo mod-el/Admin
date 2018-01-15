@@ -194,7 +194,10 @@ class AdminController extends Controller {
 									$this->model->error('Error while saving');
 								}
 							}else{
-								$id = $this->model->_Admin->saveElement($data);
+								$versionLock = null;
+								if(isset($_POST['version']) and is_numeric($_POST['version']))
+									$versionLock = $_POST['version'];
+								$id = $this->model->_Admin->saveElement($data, $versionLock);
 								if ($id!==false) {
 									$this->model->sendJSON([
 										'status' => 'ok',
