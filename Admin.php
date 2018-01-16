@@ -35,7 +35,7 @@ class Admin extends Module {
 	 * @return bool
 	 * @throws \Model\Core\Exception
 	 */
-	public function init($options){
+	public function init(array $options){
 		if($options===[])
 			return false;
 		if($options===false) // Special controllers (like AdminLogin) can pass false to init without options
@@ -208,7 +208,7 @@ class Admin extends Module {
 	 * @param mixed $rule
 	 * @return array|bool
 	 */
-	public function getController(array $request, $rule){
+	public function getController(array $request, string $rule){
 		$config = $this->retrieveConfig();
 
 		if(!isset($config['url'][$rule]) or (!empty($config['url'][$rule]['path']) and strpos(implode('/', $request), $config['url'][$rule]['path'])!==0))
@@ -881,7 +881,7 @@ class Admin extends Module {
 	 * @param array $opt
 	 * @return bool|string
 	 */
-	public function getUrl($controller=false, $id=false, array $tags=[], array $opt=[]){
+	public function getUrl(string $controller = null, $id=false, array $tags=[], array $opt=[]){
 		switch($controller){
 			case 'AdminLogin':
 				return ($this->url ? $this->url.'/' : '').'login';

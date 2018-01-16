@@ -9,48 +9,49 @@ class Config extends Module_Config {
 	 * Saves configuration
 	 *
 	 * @param string $type
-	 * @param array $dati
+	 * @param array $data
 	 * @return bool
 	 * @throws \Model\Core\Exception
 	 */
-	public function saveConfig($type, array $dati){
+	public function saveConfig(string $type, array $data): bool
+	{
 		if(!is_dir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin'))
 			mkdir(INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin');
 
 		$config = $this->retrieveConfig();
 		if(isset($config['url'])){
 			foreach($config['url'] as $idx=>$url){
-				if(isset($dati[$idx.'-path']))
-					$url['path'] = $dati[$idx.'-path'];
-				if(isset($dati[$idx.'-table']))
-					$url['table'] = $dati[$idx.'-table'];
-				if(isset($dati[$idx.'-pages']))
-					$url['pages'] = $this->parsePages(json_decode($dati[$idx.'-pages'], true));
+				if(isset($data[$idx.'-path']))
+					$url['path'] = $data[$idx.'-path'];
+				if(isset($data[$idx.'-table']))
+					$url['table'] = $data[$idx.'-table'];
+				if(isset($data[$idx.'-pages']))
+					$url['pages'] = $this->parsePages(json_decode($data[$idx.'-pages'], true));
 				$config['url'][$idx] = $url;
 			}
 
 			foreach($config['url'] as $idx=>$url){
-				if(isset($dati['delete-'.$idx]))
+				if(isset($data['delete-'.$idx]))
 					unset($config['url'][$idx]);
 			}
 		}else{
 			$config['url'] = array();
 		}
 
-		if($dati['table']){
+		if($data['table']){
 			$config['url'][] = array(
-				'path' => $dati['path'],
-				'table' => $dati['table'],
+				'path' => $data['path'],
+				'table' => $data['table'],
 				'pages' => [],
 			);
 		}
 
-		if(isset($dati['template'])) $config['template'] = $dati['template'];
-		if(isset($dati['hide-menu'])) $config['hide-menu'] = $dati['hide-menu'];
-		if(isset($dati['dateFormat'])) $config['dateFormat'] = $dati['dateFormat'];
-		if(isset($dati['priceFormat'])) $config['priceFormat'] = $dati['priceFormat'];
-		if(isset($dati['stringaLogin1'])) $config['stringaLogin1'] = $dati['stringaLogin1'];
-		if(isset($dati['stringaLogin2'])) $config['stringaLogin2'] = $dati['stringaLogin2'];
+		if(isset($data['template'])) $config['template'] = $data['template'];
+		if(isset($data['hide-menu'])) $config['hide-menu'] = $data['hide-menu'];
+		if(isset($data['dateFormat'])) $config['dateFormat'] = $data['dateFormat'];
+		if(isset($data['priceFormat'])) $config['priceFormat'] = $data['priceFormat'];
+		if(isset($data['stringaLogin1'])) $config['stringaLogin1'] = $data['stringaLogin1'];
+		if(isset($data['stringaLogin2'])) $config['stringaLogin2'] = $data['stringaLogin2'];
 
 		if($this->model->isLoaded('Output')){
 			$headerTemplate = $this->model->_Output->findTemplateFile('header', $config['template']);
@@ -112,7 +113,8 @@ $config = '.var_export($config, true).';
 	 * @return mixed
 	 * @throws \Model\Core\Exception
 	 */
-	public function install(array $data = []){
+	public function install(array $data = []): bool
+	{
 		if(empty($data))
 			return true;
 
@@ -166,7 +168,8 @@ $config = '.var_export($config, true).';
 	 *
 	 * @return array
 	 */
-	public function getRules(){
+	public function getRules(): array
+	{
 		$config = $this->retrieveConfig();
 
 		$ret = [
