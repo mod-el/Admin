@@ -108,7 +108,7 @@ class AdminController extends Controller {
 						break;
 					case 'delete':
 						try {
-							if (!checkCsrf() or !isset($_GET['id']))
+							if (!$this->model->_CSRF->checkCsrf() or !isset($_GET['id']))
 								$this->model->error('Missing data');
 							$ids = explode(',', $_GET['id']);
 
@@ -156,7 +156,7 @@ class AdminController extends Controller {
 						break;
 					case 'save':
 						try {
-							if (!checkCsrf() or !isset($_POST['data']))
+							if (!$this->model->_CSRF->checkCsrf() or !isset($_POST['data']))
 								$this->model->error('Dati errati');
 							$data = json_decode($_POST['data'], true);
 							if ($data === null)
