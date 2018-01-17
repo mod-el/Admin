@@ -1233,6 +1233,11 @@ class Admin extends Module {
 	 * @return bool|int
 	 */
 	public function saveElement(array $data, int $versionLock = null){
+		foreach($this->model->element->getForm()->getDataset() as $k => $d){
+			if(isset($data[$k]) and $d->options['nullable'] and $data[$k] === '')
+				$data[$k] = null;
+		}
+
 		return $this->model->element->save($data, [
 			'children' => true,
 			'version' => $versionLock,
