@@ -4,7 +4,7 @@ use Model\Core\Controller;
 
 class AdminLoginController extends Controller {
 	function index(){
-		$this->model->_Admin->init(false);
+		$this->model->_Admin->init([]);
 		$user = $this->model->getModule('User', 'Admin');
 
 		if(!$this->model->isCLI()){

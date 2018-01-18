@@ -36,11 +36,6 @@ class Admin extends Module {
 	 * @throws \Model\Core\Exception
 	 */
 	public function init(array $options){
-		if($options===[])
-			return false;
-		if($options===false) // Special controllers (like AdminLogin) can pass false to init without options
-			$options = [];
-
 		$config = $this->retrieveConfig();
 
 		$user_table = 'admin_users';
