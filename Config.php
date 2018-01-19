@@ -35,15 +35,15 @@ class Config extends Module_Config {
 					unset($config['url'][$idx]);
 			}
 		}else{
-			$config['url'] = array();
+			$config['url'] = [];
 		}
 
 		if($data['table']){
-			$config['url'][] = array(
+			$config['url'][] = [
 				'path' => $data['path'],
 				'table' => $data['table'],
 				'pages' => [],
-			);
+			];
 		}
 
 		if(isset($data['template'])) $config['template'] = $data['template'];
@@ -61,6 +61,11 @@ class Config extends Module_Config {
 			if($footerTemplate)
 				$this->model->_Output->removeFileFromCache($footerTemplate['path']);
 		}
+
+		$adminDictionaryFile = INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin'.DIRECTORY_SEPARATOR.'dictionary.php';
+		if(!file_exists($adminDictionaryFile))
+			file_put_contents($adminDictionaryFile, "<?php\n\$dictionary = [];\n");
+		$this->checkAndInsertWords([]);
 
 		$configFile = INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin'.DIRECTORY_SEPARATOR.'config.php';
 
@@ -226,5 +231,27 @@ $config = '.var_export($config, true).';
 		}
 
 		return $templates;
+	}
+
+	public function checkAndInsertWords(array $words): bool {
+		$adminDictionaryFile = INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin'.DIRECTORY_SEPARATOR.'dictionary.php';
+
+		$dictionary = [];
+		if(file_exists($adminDictionaryFile))
+			require($adminDictionaryFile);
+
+		foreach($words as $w => $langs){
+			if(isset($dictionary[$w]))
+				$dictionary[$w] = array_merge($dictionary[$w], $words[$w]);
+			else
+				$dictionary[$w] = $words[$w];
+		}
+
+		$w = (bool) file_put_contents($adminDictionaryFile, "<?php\n\$dictionary = ".var_export($dictionary, true).";\n");
+
+		if($w and $this->model->isLoaded('Multilang'))
+			return $this->model->_Multilang->checkAndInsertWords('admin', $words);
+		else
+			return $w;
 	}
 }

@@ -26,9 +26,11 @@ class Admin extends Module {
 	/** @var array */
 	protected $instantSaveIds = [];
 	/** @var array */
-	public $sublists = array();
+	public $sublists = [];
 	/** @var Module */
 	public $template;
+	/** @var array */
+	private $dictionary = null;
 
 	/**
 	 * @param mixed $options
@@ -1287,5 +1289,31 @@ class Admin extends Module {
 	 */
 	public function getUrlPrefix(){
 		return $this->model->prefix().($this->url ? $this->url.'/' : '');
+	}
+
+	private function getDictionary(): array {
+		if($this->dictionary === null){
+			$adminDictionaryFile = INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin'.DIRECTORY_SEPARATOR.'dictionary.php';
+
+			$dictionary = [];
+			if(file_exists($adminDictionaryFile))
+				require($adminDictionaryFile);
+
+			$this->dictionary = [];
+			foreach($dictionary as $w => $langs){
+				$this->dictionary[$w] = count($langs)>0 ? ($langs['it'] ?? reset($langs)) : '';
+			}
+		}
+
+		return $this->dictionary;
+	}
+
+	public function word(string $w): string {
+		if($this->model->isLoaded('Multilang')){
+			return $this->model->_Multilang->word('admin.'.$w);
+		}else{
+			$dictionary = $this->getDictionary();
+			return $dictionary[$w] ?? '';
+		}
 	}
 }
