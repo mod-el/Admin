@@ -3,35 +3,42 @@
 use Model\Core\Controller;
 use Model\ORM\Element;
 
-class AdminController extends Controller {
+class AdminController extends Controller
+{
 	protected $options = [
 		'table' => null,
 	];
 
-	protected function options(){}
+	protected function options()
+	{
+	}
 
-	protected function customize(){}
+	protected function customize()
+	{
+	}
 
 	/**
 	 * @throws \Model\Core\Exception
 	 */
-	public function init(){
-		if(!$this->model->isLoaded('Admin'))
+	public function init()
+	{
+		if (!$this->model->isLoaded('Admin'))
 			$this->model->error('Admin controllers can be accessed only through Admin module.');
 
 		$this->options();
 		$this->model->_Admin->init($this->options);
 
-		if($this->model->_Admin->form)
+		if ($this->model->_Admin->form)
 			$values = $this->model->_Admin->form->getValues();
 
 		$this->customize();
 
-		if($this->model->_Admin->form)
+		if ($this->model->_Admin->form)
 			$this->model->_Admin->form->setValues($values);
 	}
 
-	public function index(){
+	public function index()
+	{
 		try {
 			$config = $this->model->_Admin->retrieveConfig();
 			if (!$this->model->isCLI()) {
@@ -49,21 +56,21 @@ class AdminController extends Controller {
 
 				switch ($request[1]) {
 					case '':
-						if(!$this->model->_Admin->canUser('L'))
+						if (!$this->model->_Admin->canUser('L'))
 							$this->model->error('You have not the permissions to view this page.');
 
 						$sId = $this->model->_Admin->getSessionId();
 
-						if((isset($this->options['table']) and $this->options['table']) or (isset($this->options['element']) and $this->options['element'])){
+						if ((isset($this->options['table']) and $this->options['table']) or (isset($this->options['element']) and $this->options['element'])) {
 							$options = $this->model->_Admin->getListOptions($sId);
 
 							if ($this->model->getInput('p'))
 								$options['p'] = (int)$this->model->getInput('p');
 
-							if ($this->model->getInput('nopag')){
+							if ($this->model->getInput('nopag')) {
 								$options['p'] = 1;
 								$options['perPage'] = 0;
-							}else{
+							} else {
 								$options['perPage'] = isset($this->options['perPage']) ? $this->options['perPage'] : 20;
 							}
 
@@ -88,7 +95,7 @@ class AdminController extends Controller {
 							$this->model->_Admin->setListOptions($sId, $options);
 
 							$list = $this->model->_Admin->getList($options);
-						}else{
+						} else {
 							$list = [];
 						}
 
@@ -99,7 +106,7 @@ class AdminController extends Controller {
 							$this->model->sendJSON($list);
 						} else {
 							$templateViewOptions = $templateModule->respond($request, $list);
-							if($this->viewOptions['template']){
+							if ($this->viewOptions['template']) {
 								unset($templateViewOptions['template']);
 								unset($templateViewOptions['template-module']);
 							}
@@ -145,9 +152,9 @@ class AdminController extends Controller {
 						if ($this->model->isCLI()) {
 							$arr = $this->model->_Admin->getEditArray();
 							$this->model->sendJSON($arr);
-						}else{
+						} else {
 							$templateViewOptions = $templateModule->respond($request);
-							if($this->viewOptions['template']){
+							if ($this->viewOptions['template']) {
 								unset($templateViewOptions['template']);
 								unset($templateViewOptions['template-module']);
 							}
@@ -161,27 +168,27 @@ class AdminController extends Controller {
 							$data = json_decode($_POST['data'], true);
 							if ($data === null)
 								$this->model->error('Dati errati');
-							if(!$this->model->element)
+							if (!$this->model->element)
 								$this->model->error('Element does not exist');
 
 							if (!$this->model->_Admin->canUser('U', null, $this->model->element))
 								$this->model->error('Can\'t save, permission denied.');
 
-							if(isset($_GET['instant'])){
+							if (isset($_GET['instant'])) {
 								$instantIds = explode(',', $_GET['instant']);
 								$changed = $this->model->_Admin->saveElementViaInstant($data, $instantIds);
-								if ($changed!==false) {
+								if ($changed !== false) {
 									$changed = [
 										'elements' => $changed,
 										'columns' => $this->model->_Admin->getColumns(),
 									];
 
-									if(isset($templateModule)){
+									if (isset($templateModule)) {
 										$data = $templateModule->respond(['', ''], $changed);
 										$changed = $data['data'];
 									}
 
-									foreach($changed['elements'] as &$row){
+									foreach ($changed['elements'] as &$row) {
 										unset($row['element']);
 									}
 									unset($row);
@@ -193,12 +200,12 @@ class AdminController extends Controller {
 								} else {
 									$this->model->error('Error while saving');
 								}
-							}else{
+							} else {
 								$versionLock = null;
-								if(isset($_POST['version']) and is_numeric($_POST['version']))
+								if (isset($_POST['version']) and is_numeric($_POST['version']))
 									$versionLock = $_POST['version'];
 								$id = $this->model->_Admin->saveElement($data, $versionLock);
-								if ($id!==false) {
+								if ($id !== false) {
 									$this->model->sendJSON([
 										'status' => 'ok',
 										'id' => $id,
@@ -212,12 +219,12 @@ class AdminController extends Controller {
 						}
 						break;
 					case 'duplicate':
-						try{
-							if(!$this->model->element or !$this->model->element->exists())
+						try {
+							if (!$this->model->element or !$this->model->element->exists())
 								$this->model->error('Error: attempting to duplicate a non existing element.');
 
 							$newElement = $this->model->element->duplicate();
-							$this->model->redirect($this->model->_Admin->getUrlPrefix().$this->model->_Admin->request[0].'/edit/'.$newElement['id'].'?duplicated');
+							$this->model->redirect($this->model->_Admin->getUrlPrefix() . $this->model->_Admin->request[0] . '/edit/' . $newElement['id'] . '?duplicated');
 						} catch (\Exception $e) {
 							$err = getErr($e);
 							die($err);
@@ -236,7 +243,7 @@ class AdminController extends Controller {
 						}
 						break;
 				}
-			}else{
+			} else {
 				$templateViewOptions = $templateModule->respond($request);
 				$this->viewOptions = array_merge($this->viewOptions, $templateViewOptions);
 			}
@@ -249,7 +256,8 @@ class AdminController extends Controller {
 	 * @param Element $element
 	 * @return bool
 	 */
-	protected function beforeDelete(Element $element){
+	protected function beforeDelete(Element $element): bool
+	{
 		return true;
 	}
 
@@ -257,5 +265,7 @@ class AdminController extends Controller {
 	 * @param int $id
 	 * @param Element $element
 	 */
-	protected function afterDelete($id, Element $element){}
+	protected function afterDelete(int $id, Element $element)
+	{
+	}
 }

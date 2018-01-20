@@ -6,7 +6,8 @@ use Model\Form\MField;
 use Model\ORM\Element;
 use Model\Paginator\Paginator;
 
-class Admin extends Module {
+class Admin extends Module
+{
 	/** @var string */
 	public $url;
 	/** @var array */
@@ -37,13 +38,14 @@ class Admin extends Module {
 	 * @return bool
 	 * @throws \Model\Core\Exception
 	 */
-	public function init(array $options){
+	public function init(array $options)
+	{
 		$config = $this->retrieveConfig();
 
 		$user_table = 'admin_users';
-		if(isset($config['url']) and is_array($config['url'])){
-			foreach($config['url'] as $u){
-				if(is_array($u) and $u['path']==$this->url){
+		if (isset($config['url']) and is_array($config['url'])) {
+			foreach ($config['url'] as $u) {
+				if (is_array($u) and $u['path'] == $this->url) {
 					$user_table = $u['table'];
 					break;
 				}
@@ -51,9 +53,9 @@ class Admin extends Module {
 		}
 
 		$this->model->load('User', array(
-			'table'=>$user_table,
-			'mandatory'=>true,
-			'login-controller'=>'AdminLogin',
+			'table' => $user_table,
+			'mandatory' => true,
+			'login-controller' => 'AdminLogin',
 		), 'Admin');
 
 		$this->model->load('Paginator');
@@ -79,25 +81,25 @@ class Admin extends Module {
 			'L' => true,
 		], $this->options['privileges']);
 
-		if($this->options['table'] or $this->options['element']){
-			if($this->options['element'] and !$this->options['table'])
+		if ($this->options['table'] or $this->options['element']) {
+			if ($this->options['element'] and !$this->options['table'])
 				$this->options['table'] = $this->model->_ORM->getTableFor($this->options['element']);
 
-			if(!$this->options['table'])
+			if (!$this->options['table'])
 				$this->model->error('Can\'t retrieve table name from the provided element.');
 
-			if(!$this->options['element'])
+			if (!$this->options['element'])
 				$this->options['element'] = '\\Model\\ORM\\Element';
 
 			$tableModel = $this->model->_Db->getTable($this->options['table']);
-			if(!$tableModel)
+			if (!$tableModel)
 				$this->model->error('Table model not found, please generate cache.');
 
-			if($this->options['order_by']===false)
-				$this->options['order_by'] = $this->options['primary'].' DESC';
+			if ($this->options['order_by'] === false)
+				$this->options['order_by'] = $this->options['primary'] . ' DESC';
 
 			$new_fields = array(); // I loop through the columns to standardize the format
-			foreach($this->options['columns'] as $k=>$f){
+			foreach ($this->options['columns'] as $k => $f) {
 				/*
 				 * ACCEPTED FORMATS: *
 				 * 'field'
@@ -109,36 +111,36 @@ class Admin extends Module {
 				 * 'label'=>array()
 				 * * The key is the colum id, in the array there will be the remaining options (if a label is not provided, the column is will be used)
 				*/
-				if(is_numeric($k)){
-					if(is_array($f)){
-						if(isset($f['display']) and (is_string($f['display']) or is_numeric($f['display'])))
+				if (is_numeric($k)) {
+					if (is_array($f)) {
+						if (isset($f['display']) and (is_string($f['display']) or is_numeric($f['display'])))
 							$k = $f['display'];
-						elseif(isset($k['field']) and (is_string($f['field']) or is_numeric($f['field'])))
+						elseif (isset($k['field']) and (is_string($f['field']) or is_numeric($f['field'])))
 							$k = $f['field'];
-					}else{
-						if(is_string($f) or is_numeric($f))
+					} else {
+						if (is_string($f) or is_numeric($f))
 							$k = $f;
 					}
 					$k = str_replace('"', '', $this->getLabel($k));
 				}
 
-				if(!is_array($f)){
-					if(is_string($f) or is_numeric($f)){
+				if (!is_array($f)) {
+					if (is_string($f) or is_numeric($f)) {
 						$f = array(
-							'field'=>$f,
-							'display'=>$f,
+							'field' => $f,
+							'display' => $f,
 						);
-					}elseif(is_callable($f)){
+					} elseif (is_callable($f)) {
 						$f = array(
-							'field'=>false,
-							'display'=>$f,
+							'field' => false,
+							'display' => $f,
 						);
-					}else{
-						$this->model->error('Unknown column format with label "'.entities($k).'"');
+					} else {
+						$this->model->error('Unknown column format with label "' . entities($k) . '"');
 					}
 				}
 
-				if(!isset($f['field']) and !isset($f['display']))
+				if (!isset($f['field']) and !isset($f['display']))
 					$f['field'] = $k;
 
 				$f = array_merge(array(
@@ -153,19 +155,19 @@ class Admin extends Module {
 					'price' => false,
 				), $f);
 
-				if(is_string($f['display']) and !$f['field'] and $f['display'])
+				if (is_string($f['display']) and !$f['field'] and $f['display'])
 					$f['field'] = $f['display'];
-				if($f['field']===false and array_key_exists($k, $tableModel->columns))
+				if ($f['field'] === false and array_key_exists($k, $tableModel->columns))
 					$f['field'] = $k;
-				if(is_string($f['field']) and $f['field'] and !$f['display'])
+				if (is_string($f['field']) and $f['field'] and !$f['display'])
 					$f['display'] = $f['field'];
 
 				$k = $this->standardizeLabel($k);
-				if($k==''){
-					if($f['field'])
+				if ($k == '') {
+					if ($f['field'])
 						$k = $f['field'];
-					if(!$k)
-						$this->model->error('Can\'t assign id to column with label "'.entities($f['label']).'"');
+					if (!$k)
+						$this->model->error('Can\'t assign id to column with label "' . entities($f['label']) . '"');
 				}
 
 				$new_fields[$k] = $f;
@@ -179,19 +181,19 @@ class Admin extends Module {
 				'model' => $this->model,
 			]);
 
-			if(isset($this->request[2])){
-				if(!is_numeric($this->request[2]))
+			if (isset($this->request[2])) {
+				if (!is_numeric($this->request[2]))
 					die('Element id must be numeric');
 
-				$elId = (int) $this->request[2];
-				if($elId<=0)
+				$elId = (int)$this->request[2];
+				if ($elId <= 0)
 					$elId = false;
-			}else{
+			} else {
 				$elId = false;
 			}
 
 			$element = $this->model->_ORM->loadMainElement($this->options['element'] ?: '\\Model\\Element', $elId, ['table' => $this->options['table']]);
-			if($element)
+			if ($element)
 				$this->form = $element->getForm();
 		}
 
@@ -205,22 +207,23 @@ class Admin extends Module {
 	 * @param mixed $rule
 	 * @return array|bool
 	 */
-	public function getController(array $request, string $rule){
+	public function getController(array $request, string $rule)
+	{
 		$config = $this->retrieveConfig();
 
-		if(!isset($config['url'][$rule]) or (!empty($config['url'][$rule]['path']) and strpos(implode('/', $request), $config['url'][$rule]['path'])!==0))
+		if (!isset($config['url'][$rule]) or (!empty($config['url'][$rule]['path']) and strpos(implode('/', $request), $config['url'][$rule]['path']) !== 0))
 			return false;
 
 		$this->url = $config['url'][$rule]['path'];
 
 		$realRequest = $this->getAdminRequest($request, $this->url);
-		if($realRequest===false)
+		if ($realRequest === false)
 			return false;
 
 		$this->request = $realRequest;
 
-		if(isset($realRequest[0])){
-			switch($realRequest[0]){
+		if (isset($realRequest[0])) {
+			switch ($realRequest[0]) {
 				case 'login':
 				case 'logout':
 					return [
@@ -228,7 +231,7 @@ class Admin extends Module {
 					];
 					break;
 			}
-		}else{
+		} else {
 			return [
 				'controller' => 'Admin',
 			];
@@ -236,11 +239,11 @@ class Admin extends Module {
 
 		$pages = $this->getPages();
 		$controller = $this->seekForController($pages, $realRequest[0]);
-		if(!$controller)
+		if (!$controller)
 			return false;
 
 		return [
-			'controller' => 'Admin\\'.$controller,
+			'controller' => 'Admin\\' . $controller,
 		];
 	}
 
@@ -251,14 +254,15 @@ class Admin extends Module {
 	 * @param string $path
 	 * @return array|bool
 	 */
-	private function getAdminRequest(array $request, $path){
-		if(empty($path))
+	private function getAdminRequest(array $request, string $path)
+	{
+		if (empty($path))
 			return $request;
 
 		$path = explode('/', $path);
-		foreach($path as $p){
+		foreach ($path as $p) {
 			$shift = array_shift($request);
-			if($shift!==$p)
+			if ($shift !== $p)
 				return false;
 		}
 		return $request;
@@ -271,13 +275,14 @@ class Admin extends Module {
 	 * @param string $request
 	 * @return string|bool
 	 */
-	private function seekForController(array $pages, $request){
-		foreach($pages as $p){
-			if(isset($p['controller'], $p['rule']) and $p['rule']===$request)
+	private function seekForController(array $pages, string $request)
+	{
+		foreach ($pages as $p) {
+			if (isset($p['controller'], $p['rule']) and $p['rule'] === $request)
 				return $p['controller'];
-			if(isset($p['sub'])){
+			if (isset($p['sub'])) {
 				$controller = $this->seekForController($p['sub'], $request);
-				if($controller)
+				if ($controller)
 					return $controller;
 			}
 		}
@@ -292,11 +297,12 @@ class Admin extends Module {
 	 * @return mixed
 	 * @throws \Model\Core\Exception
 	 */
-	public function __call($name, $arguments){
-		if(method_exists($this->template, $name)){
+	public function __call($name, $arguments)
+	{
+		if (method_exists($this->template, $name)) {
 			return call_user_func_array([$this->template, $name], $arguments);
-		}else{
-			$this->model->error('Non existing method '.$name.' in Admin module.');
+		} else {
+			$this->model->error('Non existing method ' . $name . ' in Admin module.');
 			return null;
 		}
 	}
@@ -307,7 +313,8 @@ class Admin extends Module {
 	 * @param string $k
 	 * @return string
 	 */
-	private function standardizeLabel($k){
+	private function standardizeLabel(string $k): string
+	{
 		return preg_replace('/[^a-z0-9]/i', '', entities(strtolower($k)));
 	}
 
@@ -317,7 +324,8 @@ class Admin extends Module {
 	 * @param string $k
 	 * @return string
 	 */
-	public function getLabel($k){
+	public function getLabel(string $k): string
+	{
 		return ucwords(str_replace(array('-', '_'), ' ', $k));
 	}
 
@@ -328,7 +336,8 @@ class Admin extends Module {
 	 * @return array
 	 * @throws \Model\Core\Exception
 	 */
-	public function getList(array $options = []){
+	public function getList(array $options = []): array
+	{
 		$options = array_merge([
 			'p' => 1,
 			'perPage' => $this->options['perPage'],
@@ -341,63 +350,63 @@ class Admin extends Module {
 		// Create the filters array
 		$where = $this->options['where'];
 
-		$this->customFiltersCallbacks['all'] = function($v) use($options){ // "all" is a special filter, that searches in all string columns
+		$this->customFiltersCallbacks['all'] = function ($v) use ($options) { // "all" is a special filter, that searches in all string columns
 			$tableModel = $this->model->_Db->getTable($this->options['table']);
 			$columns = $tableModel->columns;
 
-			if($this->model->isLoaded('Multilang') and array_key_exists($this->options['table'], $this->model->_Multilang->tables)){
+			if ($this->model->isLoaded('Multilang') and array_key_exists($this->options['table'], $this->model->_Multilang->tables)) {
 				$mlTableOptions = $this->model->_Multilang->tables[$this->options['table']];
-				$mlTable = $this->options['table'].$mlTableOptions['suffix'];
+				$mlTable = $this->options['table'] . $mlTableOptions['suffix'];
 				$mlTableModel = $this->model->_Db->getTable($mlTable);
-				foreach ($mlTableModel->columns as $k=>$col){
-					if(isset($columns[$k]) or $k==$mlTableOptions['keyfield'] or $k==$mlTableOptions['lang'])
+				foreach ($mlTableModel->columns as $k => $col) {
+					if (isset($columns[$k]) or $k == $mlTableOptions['keyfield'] or $k == $mlTableOptions['lang'])
 						continue;
 					$columns[$k] = $col;
 				}
 			}
 
 			$arr = [];
-			foreach($columns as $k=>$col){
-				if($this->options['primary']==$k or $col['foreign_key'] or ($options['search-columns'] and !in_array($k, $options['search-columns'])))
+			foreach ($columns as $k => $col) {
+				if ($this->options['primary'] == $k or $col['foreign_key'] or ($options['search-columns'] and !in_array($k, $options['search-columns'])))
 					continue;
 
-				switch($col['type']){
+				switch ($col['type']) {
 					case 'tinyint':
 					case 'smallint':
 					case 'int':
 					case 'mediumint':
 					case 'bigint':
-						if(is_numeric($v))
+						if (is_numeric($v))
 							$arr[] = [$k, '=', $v];
 						break;
 					case 'decimal':
-						if(is_numeric($v))
-							$arr[] = [$k, 'LIKE', $v.'.%'];
+						if (is_numeric($v))
+							$arr[] = [$k, 'LIKE', $v . '.%'];
 						break;
 					case 'varchar':
 					case 'char':
 					case 'text':
 					case 'tinytext':
 					case 'enum':
-						$arr[] = [$k, 'REGEXP', '(^|[^a-z0-9])'.$v];
+						$arr[] = [$k, 'REGEXP', '(^|[^a-z0-9])' . $v];
 						break;
 				}
 			}
 
-			if($options['search-columns'] and empty($arr)){ // If specific columns are provided and no criteria matched, then it's impossible, I return a never-matching query
+			if ($options['search-columns'] and empty($arr)) { // If specific columns are provided and no criteria matched, then it's impossible, I return a never-matching query
 				return [
 					'1=2',
 				];
-			}else{
+			} else {
 				return [
-					['sub'=>$arr, 'operator'=>'OR'],
+					['sub' => $arr, 'operator' => 'OR'],
 				];
 			}
 		};
 
-		foreach($options['filters'] as $f){
+		foreach ($options['filters'] as $f) {
 			$f_where = $this->getWhereFromFilter($f);
-			if($f_where)
+			if ($f_where)
 				$where = array_merge($where, $f_where);
 		}
 
@@ -412,7 +421,7 @@ class Admin extends Module {
 			'perPage' => $options['perPage'] ?: false,
 			'pag' => $options['p'],
 		]);
-		$limit = $options['perPage'] ? $this->paginator->getStartLimit().','.$options['perPage'] : null;
+		$limit = $options['perPage'] ? $this->paginator->getStartLimit() . ',' . $options['perPage'] : null;
 
 		// Get the rules to apply to the query, in order to sort as requested (what joins do I need to make and what order by clause I need to use)
 		$sortingRules = $this->getSortingRules($options['sortBy'], $this->options['joins']);
@@ -426,19 +435,19 @@ class Admin extends Module {
 		];
 
 		// If a Element type is specified, I retrieve them through ORM module, otherwise I just execute a select query
-		if($this->options['element']){
+		if ($this->options['element']) {
 			$elements = $this->model->_ORM->all($this->options['element'], $where, $queryOptions);
-		}else{
+		} else {
 			$elements = $this->model->_Db->select_all($this->options['table'], $where, $queryOptions);
 		}
 
-		if($elements===false)
+		if ($elements === false)
 			$this->model->error('Error in retrieving elements list');
 
 		// I run through the elements to get the data I need
 		$arr_elements = [];
-		foreach($elements as $el){
-			if(is_array($el)){ // Retrieved through normal query, I convert into Element for consistency
+		foreach ($elements as $el) {
+			if (is_array($el)) { // Retrieved through normal query, I convert into Element for consistency
 				$el = new Element($el, [
 					'table' => $this->options['table'],
 					'pre_loaded' => true,
@@ -447,7 +456,7 @@ class Admin extends Module {
 			}
 
 			$arr_el = [];
-			foreach($this->options['columns'] as $k=>$cOpt){
+			foreach ($this->options['columns'] as $k => $cOpt) {
 				$cOpt['html'] = $options['html'];
 				$c = $this->getElementColumn($el, $cOpt);
 				$arr_el[$k] = $c;
@@ -461,8 +470,8 @@ class Admin extends Module {
 		}
 
 		$totals = [];
-		foreach($this->options['columns'] as $k=>$c){
-			if($c['total'] and $c['field']){
+		foreach ($this->options['columns'] as $k => $c) {
+			if ($c['total'] and $c['field']) {
 				$totals[$k] = $this->model->_Db->select($this->options['table'], $where, [
 					'sum' => $c['field'],
 				]);
@@ -485,9 +494,10 @@ class Admin extends Module {
 	 *
 	 * @return array
 	 */
-	public function getColumns(){
+	public function getColumns(): array
+	{
 		$columns = [];
-		foreach($this->options['columns'] as $k=>$c){
+		foreach ($this->options['columns'] as $k => $c) {
 			$sortingRules = $this->getSortingRulesFor($c, 'ASC', 0);
 
 			unset($c['display']);
@@ -509,7 +519,8 @@ class Admin extends Module {
 	 * @return array
 	 * @throws \Model\Core\Exception
 	 */
-	private function getElementColumn(Element $el, array $cOpt){
+	private function getElementColumn(Element $el, array $cOpt): array
+	{
 		$config = $this->retrieveConfig();
 
 		$c = [
@@ -517,30 +528,30 @@ class Admin extends Module {
 			'value' => null,
 		];
 
-		if(!is_string($cOpt['display'])){
-			if(is_callable($cOpt['display'])){
+		if (!is_string($cOpt['display'])) {
+			if (is_callable($cOpt['display'])) {
 				$c['text'] = call_user_func($cOpt['display'], $el);
-			}else{
+			} else {
 				$this->model->error('Unknown display format in a column - either string or callable is expected');
 			}
-		}else{
+		} else {
 			$form = $el->getForm();
 
-			if(isset($form[$cOpt['display']])){
+			if (isset($form[$cOpt['display']])) {
 				$d = $form[$cOpt['display']];
 				$c['text'] = $d->getText($config);
-			}else{
+			} else {
 				$c['text'] = $el[$cOpt['display']];
 			}
 
-			if($this->options['columns-callback'] and is_callable($this->options['columns-callback']))
+			if ($this->options['columns-callback'] and is_callable($this->options['columns-callback']))
 				$c['text'] = call_user_func($this->options['columns-callback'], $c['text']);
 
-			if($cOpt['html'])
+			if ($cOpt['html'])
 				$c['text'] = entities($c['text']);
 		}
 
-		if($cOpt['field']){
+		if ($cOpt['field']) {
 			$c['value'] = $el[$cOpt['field']];
 		}
 
@@ -554,24 +565,25 @@ class Admin extends Module {
 	 * @return bool|array
 	 * @throws \Model\Core\Exception
 	 */
-	private function getWhereFromFilter(array $f){
-		if(!is_array($f) or count($f)<2 or count($f)>3)
+	private function getWhereFromFilter(array $f)
+	{
+		if (!is_array($f) or count($f) < 2 or count($f) > 3)
 			return false;
 
 		$k = $f[0];
 
-		if(isset($this->customFiltersCallbacks[$k])){
-			if(count($f)!=2)
+		if (isset($this->customFiltersCallbacks[$k])) {
+			if (count($f) != 2)
 				return false;
-			if(!is_callable($this->customFiltersCallbacks[$k]))
-				$this->model->error('Wrong callback format for filter '.$k);
+			if (!is_callable($this->customFiltersCallbacks[$k]))
+				$this->model->error('Wrong callback format for filter ' . $k);
 
 			return call_user_func($this->customFiltersCallbacks[$k], $f[1]);
-		}else{
-			if(count($f)!=3 and (count($f)!=4 or $f[1]!=='range'))
+		} else {
+			if (count($f) != 3 and (count($f) != 4 or $f[1] !== 'range'))
 				return false;
 
-			switch($f[1]){
+			switch ($f[1]) {
 				case '=':
 				case '<':
 				case '<=':
@@ -583,26 +595,26 @@ class Admin extends Module {
 				case '!=':
 					return [
 						[
-							'sub'=>[
+							'sub' => [
 								[$k, '!=', $f[2]],
 								[$k, '=', null],
 							],
-							'operator'=>'OR',
+							'operator' => 'OR',
 						],
 					];
 					break;
 				case 'contains':
 					return [
-						[$k, 'LIKE', '%'.$f[2].'%'],
+						[$k, 'LIKE', '%' . $f[2] . '%'],
 					];
 					break;
 				case 'starts':
 					return [
-						[$k, 'LIKE', $f[2].'%'],
+						[$k, 'LIKE', $f[2] . '%'],
 					];
 					break;
 				case 'empty':
-					switch($f[2]){
+					switch ($f[2]) {
 						case 0:
 							return [
 								[$k, '!=', null],
@@ -612,11 +624,11 @@ class Admin extends Module {
 						case 1:
 							return [
 								[
-									'sub'=>[
+									'sub' => [
 										[$k, ''],
 										[$k, null],
 									],
-									'operator'=>'OR',
+									'operator' => 'OR',
 								],
 							];
 							break;
@@ -642,28 +654,29 @@ class Admin extends Module {
 	 * @return array
 	 * @throws \Model\Core\Exception
 	 */
-	private function getSortingRules(array $sortBy, array $joins){
-		if($sortBy){
+	private function getSortingRules(array $sortBy, array $joins): array
+	{
+		if ($sortBy) {
 			$order_by = [];
 
-			foreach($sortBy as $idx => $sort){
-				if(!is_array($sort) or count($sort)!=2 or !in_array(strtolower($sort[1]), ['asc', 'desc']))
+			foreach ($sortBy as $idx => $sort) {
+				if (!is_array($sort) or count($sort) != 2 or !in_array(strtolower($sort[1]), ['asc', 'desc']))
 					$this->model->error('Wrong "sortBy" format!');
-				if(!isset($this->options['columns'][$sort[0]]))
-					$this->model->error('Column '.$sort[0].' in "sortBy" doesn\'t exist!');
+				if (!isset($this->options['columns'][$sort[0]]))
+					$this->model->error('Column ' . $sort[0] . ' in "sortBy" doesn\'t exist!');
 
 				$rules = $this->getSortingRulesFor($this->options['columns'][$sort[0]], $sort[1], $idx);
-				if(!$rules)
-					$this->model->error('Column '.$sort[0].' is not sortable!');
+				if (!$rules)
+					$this->model->error('Column ' . $sort[0] . ' is not sortable!');
 
 				$order_by[] = $rules['order_by'];
-				if($rules['joins']){
-					foreach($rules['joins'] as $j)
+				if ($rules['joins']) {
+					foreach ($rules['joins'] as $j)
 						$joins[] = $j;
 				}
 			}
 			$order_by = implode(',', $order_by);
-		}else{
+		} else {
 			$order_by = $this->options['order_by'];
 		}
 
@@ -682,39 +695,41 @@ class Admin extends Module {
 	 * @param int $idx
 	 * @return array|bool
 	 */
-	private function getSortingRulesFor(array $column, $dir, $idx){
-		if(!is_string($column['display']) and is_callable($column['display'])){
-			if($column['field'] and is_string($column['field'])){
+	private function getSortingRulesFor(array $column, string $dir, int $idx)
+	{
+		if (!is_string($column['display']) and is_callable($column['display'])) {
+			if ($column['field'] and is_string($column['field'])) {
 				return [
-					'order_by' => $column['field'].' '.$dir,
+					'order_by' => $column['field'] . ' ' . $dir,
 					'joins' => [],
 				];
 			}
-		}else{
-			if(isset($this->form[$column['display']])){
+		} else {
+			if (isset($this->form[$column['display']])) {
 				$d = $this->form[$column['display']];
-				if(in_array($d->options['type'], ['select', 'radio', 'select-cascade'])){
+				if (in_array($d->options['type'], ['select', 'radio', 'select-cascade'])) {
 					$tableModel = $this->model->_Db->getTable($this->options['table']);
-					if($tableModel and isset($tableModel->columns[$d->options['field']]) and $tableModel->columns[$d->options['field']]['type']=='enum'){
+					if ($tableModel and isset($tableModel->columns[$d->options['field']]) and $tableModel->columns[$d->options['field']]['type'] == 'enum') {
 						return [
-							'order_by' => $d->options['field'].' '.$dir,
+							'order_by' => $d->options['field'] . ' ' . $dir,
 							'joins' => [],
 						];
 					}
 
-					if($d->options['table'] and $d->options['text-field']){
-						if(is_array($d->options['text-field'])){
+					if ($d->options['table'] and $d->options['text-field']) {
+						if (is_array($d->options['text-field'])) {
 							$text_fields = $d->options['text-field'];
-						}elseif(is_string($d->options['text-field'])){
+						} elseif (is_string($d->options['text-field'])) {
 							$text_fields = [$d->options['text-field']];
-						}else{
+						} else {
 							return false;
 						}
 
-						$order_by = []; $join_fields = [];
-						foreach($text_fields as $cf=>$tf){
-							$order_by[] = 'ord'.$idx.'_'.$cf.'_'.$tf.' '.$dir;
-							$join_fields[$tf] = 'ord'.$idx.'_'.$cf.'_'.$tf;
+						$order_by = [];
+						$join_fields = [];
+						foreach ($text_fields as $cf => $tf) {
+							$order_by[] = 'ord' . $idx . '_' . $cf . '_' . $tf . ' ' . $dir;
+							$join_fields[$tf] = 'ord' . $idx . '_' . $cf . '_' . $tf;
 						}
 						return [
 							'order_by' => implode(',', $order_by),
@@ -727,20 +742,20 @@ class Admin extends Module {
 							],
 						];
 					}
-				}elseif($d->options['type']==='instant-search'){
-					if(isset($d->options['table'], $d->options['text-field'])){
-						if(!is_array($d->options['text-field']))
+				} elseif ($d->options['type'] === 'instant-search') {
+					if (isset($d->options['table'], $d->options['text-field'])) {
+						if (!is_array($d->options['text-field']))
 							$d->options['text-field'] = [$d->options['text-field']];
 
 						$order_by = $d->options['text-field'];
-						foreach($order_by as &$f){
-							$f = 'ord'.$idx.'_'.$f.' '.$dir;
+						foreach ($order_by as &$f) {
+							$f = 'ord' . $idx . '_' . $f . ' ' . $dir;
 						}
 						unset($f);
 
 						$join_fields = array();
-						foreach($d->options['text-field'] as $f){
-							$join_fields[$f] = 'ord'.$idx.'_'.$f;
+						foreach ($d->options['text-field'] as $f) {
+							$join_fields[$f] = 'ord' . $idx . '_' . $f;
 						}
 
 						return [
@@ -755,16 +770,16 @@ class Admin extends Module {
 							],
 						];
 					}
-				}else{
+				} else {
 					return [
-						'order_by' => $d->options['field'].' '.$dir,
+						'order_by' => $d->options['field'] . ' ' . $dir,
 						'joins' => [],
 					];
 				}
 				return false;
-			}elseif(is_string($column['display'])){
+			} elseif (is_string($column['display'])) {
 				return [
-					'order_by' => $column['display'].' '.$dir,
+					'order_by' => $column['display'] . ' ' . $dir,
 					'joins' => [],
 				];
 			}
@@ -777,14 +792,15 @@ class Admin extends Module {
 	 *
 	 * @return int
 	 */
-	public function getSessionId(){
+	public function getSessionId(): int
+	{
 		$sId = $this->model->getInput('sId');
-		if($sId===null){
+		if ($sId === null) {
 			$sId = 0;
-			while(isset($_SESSION[SESSION_ID]['admin-search-sessions'][$this->request[0]][$sId]))
+			while (isset($_SESSION[SESSION_ID]['admin-search-sessions'][$this->request[0]][$sId]))
 				$sId++;
 		}
-		return $sId;
+		return (int)$sId;
 	}
 
 	/**
@@ -793,13 +809,14 @@ class Admin extends Module {
 	 * @param int $sId
 	 * @return array
 	 */
-	public function getListOptions($sId = null){
-		if($sId===null)
+	public function getListOptions(int $sId = null): array
+	{
+		if ($sId === null)
 			$sId = $this->getSessionId();
 
-		if(isset($_SESSION[SESSION_ID]['admin-search-sessions'][$this->request[0]][$sId])){
+		if (isset($_SESSION[SESSION_ID]['admin-search-sessions'][$this->request[0]][$sId])) {
 			$options = $_SESSION[SESSION_ID]['admin-search-sessions'][$this->request[0]][$sId];
-		}else{
+		} else {
 			$options = [
 				'p' => 1,
 				'filters' => [],
@@ -808,11 +825,11 @@ class Admin extends Module {
 				'html' => !$this->model->isCLI(),
 			];
 
-			if($this->customFiltersForm){
+			if ($this->customFiltersForm) {
 				$defaultFilters = $this->customFiltersForm->getDataset();
-				foreach($defaultFilters as $k => $d){
+				foreach ($defaultFilters as $k => $d) {
 					$v = $d->getValue();
-					if($v)
+					if ($v)
 						$options['filters'][] = [$k, $v];
 				}
 			}
@@ -824,10 +841,11 @@ class Admin extends Module {
 	/**
 	 * Stores in session the current list options array
 	 *
-	 * @param int|null $sId
+	 * @param int $sId
 	 * @param array $options
 	 */
-	public function setListOptions($sId, array $options){
+	public function setListOptions(int $sId, array $options)
+	{
 		$_SESSION[SESSION_ID]['admin-search-sessions'][$this->request[0]][$sId] = $options;
 	}
 
@@ -839,18 +857,19 @@ class Admin extends Module {
 	 * @return MField|bool
 	 * @throws \Model\Core\Exception
 	 */
-	public function filter($name, array $options=[]){
-		if(isset($this->customFiltersCallbacks[$name]))
-			$this->model->error('Duplicate custom filter '.$name);
+	public function filter(string $name, array $options = [])
+	{
+		if (isset($this->customFiltersCallbacks[$name]))
+			$this->model->error('Duplicate custom filter ' . $name);
 
 		$d = $this->customFiltersForm->add($name, $options);
-		if(!$d)
+		if (!$d)
 			return false;
 
-		if(isset($options['callback'])){
+		if (isset($options['callback'])) {
 			$this->customFiltersCallbacks[$name] = $options['callback'];
-		}elseif(!isset($options['admin-type'])){
-			$this->customFiltersCallbacks[$name] = function($v) use($d){
+		} elseif (!isset($options['admin-type'])) {
+			$this->customFiltersCallbacks[$name] = function ($v) use ($d) {
 				return [
 					[$d->options['field'], '=', $v],
 				];
@@ -865,7 +884,8 @@ class Admin extends Module {
 	 *
 	 * @return Form
 	 */
-	public function getCustomFiltersForm(){
+	public function getCustomFiltersForm(): Form
+	{
 		return $this->customFiltersForm;
 	}
 
@@ -878,10 +898,11 @@ class Admin extends Module {
 	 * @param array $opt
 	 * @return bool|string
 	 */
-	public function getUrl(string $controller = null, $id=false, array $tags=[], array $opt=[]){
-		switch($controller){
+	public function getUrl(string $controller = null, $id = false, array $tags = [], array $opt = [])
+	{
+		switch ($controller) {
 			case 'AdminLogin':
-				return ($this->url ? $this->url.'/' : '').'login';
+				return ($this->url ? $this->url . '/' : '') . 'login';
 				break;
 			default:
 				return false;
@@ -894,12 +915,13 @@ class Admin extends Module {
 	 *
 	 * @return array
 	 */
-	public function getPages(){
+	public function getPages(): array
+	{
 		$config = $this->retrieveConfig();
 
 		$pages = [];
 
-		if(isset($config['url']) and is_array($config['url'])) {
+		if (isset($config['url']) and is_array($config['url'])) {
 			foreach ($config['url'] as $u) {
 				if (is_array($u) and $u['path'] == $this->url) {
 					$pages = $u['pages'];
@@ -908,7 +930,7 @@ class Admin extends Module {
 			}
 		}
 
-		if(isset(\Model\Core\Globals::$data['adminAdditionalPages']))
+		if (isset(\Model\Core\Globals::$data['adminAdditionalPages']))
 			$pages = array_merge($pages, \Model\Core\Globals::$data['adminAdditionalPages']);
 
 		return $pages;
@@ -921,40 +943,41 @@ class Admin extends Module {
 	 * @return array
 	 * @throws \Model\Core\Exception
 	 */
-	public function getActions(array $request = null){
-		if($request===null)
+	public function getActions(array $request = null): array
+	{
+		if ($request === null)
 			$request = $this->request;
 
 		$actions = [];
 
-		if(!(isset($this->options['table']) and $this->options['table']) and !(isset($this->options['element']) and $this->options['element']))
+		if (!(isset($this->options['table']) and $this->options['table']) and !(isset($this->options['element']) and $this->options['element']))
 			return [];
 
-		if($this->canUser('C')){
+		if ($this->canUser('C')) {
 			$actions['new'] = [
 				'text' => 'Nuovo',
 				'action' => 'new',
 			];
 		}
-		if($this->canUser('D')){
+		if ($this->canUser('D')) {
 			$actions['delete'] = [
 				'text' => 'Elimina',
 				'action' => 'delete',
 			];
 		}
 
-		if(!isset($request[1]))
+		if (!isset($request[1]))
 			$request[1] = '';
 
-		switch($request[1]){
+		switch ($request[1]) {
 			case 'edit':
-				if($this->canUser('U')){
+				if ($this->canUser('U')) {
 					$actions['save'] = [
 						'text' => 'Salva',
 						'action' => 'save',
 					];
 				}
-				if(isset($request[2]) and $this->canUser('C')){
+				if (isset($request[2]) and $this->canUser('C')) {
 					$actions['duplicate'] = [
 						'text' => 'Duplica',
 						'action' => 'duplicate',
@@ -975,60 +998,61 @@ class Admin extends Module {
 	 * @return bool
 	 * @throws \Model\Core\Exception
 	 */
-	public function canUser($what, $page = null, Element $el = null){
-		if($page===null)
+	public function canUser(string $what, string $page = null, Element $el = null): bool
+	{
+		if ($page === null)
 			$page = $this->request[0];
-		if($el===null)
+		if ($el === null)
 			$el = $this->model->element;
 
-		if($this->privilegesCache===false){
+		if ($this->privilegesCache === false) {
 			$this->privilegesCache = $this->model->_Db->select_all('admin_privileges', [
-				'or'=>[
+				'or' => [
 					['user', $this->model->_User_Admin->logged()],
 					['user', null],
 				],
-			], ['order_by'=>'id DESC']);
+			], ['order_by' => 'id DESC']);
 		}
 
 		$currentGuess = [
-			'row'=>false,
-			'C'=>$this->options['privileges']['C'],
-			'R'=>$this->options['privileges']['R'],
-			'U'=>$this->options['privileges']['U'],
-			'D'=>$this->options['privileges']['D'],
-			'L'=>$this->options['privileges']['L'],
+			'row' => false,
+			'C' => $this->options['privileges']['C'],
+			'R' => $this->options['privileges']['R'],
+			'U' => $this->options['privileges']['U'],
+			'D' => $this->options['privileges']['D'],
+			'L' => $this->options['privileges']['L'],
 		];
-		if(!array_key_exists($what, $currentGuess) or $what==='row')
+		if (!array_key_exists($what, $currentGuess) or $what === 'row')
 			$this->model->error('Requested unknown privilege.');
 
 		$groups = $this->findPageGroups($this->getPages(), $page);
-		if($groups===false)
+		if ($groups === false)
 			return $currentGuess[$what];
 
-		foreach($this->privilegesCache as $p){
-			if(
-				((in_array($p['group'], $groups) or $p['page']===$page or ($p['page']===null and $p['group']===null and $currentGuess['row']['page']===null)) and ($currentGuess['row']===false or ($currentGuess['row']['user']===null and $p['user']!==null)))
-				or ($currentGuess['row']['group']===null and $currentGuess['row']['page']===null and in_array($p['group'], $groups))
-				or ($currentGuess['row']['page']===null and $p['page']===$page)
-			){
+		foreach ($this->privilegesCache as $p) {
+			if (
+				((in_array($p['group'], $groups) or $p['page'] === $page or ($p['page'] === null and $p['group'] === null and $currentGuess['row']['page'] === null)) and ($currentGuess['row'] === false or ($currentGuess['row']['user'] === null and $p['user'] !== null)))
+				or ($currentGuess['row']['group'] === null and $currentGuess['row']['page'] === null and in_array($p['group'], $groups))
+				or ($currentGuess['row']['page'] === null and $p['page'] === $page)
+			) {
 				$currentGuess['row'] = $p;
 
-				foreach($currentGuess as $idx=>$priv){
-					if($idx==='row')
+				foreach ($currentGuess as $idx => $priv) {
+					if ($idx === 'row')
 						continue;
-					if($p[$idx.'_special']){
-						eval('$currentGuess[$idx] = function($el){ return '.$p[$idx.'_special'].'; }');
-					}else{
+					if ($p[$idx . '_special']) {
+						eval('$currentGuess[$idx] = function($el){ return ' . $p[$idx . '_special'] . '; }');
+					} else {
 						$currentGuess[$idx] = $p[$idx];
 					}
 				}
 			}
 		}
 
-		if(!is_string($currentGuess[$what]) and is_callable($currentGuess[$what])){
-			return (bool) call_user_func($currentGuess[$what], $el);
-		}else{
-			return (bool) $currentGuess[$what];
+		if (!is_string($currentGuess[$what]) and is_callable($currentGuess[$what])) {
+			return (bool)call_user_func($currentGuess[$what], $el);
+		} else {
+			return (bool)$currentGuess[$what];
 		}
 	}
 
@@ -1037,15 +1061,16 @@ class Admin extends Module {
 	 * @param string $page
 	 * @return array|bool
 	 */
-	private function findPageGroups(array $pages, $page){
-		foreach($pages as $p){
-			if(isset($p['rule']) and $p['rule']==$page){
+	private function findPageGroups(array $pages, string $page)
+	{
+		foreach ($pages as $p) {
+			if (isset($p['rule']) and $p['rule'] == $page) {
 				return [
 					$p['name'],
 				];
-			}elseif(isset($p['sub'])){
+			} elseif (isset($p['sub'])) {
 				$search = $this->findPageGroups($p['sub'], $page);
-				if($search!==false){
+				if ($search !== false) {
 					array_unshift($search, $p['name']);
 					return $search;
 				}
@@ -1059,8 +1084,9 @@ class Admin extends Module {
 	 *
 	 * @return bool
 	 */
-	public function clearForm(){
-		if($this->form)
+	public function clearForm(): bool
+	{
+		if ($this->form)
 			return $this->form->clear();
 		else
 			return false;
@@ -1074,17 +1100,18 @@ class Admin extends Module {
 	 * @return MField|bool
 	 * @throws \Model\Core\Exception
 	 */
-	public function field($name, $options = []){
-		if(!$this->form)
+	public function field(string $name, array $options = [])
+	{
+		if (!$this->form)
 			return false;
 
-		if(!is_array($options))
-			$options = ['type'=>$options];
+		if (!is_array($options))
+			$options = ['type' => $options];
 
-		if(isset($this->form[$name])){
+		if (isset($this->form[$name])) {
 			$datum = $this->form[$name];
 			$datum->options = array_merge($datum->options, $options);
-		}else{
+		} else {
 			$datum = $this->form->add($name, $options);
 		}
 
@@ -1094,13 +1121,14 @@ class Admin extends Module {
 	/**
 	 * Returns an array to use in the "edit" section
 	 */
-	public function getEditArray(){
+	public function getEditArray(): array
+	{
 		$element = $this->model->_ORM->element;
 
-		if(!$element)
+		if (!$element)
 			$this->model->error('Element does not exist.');
 
-		if(!$this->canUser('R', null, $element))
+		if (!$this->canUser('R', null, $element))
 			$this->model->error('Can\'t read, permission denied.');
 
 		$arr = [
@@ -1111,31 +1139,31 @@ class Admin extends Module {
 		];
 
 		$dataset = $this->form->getDataset();
-		foreach($dataset as $k => $d){
+		foreach ($dataset as $k => $d) {
 			$arr['data'][$k] = $d->getJsValue(false);
 		}
 
-		foreach($this->sublists as $s){
+		foreach ($this->sublists as $s) {
 			$options = $element->getChildrenOptions($s['name']);
-			if(!$options)
-				$this->model->error($s['name'].' is not a children list of the element!');
+			if (!$options)
+				$this->model->error($s['name'] . ' is not a children list of the element!');
 
-			$arr['children'][$s['name'].'-'.$s['options']['cont']] = [
+			$arr['children'][$s['name'] . '-' . $s['options']['cont']] = [
 				'primary' => $options['primary'],
 				'list' => [],
 			];
 
-			foreach($element->{$s['name']} as $chId => $ch){
+			foreach ($element->{$s['name']} as $chId => $ch) {
 				$chArr = [];
 				$form = $this->getSublistRowForm($ch, $s['options']);
 				$keys = array_keys($form->getDataset());
 
 				$chArr[$options['primary']] = $ch[$options['primary']];
-				foreach($keys as $k){
+				foreach ($keys as $k) {
 					$chArr[$k] = $form[$k]->getJsValue(false);
 				}
 
-				$arr['children'][$s['name'].'-'.$s['options']['cont']]['list'][] = $chArr;
+				$arr['children'][$s['name'] . '-' . $s['options']['cont']]['list'][] = $chArr;
 			}
 		}
 
@@ -1150,20 +1178,21 @@ class Admin extends Module {
 	 * @return Form
 	 * @throws \Model\Core\Exception
 	 */
-	public function getSublistRowForm(Element $el, array $options){
+	public function getSublistRowForm(Element $el, array $options): Form
+	{
 		$form = $el->getForm();
-		if(count($options['fields'])>0){
+		if (count($options['fields']) > 0) {
 			$newForm = clone $form;
 			$newForm->clear();
 
 			$keys = [];
-			foreach($options['fields'] as $f => $fOpt){
-				if(!is_string($fOpt) and is_callable($fOpt)){
+			foreach ($options['fields'] as $f => $fOpt) {
+				if (!is_string($fOpt) and is_callable($fOpt)) {
 					$fOpt = [
 						'type' => 'custom',
 						'custom' => $fOpt,
 					];
-				}elseif(is_numeric($f)){
+				} elseif (is_numeric($f)) {
 					$f = $fOpt;
 					$fOpt = [];
 				}
@@ -1187,26 +1216,27 @@ class Admin extends Module {
 	 * @return array|bool
 	 * @throws \Model\Core\Exception
 	 */
-	public function saveElementViaInstant(array $data, array $instant = []){
-		$this->model->on('Db_update', function($e) use($instant){
+	public function saveElementViaInstant(array $data, array $instant = [])
+	{
+		$this->model->on('Db_update', function ($e) use ($instant) {
 			$primary = $this->model->element->settings['primary'];
-			if(isset($e['where'][$primary])){
-				if(in_array($e['where'][$primary], $instant) and !in_array($e['where'][$primary], $this->instantSaveIds))
+			if (isset($e['where'][$primary])) {
+				if (in_array($e['where'][$primary], $instant) and !in_array($e['where'][$primary], $this->instantSaveIds))
 					$this->instantSaveIds[] = $e['where'][$primary];
 			}
 		});
 
-		if(!$this->saveElement($data))
+		if (!$this->saveElement($data))
 			return false;
 
 		$changed = [];
 
-		if($this->instantSaveIds){
-			foreach($this->instantSaveIds as $id){
+		if ($this->instantSaveIds) {
+			foreach ($this->instantSaveIds as $id) {
 				$el = $this->model->_ORM->one($this->options['element'], $id);
 				$arr_el = [];
 
-				foreach($this->options['columns'] as $k=>$cOpt) {
+				foreach ($this->options['columns'] as $k => $cOpt) {
 					$cOpt['html'] = true;
 					$c = $this->getElementColumn($el, $cOpt);
 					$arr_el[$k] = $c;
@@ -1227,11 +1257,12 @@ class Admin extends Module {
 	 *
 	 * @param array $data
 	 * @param int $versionLock
-	 * @return bool|int
+	 * @return int
 	 */
-	public function saveElement(array $data, int $versionLock = null){
-		foreach($this->model->element->getForm()->getDataset() as $k => $d){
-			if(isset($data[$k]) and $d->options['nullable'] and $data[$k] === '')
+	public function saveElement(array $data, int $versionLock = null): int
+	{
+		foreach ($this->model->element->getForm()->getDataset() as $k => $d) {
+			if (isset($data[$k]) and $d->options['nullable'] and $data[$k] === '')
 				$data[$k] = null;
 		}
 
@@ -1247,7 +1278,8 @@ class Admin extends Module {
 	 * @param string $name
 	 * @param array $options
 	 */
-	public function sublist($name, array $options = []){
+	public function sublist(string $name, array $options = [])
+	{
 		$options = array_merge([
 			'type' => 'row',
 			'fields' => [],
@@ -1255,8 +1287,8 @@ class Admin extends Module {
 		], $options);
 
 		$this->sublists[] = [
-			'name'=>$name,
-			'options'=>$options,
+			'name' => $name,
+			'options' => $options,
 		];
 	}
 
@@ -1267,13 +1299,14 @@ class Admin extends Module {
 	 * @param string $name
 	 * @param array $options
 	 */
-	public function renderSublist($name, array $options = []){
-		if(!$this->template)
+	public function renderSublist(string $name, array $options = [])
+	{
+		if (!$this->template)
 			return;
 
 		$defaultOptions = [];
-		foreach($this->sublists as $s){
-			if($s['name']===$name){
+		foreach ($this->sublists as $s) {
+			if ($s['name'] === $name) {
 				$defaultOptions = $s['options'];
 				break;
 			}
@@ -1287,31 +1320,34 @@ class Admin extends Module {
 	 * @return string
 	 * @throws \Model\Core\Exception
 	 */
-	public function getUrlPrefix(){
-		return $this->model->prefix().($this->url ? $this->url.'/' : '');
+	public function getUrlPrefix(): string
+	{
+		return $this->model->prefix() . ($this->url ? $this->url . '/' : '');
 	}
 
-	private function getDictionary(): array {
-		if($this->dictionary === null){
-			$adminDictionaryFile = INCLUDE_PATH.'app'.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'Admin'.DIRECTORY_SEPARATOR.'dictionary.php';
+	private function getDictionary(): array
+	{
+		if ($this->dictionary === null) {
+			$adminDictionaryFile = INCLUDE_PATH . 'app' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'Admin' . DIRECTORY_SEPARATOR . 'dictionary.php';
 
 			$dictionary = [];
-			if(file_exists($adminDictionaryFile))
+			if (file_exists($adminDictionaryFile))
 				require($adminDictionaryFile);
 
 			$this->dictionary = [];
-			foreach($dictionary as $w => $langs){
-				$this->dictionary[$w] = count($langs)>0 ? ($langs['it'] ?? reset($langs)) : '';
+			foreach ($dictionary as $w => $langs) {
+				$this->dictionary[$w] = count($langs) > 0 ? ($langs['it'] ?? reset($langs)) : '';
 			}
 		}
 
 		return $this->dictionary;
 	}
 
-	public function word(string $w): string {
-		if($this->model->isLoaded('Multilang')){
-			return $this->model->_Multilang->word('admin.'.$w);
-		}else{
+	public function word(string $w): string
+	{
+		if ($this->model->isLoaded('Multilang')) {
+			return $this->model->_Multilang->word('admin.' . $w);
+		} else {
 			$dictionary = $this->getDictionary();
 			return $dictionary[$w] ?? '';
 		}
