@@ -1096,11 +1096,11 @@ class Admin extends Module
 	 * Adds or edits a field in the form
 	 *
 	 * @param string $name
-	 * @param array $options
+	 * @param array|string $options
 	 * @return MField|bool
 	 * @throws \Model\Core\Exception
 	 */
-	public function field(string $name, array $options = [])
+	public function field(string $name, $options = [])
 	{
 		if (!$this->form)
 			return false;
