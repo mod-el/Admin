@@ -95,10 +95,25 @@ class Admin extends Module
 			if (!$tableModel)
 				$this->model->error('Table model not found, please generate cache.');
 
-			if ($this->options['order_by'] === false)
+			if ($this->options['order_by'] === false) {
 				$this->options['order_by'] = $this->options['primary'] . ' DESC';
 
-			$new_fields = array(); // I loop through the columns to standardize the format
+				if ($this->options['element']) {
+					$elementData = $this->model->_ORM->getElementData($this->options['element']);
+					if ($elementData and $elementData['order_by']) {
+						foreach ($elementData['order_by'] as $orderByField => $orderByData) {
+							if ($orderByData['depending_on'])
+								$this->options['order_by'] = $orderByData['depending_on'] . ' ASC,' . $orderByField . ' ASC';
+							else
+								$this->options['order_by'] = $orderByField . ' ASC';
+
+							break;
+						}
+					}
+				}
+			}
+
+			$new_fields = []; // I loop through the columns to standardize the format
 			foreach ($this->options['columns'] as $k => $f) {
 				/*
 				 * ACCEPTED FORMATS: *
