@@ -1340,6 +1340,9 @@ class Admin extends Module
 		return $this->model->prefix() . ($this->url ? $this->url . '/' : '');
 	}
 
+	/**
+	 * @return array
+	 */
 	private function getDictionary(): array
 	{
 		if ($this->dictionary === null) {
@@ -1358,6 +1361,10 @@ class Admin extends Module
 		return $this->dictionary;
 	}
 
+	/**
+	 * @param string $w
+	 * @return string
+	 */
 	public function word(string $w): string
 	{
 		if ($this->model->isLoaded('Multilang')) {
