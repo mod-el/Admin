@@ -101,14 +101,10 @@ class Admin extends Module
 				if ($this->options['element']) {
 					$elementData = $this->model->_ORM->getElementData($this->options['element']);
 					if ($elementData and $elementData['order_by']) {
-						foreach ($elementData['order_by'] as $orderByField => $orderByData) {
-							if ($orderByData['depending_on'])
-								$this->options['order_by'] = $orderByData['depending_on'] . ' ASC,' . $orderByField . ' ASC';
-							else
-								$this->options['order_by'] = $orderByField . ' ASC';
-
-							break;
-						}
+						if ($elementData['order_by']['depending_on'])
+							$this->options['order_by'] = $elementData['order_by']['depending_on'] . ' ASC,' . $elementData['order_by']['field'] . ' ASC';
+						else
+							$this->options['order_by'] = $elementData['order_by']['field'] . ' ASC';
 					}
 				}
 			}

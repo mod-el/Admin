@@ -1,6 +1,7 @@
 <?php namespace Model\Admin\Controllers;
 
 use Model\Core\Controller;
+use Model\Core\Exception;
 use Model\ORM\Element;
 
 class AdminController extends Controller
@@ -226,6 +227,24 @@ class AdminController extends Controller
 							$newElement = $this->model->element->duplicate();
 							$this->model->redirect($this->model->_Admin->getUrlPrefix() . $this->model->_Admin->request[0] . '/edit/' . $newElement['id'] . '?duplicated');
 						} catch (\Exception $e) {
+							$err = getErr($e);
+							die($err);
+						}
+						break;
+					case 'changeOrder':
+						try {
+							if (!$this->model->element or !$this->model->element->exists())
+								$this->model->error('Error: attempting to change order to a non existing element.');
+
+							$to = $this->model->getInput('to');
+							if (!$to or !is_numeric($to))
+								$this->model->error('Bad parameters');
+
+							if($this->model->element->changeOrder($to))
+								die('ok');
+							else
+								die('Error');
+						} catch (Exception $e) {
 							$err = getErr($e);
 							die($err);
 						}
