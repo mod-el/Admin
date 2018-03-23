@@ -1,23 +1,23 @@
 <?php namespace Model\Admin;
 
+use Model\Core\Autoloader;
 use Model\Core\Module;
 use Model\Form\Form;
 use Model\Form\MField;
 use Model\ORM\Element;
+use Model\ORM\ElementsIterator;
 use Model\Paginator\Paginator;
 
 class Admin extends Module
 {
-	/** @var string */
-	public $url;
-	/** @var array */
-	public $request;
+	/** @var AdminPage */
+	public $page = null;
 	/** @var array */
 	public $options = [];
 	/** @var Paginator */
-	public $paginator = [];
+	public $paginator;
 	/** @var Form */
-	private $customFiltersForm;
+	public $customFiltersForm;
 	/** @var array */
 	private $customFiltersCallbacks = [];
 	/** @var Form */
@@ -25,78 +25,51 @@ class Admin extends Module
 	/** @var array|bool */
 	protected $privilegesCache = false;
 	/** @var array */
-	protected $instantSaveIds = [];
+	public $usedWhere = [];
 	/** @var array */
 	public $sublists = [];
-	/** @var Module */
-	public $template;
-	/** @var array */
-	private $dictionary = null;
 
-	/**
-	 * @param mixed $options
-	 * @return bool
-	 * @throws \Model\Core\Exception
-	 */
 	public function init(array $options)
 	{
-		$config = $this->retrieveConfig();
-
-		$user_table = 'admin_users';
-		if (isset($config['url']) and is_array($config['url'])) {
-			foreach ($config['url'] as $u) {
-				if (is_array($u) and $u['path'] == $this->url) {
-					$user_table = $u['table'];
-					break;
-				}
-			}
-		}
-
-		$this->model->load('User', array(
-			'table' => $user_table,
-			'mandatory' => true,
-			'login-controller' => 'AdminLogin',
-		), 'Admin');
-
-		$this->model->load('Paginator');
-
-		$this->options = array_merge([
-			'element' => null,
-			'table' => null,
-			'columns' => [],
-			'primary' => 'id',
-			'where' => [],
-			'order_by' => false,
-			'columns-callback' => false,
-			'perPage' => 20,
-			'privileges' => [],
-			'joins' => [],
+		$options = array_merge([
+			'page' => null,
+			'id' => null,
 		], $options);
 
-		$this->options['privileges'] = array_merge([
-			'C' => true,
-			'R' => true,
-			'U' => true,
-			'D' => true,
-			'L' => true,
-		], $this->options['privileges']);
+		if (!$options['page'])
+			return;
 
-		if ($this->options['table'] or $this->options['element']) {
-			if ($this->options['element'] and !$this->options['table'])
-				$this->options['table'] = $this->model->_ORM->getTableFor($this->options['element']);
+		$className = Autoloader::searchFile('AdminPage', $options['page']);
+		if (!$className)
+			$this->model->error('Admin Page class not found');
 
-			if (!$this->options['table'])
-				$this->model->error('Can\'t retrieve table name from the provided element.');
+		$this->page = new $className($this->model);
+		$pageOptions = $this->page->options();
 
-			if (!$this->options['element'])
-				$this->options['element'] = '\\Model\\ORM\\Element';
+		$this->options = array_merge_recursive_distinct([
+			'page' => $options['page'],
+			'element' => null,
+			'table' => null,
+			'where' => [],
+			'order_by' => false,
+			'perPage' => 20,
+			'privileges' => [
+				'C' => true,
+				'R' => true,
+				'U' => true,
+				'D' => true,
+				'L' => true,
+			],
+			'joins' => [],
+		], $pageOptions);
 
-			$tableModel = $this->model->_Db->getTable($this->options['table']);
-			if (!$tableModel)
-				$this->model->error('Table model not found, please generate cache.');
+		if ($this->options['element'] and !$this->options['table'])
+			$this->options['table'] = $this->model->_ORM->getTableFor($this->options['element']);
 
+		if ($this->options['table']) {
 			if ($this->options['order_by'] === false) {
-				$this->options['order_by'] = $this->options['primary'] . ' DESC';
+				$tableModel = $this->model->_Db->getTable($this->options['table']);
+				$this->options['order_by'] = $tableModel->primary . ' DESC';
 
 				if ($this->options['element']) {
 					$elementData = $this->model->_ORM->getElementData($this->options['element']);
@@ -111,82 +84,6 @@ class Admin extends Module
 				}
 			}
 
-			$new_fields = []; // I loop through the columns to standardize the format
-			foreach ($this->options['columns'] as $k => $f) {
-				/*
-				 * ACCEPTED FORMATS: *
-				 * 'field'
-				 * * A single string, will be used as column id, label and as field name
-				 * 'label'=>function(){}
-				 * * The key is both column id and label, the callback will be used as "display" value
-				 * 'label'=>'campo'
-				 * * The key is both column id and label, the value is the db field to use
-				 * 'label'=>array()
-				 * * The key is the colum id, in the array there will be the remaining options (if a label is not provided, the column is will be used)
-				*/
-				if (is_numeric($k)) {
-					if (is_array($f)) {
-						if (isset($f['display']) and (is_string($f['display']) or is_numeric($f['display'])))
-							$k = $f['display'];
-						elseif (isset($k['field']) and (is_string($f['field']) or is_numeric($f['field'])))
-							$k = $f['field'];
-					} else {
-						if (is_string($f) or is_numeric($f))
-							$k = $f;
-					}
-					$k = str_replace('"', '', $this->getLabel($k));
-				}
-
-				if (!is_array($f)) {
-					if (is_string($f) or is_numeric($f)) {
-						$f = array(
-							'field' => $f,
-							'display' => $f,
-						);
-					} elseif (is_callable($f)) {
-						$f = array(
-							'field' => false,
-							'display' => $f,
-						);
-					} else {
-						$this->model->error('Unknown column format with label "' . entities($k) . '"');
-					}
-				}
-
-				if (!isset($f['field']) and !isset($f['display']))
-					$f['field'] = $k;
-
-				$f = array_merge(array(
-					'label' => $k,
-					'field' => false,
-					'display' => false,
-					'empty' => '',
-					'editable' => false,
-					'clickable' => true,
-					'print' => true,
-					'total' => false,
-					'price' => false,
-				), $f);
-
-				if (is_string($f['display']) and !$f['field'] and $f['display'])
-					$f['field'] = $f['display'];
-				if ($f['field'] === false and array_key_exists($k, $tableModel->columns))
-					$f['field'] = $k;
-				if (is_string($f['field']) and $f['field'] and !$f['display'])
-					$f['display'] = $f['field'];
-
-				$k = $this->standardizeLabel($k);
-				if ($k == '') {
-					if ($f['field'])
-						$k = $f['field'];
-					if (!$k)
-						$this->model->error('Can\'t assign id to column with label "' . entities($f['label']) . '"');
-				}
-
-				$new_fields[$k] = $f;
-			}
-			$this->options['columns'] = $new_fields;
-
 			$this->paginator = new Paginator();
 
 			$this->customFiltersForm = new Form([
@@ -194,162 +91,26 @@ class Admin extends Module
 				'model' => $this->model,
 			]);
 
-			if (isset($this->request[2])) {
-				if (!is_numeric($this->request[2]))
-					die('Element id must be numeric');
+			$element = $this->model->_ORM->loadMainElement($this->options['element'] ?: 'Element', $options['id'] ?: false, ['table' => $this->options['table']]);
+			$this->form = $element->getForm();
 
-				$elId = (int)$this->request[2];
-				if ($elId <= 0)
-					$elId = false;
-			} else {
-				$elId = false;
-			}
-
-			$element = $this->model->_ORM->loadMainElement($this->options['element'] ?: '\\Model\\Element', $elId, ['table' => $this->options['table']]);
-			if ($element)
-				$this->form = $element->getForm();
+			$values = $this->form->getValues();
 		}
 
-		return true;
-	}
+		$this->page->customize();
 
-	/**
-	 * Returns the appropriate controller name, given the request
-	 *
-	 * @param array $request
-	 * @param mixed $rule
-	 * @return array|bool
-	 */
-	public function getController(array $request, string $rule)
-	{
-		$config = $this->retrieveConfig();
-
-		if (!isset($config['url'][$rule]) or (!empty($config['url'][$rule]['path']) and strpos(implode('/', $request), $config['url'][$rule]['path']) !== 0))
-			return false;
-
-		$this->url = $config['url'][$rule]['path'];
-
-		$realRequest = $this->getAdminRequest($request, $this->url);
-		if ($realRequest === false)
-			return false;
-
-		$this->request = $realRequest;
-
-		if (isset($realRequest[0])) {
-			switch ($realRequest[0]) {
-				case 'login':
-				case 'logout':
-					return [
-						'controller' => 'AdminLogin',
-					];
-					break;
-			}
-		} else {
-			return [
-				'controller' => 'Admin',
-			];
-		}
-
-		$pages = $this->getPages();
-		$controller = $this->seekForController($pages, $realRequest[0]);
-		if (!$controller)
-			return false;
-
-		return [
-			'controller' => 'Admin\\' . $controller,
-		];
-	}
-
-	/**
-	 * Given the real request url, strips the first part (the admin path) to return the request to be parsed by the Admin module (returns false on failure)
-	 *
-	 * @param array $request
-	 * @param string $path
-	 * @return array|bool
-	 */
-	private function getAdminRequest(array $request, string $path)
-	{
-		if (empty($path))
-			return $request;
-
-		$path = explode('/', $path);
-		foreach ($path as $p) {
-			$shift = array_shift($request);
-			if ($shift !== $p)
-				return false;
-		}
-		return $request;
-	}
-
-	/**
-	 * Recursively looks for the controller corresponding to a given request, in the pages and sub-pages
-	 *
-	 * @param array $pages
-	 * @param string $request
-	 * @return string|bool
-	 */
-	private function seekForController(array $pages, string $request)
-	{
-		foreach ($pages as $p) {
-			if (isset($p['controller'], $p['rule']) and $p['rule'] === $request)
-				return $p['controller'];
-			if (isset($p['sub'])) {
-				$controller = $this->seekForController($p['sub'], $request);
-				if ($controller)
-					return $controller;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Magic method: it is possible to call template methods via this module
-	 *
-	 * @param string $name
-	 * @param array $arguments
-	 * @return mixed
-	 * @throws \Model\Core\Exception
-	 */
-	public function __call($name, $arguments)
-	{
-		if (method_exists($this->template, $name)) {
-			return call_user_func_array([$this->template, $name], $arguments);
-		} else {
-			$this->model->error('Non existing method ' . $name . ' in Admin module.');
-			return null;
-		}
-	}
-
-	/**
-	 * Removes all unnecessary characters of a label to generate a column id
-	 *
-	 * @param string $k
-	 * @return string
-	 */
-	private function standardizeLabel(string $k): string
-	{
-		return preg_replace('/[^a-z0-9]/i', '', entities(strtolower($k)));
-	}
-
-	/**
-	 * Converts a field name in a human-readable label
-	 *
-	 * @param string $k
-	 * @return string
-	 */
-	public function getLabel(string $k): string
-	{
-		return ucwords(str_replace(array('-', '_'), ' ', $k));
+		if ($this->form)
+			$this->form->setValues($values);
 	}
 
 	/**
 	 * Returns the list of elements, filtered by specified options
 	 *
 	 * @param array $options
-	 * @return array
+	 * @return ElementsIterator
 	 * @throws \Model\Core\Exception
 	 */
-	public function getList(array $options = []): array
+	public function getList(array $options = []): ElementsIterator
 	{
 		$options = array_merge([
 			'p' => 1,
@@ -380,7 +141,7 @@ class Admin extends Module
 
 			$arr = [];
 			foreach ($columns as $k => $col) {
-				if ($this->options['primary'] == $k or $col['foreign_key'] or ($options['search-columns'] and !in_array($k, $options['search-columns'])))
+				if ($tableModel->primary === $k or $col['foreign_key'] or ($options['search-columns'] and !in_array($k, $options['search-columns'])))
 					continue;
 
 				switch ($col['type']) {
@@ -423,6 +184,8 @@ class Admin extends Module
 				$where = array_merge($where, $f_where);
 		}
 
+		$this->usedWhere = $where;
+
 		// Count how many total elements there are
 		$count = $this->model->_Db->count($this->options['table'], $where, [
 			'joins' => $this->options['joins'],
@@ -447,128 +210,128 @@ class Admin extends Module
 			'table' => $this->options['table'],
 		];
 
-		// If a Element type is specified, I retrieve them through ORM module, otherwise I just execute a select query
-		if ($this->options['element']) {
-			$elements = $this->model->_ORM->all($this->options['element'], $where, $queryOptions);
-		} else {
-			$elements = $this->model->_Db->select_all($this->options['table'], $where, $queryOptions);
-		}
+		$elementName = $this->options['element'] ?: 'Element';
+		$elements = $this->model->_ORM->all($elementName, $where, $queryOptions);
 
-		if ($elements === false)
-			$this->model->error('Error in retrieving elements list');
-
-		// I run through the elements to get the data I need
-		$arr_elements = [];
-		foreach ($elements as $el) {
-			if (is_array($el)) { // Retrieved through normal query, I convert into Element for consistency
-				$el = new Element($el, [
-					'table' => $this->options['table'],
-					'pre_loaded' => true,
-					'model' => $this->model,
-				]);
-			}
-
-			$arr_el = [];
-			foreach ($this->options['columns'] as $k => $cOpt) {
-				$cOpt['html'] = $options['html'];
-				$c = $this->getElementColumn($el, $cOpt);
-				$arr_el[$k] = $c;
-			}
-
-			$elId = $el[$this->options['primary']];
-			$arr_elements[$elId] = [
-				'element' => $el,
-				'columns' => $arr_el,
-			];
-		}
-
-		$totals = [];
-		foreach ($this->options['columns'] as $k => $c) {
-			if ($c['total'] and $c['field']) {
-				$totals[$k] = $this->model->_Db->select($this->options['table'], $where, [
-					'sum' => $c['field'],
-				]);
-			}
-		}
-
-		return [
-			'tot' => $count,
-			'pages' => $this->paginator->tot,
-			'current-page' => $this->paginator->pag,
-			'columns' => $this->getColumns(),
-			'elements' => $arr_elements,
-			'totals' => $totals,
-			'sortedBy' => $options['sortBy'],
-		];
+		return $elements;
 	}
 
 	/**
-	 * Returns an array with the columns of the page
+	 * Returns an array with the possible actions that the user can take
 	 *
-	 * @return array
-	 */
-	public function getColumns(): array
-	{
-		$columns = [];
-		foreach ($this->options['columns'] as $k => $c) {
-			$sortingRules = $this->getSortingRulesFor($c, 'ASC', 0);
-
-			unset($c['display']);
-			unset($c['empty']);
-			unset($c['total']);
-			$c['sortable'] = $sortingRules ? true : false;
-
-			$columns[$k] = $c;
-		}
-
-		return $columns;
-	}
-
-	/**
-	 * Returns text and value to be shown in the table, for the given column of the given element
-	 *
-	 * @param Element $el
-	 * @param array $cOpt
+	 * @param string $type
 	 * @return array
 	 * @throws \Model\Core\Exception
 	 */
-	private function getElementColumn(Element $el, array $cOpt): array
+	public function getActions(string $type): array
 	{
-		$config = $this->retrieveConfig();
+		$actions = [];
 
-		$c = [
-			'text' => '',
-			'value' => null,
+		if (!(isset($this->options['table']) and $this->options['table']) and !(isset($this->options['element']) and $this->options['element']))
+			return [];
+
+		if ($this->canUser('C')) {
+			$actions['new'] = [
+				'text' => 'Nuovo',
+				'action' => 'new',
+			];
+		}
+		if ($this->canUser('D')) {
+			$actions['delete'] = [
+				'text' => 'Elimina',
+				'action' => 'delete',
+			];
+		}
+
+		switch ($type) {
+			case 'edit':
+				if ($this->canUser('U')) {
+					$actions['save'] = [
+						'text' => 'Salva',
+						'action' => 'save',
+					];
+				}
+				if ($this->canUser('C')) {
+					$actions['duplicate'] = [
+						'text' => 'Duplica',
+						'action' => 'duplicate',
+					];
+				}
+				break;
+			case 'new':
+				if ($this->canUser('C')) {
+					$actions['save'] = [
+						'text' => 'Salva',
+						'action' => 'save',
+					];
+				}
+				break;
+		}
+
+		return $actions;
+	}
+
+	/**
+	 * Can the current user do something? (Privilege check, basically)
+	 *
+	 * @param string $what
+	 * @param string $page
+	 * @param Element $el
+	 * @return bool
+	 * @throws \Model\Core\Exception
+	 */
+	public function canUser(string $what, string $page = null, Element $el = null): bool
+	{
+		if ($page === null)
+			$page = $this->options['page'];
+		if ($el === null)
+			$el = $this->model->element;
+
+		if ($this->privilegesCache === false) {
+			$this->privilegesCache = $this->model->_Db->select_all('admin_privileges', [
+				'or' => [
+					['user', $this->model->_User_Admin->logged()],
+					['user', null],
+				],
+			], ['order_by' => 'id DESC']);
+		}
+
+		$currentGuess = [
+			'row' => false,
+			'C' => $this->options['privileges']['C'],
+			'R' => $this->options['privileges']['R'],
+			'U' => $this->options['privileges']['U'],
+			'D' => $this->options['privileges']['D'],
+			'L' => $this->options['privileges']['L'],
 		];
+		if (!array_key_exists($what, $currentGuess) or $what === 'row')
+			$this->model->error('Requested unknown privilege.');
 
-		if (!is_string($cOpt['display'])) {
-			if (is_callable($cOpt['display'])) {
-				$c['text'] = call_user_func($cOpt['display'], $el);
-			} else {
-				$this->model->error('Unknown display format in a column - either string or callable is expected');
+
+		foreach ($this->privilegesCache as $p) {
+			if (
+				(($p['page'] === $page or ($p['page'] === null and $currentGuess['row']['page'] === null)) and ($currentGuess['row'] === false or ($currentGuess['row']['user'] === null and $p['user'] !== null)))
+				or ($currentGuess['row']['page'] === null and $p['page'] === $page)
+			) {
+				$currentGuess['row'] = $p;
+
+				foreach ($currentGuess as $idx => $priv) {
+					if ($idx === 'row')
+						continue;
+					if ($p[$idx . '_special']) {
+						eval('$currentGuess[$idx] = function($el){ return ' . $p[$idx . '_special'] . '; }');
+					} else {
+						$currentGuess[$idx] = $p[$idx];
+					}
+				}
 			}
+		}
+
+		if (!is_string($currentGuess[$what]) and is_callable($currentGuess[$what])) {
+			return (bool)call_user_func($currentGuess[$what], $el);
 		} else {
-			$form = $el->getForm();
-
-			if (isset($form[$cOpt['display']])) {
-				$d = $form[$cOpt['display']];
-				$c['text'] = $d->getText($config);
-			} else {
-				$c['text'] = $el[$cOpt['display']];
-			}
-
-			if ($this->options['columns-callback'] and is_callable($this->options['columns-callback']))
-				$c['text'] = call_user_func($this->options['columns-callback'], $c['text']);
-
-			if ($cOpt['html'])
-				$c['text'] = entities($c['text']);
+			return (bool)$currentGuess[$what];
 		}
-
-		if ($cOpt['field']) {
-			$c['value'] = $el[$cOpt['field']];
-		}
-
-		return $c;
 	}
 
 	/**
@@ -675,10 +438,8 @@ class Admin extends Module
 			foreach ($sortBy as $idx => $sort) {
 				if (!is_array($sort) or count($sort) != 2 or !in_array(strtolower($sort[1]), ['asc', 'desc']))
 					$this->model->error('Wrong "sortBy" format!');
-				if (!isset($this->options['columns'][$sort[0]]))
-					$this->model->error('Column ' . $sort[0] . ' in "sortBy" doesn\'t exist!');
 
-				$rules = $this->getSortingRulesFor($this->options['columns'][$sort[0]], $sort[1], $idx);
+				$rules = $this->getSortingRulesFor($sort[0], $sort[1], $idx);
 				if (!$rules)
 					$this->model->error('Column ' . $sort[0] . ' is not sortable!');
 
@@ -703,432 +464,95 @@ class Admin extends Module
 	 * Extension of getSortingRules method, here I look at the rules for the specific column
 	 * Returns false if the column is not sortable
 	 *
-	 * @param array $column
+	 * @param string $field
 	 * @param string $dir
 	 * @param int $idx
-	 * @return array|bool
+	 * @return array|null
 	 */
-	private function getSortingRulesFor(array $column, string $dir, int $idx)
+	public function getSortingRulesFor(string $field, string $dir, int $idx)
 	{
-		if (!is_string($column['display']) and is_callable($column['display'])) {
-			if ($column['field'] and is_string($column['field'])) {
-				return [
-					'order_by' => $column['field'] . ' ' . $dir,
-					'joins' => [],
-				];
-			}
-		} else {
-			if (isset($this->form[$column['display']])) {
-				$d = $this->form[$column['display']];
-				if (in_array($d->options['type'], ['select', 'radio', 'select-cascade'])) {
-					$tableModel = $this->model->_Db->getTable($this->options['table']);
-					if ($tableModel and isset($tableModel->columns[$d->options['field']]) and $tableModel->columns[$d->options['field']]['type'] == 'enum') {
-						return [
-							'order_by' => $d->options['field'] . ' ' . $dir,
-							'joins' => [],
-						];
-					}
+		if (!$field)
+			return null;
 
-					if ($d->options['table'] and $d->options['text-field']) {
-						if (is_array($d->options['text-field'])) {
-							$text_fields = $d->options['text-field'];
-						} elseif (is_string($d->options['text-field'])) {
-							$text_fields = [$d->options['text-field']];
-						} else {
-							return false;
-						}
-
-						$order_by = [];
-						$join_fields = [];
-						foreach ($text_fields as $cf => $tf) {
-							$order_by[] = 'ord' . $idx . '_' . $cf . '_' . $tf . ' ' . $dir;
-							$join_fields[$tf] = 'ord' . $idx . '_' . $cf . '_' . $tf;
-						}
-						return [
-							'order_by' => implode(',', $order_by),
-							'joins' => [
-								[
-									'type' => 'LEFT',
-									'table' => $d->options['table'],
-									'fields' => $join_fields,
-								],
-							],
-						];
-					}
-				} elseif ($d->options['type'] === 'instant-search') {
-					if (isset($d->options['table'], $d->options['text-field'])) {
-						if (!is_array($d->options['text-field']))
-							$d->options['text-field'] = [$d->options['text-field']];
-
-						$order_by = $d->options['text-field'];
-						foreach ($order_by as &$f) {
-							$f = 'ord' . $idx . '_' . $f . ' ' . $dir;
-						}
-						unset($f);
-
-						$join_fields = array();
-						foreach ($d->options['text-field'] as $f) {
-							$join_fields[$f] = 'ord' . $idx . '_' . $f;
-						}
-
-						return [
-							'order_by' => implode(',', $order_by),
-							'joins' => [
-								[
-									'type' => 'LEFT',
-									'table' => $d->options['table'],
-									'fields' => $join_fields,
-									'on' => $d->options['field'],
-								],
-							],
-						];
-					}
-				} else {
+		if (isset($this->form[$field])) {
+			$d = $this->form[$field];
+			if (in_array($d->options['type'], ['select', 'radio', 'select-cascade'])) {
+				$tableModel = $this->model->_Db->getTable($this->options['table']);
+				if ($tableModel and isset($tableModel->columns[$d->options['field']]) and $tableModel->columns[$d->options['field']]['type'] == 'enum') {
 					return [
 						'order_by' => $d->options['field'] . ' ' . $dir,
 						'joins' => [],
 					];
 				}
-				return false;
-			} elseif (is_string($column['display'])) {
+
+				if ($d->options['table'] and $d->options['text-field']) {
+					if (is_array($d->options['text-field'])) {
+						$text_fields = $d->options['text-field'];
+					} elseif (is_string($d->options['text-field'])) {
+						$text_fields = [$d->options['text-field']];
+					} else {
+						return null;
+					}
+
+					$order_by = [];
+					$join_fields = [];
+					foreach ($text_fields as $cf => $tf) {
+						$order_by[] = 'ord' . $idx . '_' . $cf . '_' . $tf . ' ' . $dir;
+						$join_fields[$tf] = 'ord' . $idx . '_' . $cf . '_' . $tf;
+					}
+					return [
+						'order_by' => implode(',', $order_by),
+						'joins' => [
+							[
+								'type' => 'LEFT',
+								'table' => $d->options['table'],
+								'fields' => $join_fields,
+							],
+						],
+					];
+				}
+			} elseif ($d->options['type'] === 'instant-search') {
+				if (isset($d->options['table'], $d->options['text-field'])) {
+					if (!is_array($d->options['text-field']))
+						$d->options['text-field'] = [$d->options['text-field']];
+
+					$order_by = $d->options['text-field'];
+					foreach ($order_by as &$f) {
+						$f = 'ord' . $idx . '_' . $f . ' ' . $dir;
+					}
+					unset($f);
+
+					$join_fields = array();
+					foreach ($d->options['text-field'] as $f) {
+						$join_fields[$f] = 'ord' . $idx . '_' . $f;
+					}
+
+					return [
+						'order_by' => implode(',', $order_by),
+						'joins' => [
+							[
+								'type' => 'LEFT',
+								'table' => $d->options['table'],
+								'fields' => $join_fields,
+								'on' => $d->options['field'],
+							],
+						],
+					];
+				}
+			} else {
 				return [
-					'order_by' => $column['display'] . ' ' . $dir,
+					'order_by' => $d->options['field'] . ' ' . $dir,
 					'joins' => [],
 				];
 			}
-		}
-		return false;
-	}
 
-	/**
-	 * sId (for storing and retrieving list options, hence maintaining the page settings on refreshing) is either passed via input parameters or a new one is calculated
-	 *
-	 * @return int
-	 */
-	public function getSessionId(): int
-	{
-		$sId = $this->model->getInput('sId');
-		if ($sId === null) {
-			$sId = 0;
-			while (isset($_SESSION[SESSION_ID]['admin-search-sessions'][$this->request[0]][$sId]))
-				$sId++;
-		}
-		return (int)$sId;
-	}
-
-	/**
-	 * Returns options array for the list page, retrieving it from session if possible
-	 *
-	 * @param int $sId
-	 * @return array
-	 */
-	public function getListOptions(int $sId = null): array
-	{
-		if ($sId === null)
-			$sId = $this->getSessionId();
-
-		if (isset($_SESSION[SESSION_ID]['admin-search-sessions'][$this->request[0]][$sId])) {
-			$options = $_SESSION[SESSION_ID]['admin-search-sessions'][$this->request[0]][$sId];
+			return null;
 		} else {
-			$options = [
-				'p' => 1,
-				'filters' => [],
-				'search-columns' => [],
-				'sortBy' => [],
-				'html' => !$this->model->isCLI(),
-			];
-
-			if ($this->customFiltersForm) {
-				$defaultFilters = $this->customFiltersForm->getDataset();
-				foreach ($defaultFilters as $k => $d) {
-					$v = $d->getValue();
-					if ($v)
-						$options['filters'][] = [$k, $v];
-				}
-			}
-		}
-
-		return $options;
-	}
-
-	/**
-	 * Stores in session the current list options array
-	 *
-	 * @param int $sId
-	 * @param array $options
-	 */
-	public function setListOptions(int $sId, array $options)
-	{
-		$_SESSION[SESSION_ID]['admin-search-sessions'][$this->request[0]][$sId] = $options;
-	}
-
-	/**
-	 * Registers a custom filter
-	 *
-	 * @param string $name
-	 * @param array $options
-	 * @return MField|bool
-	 * @throws \Model\Core\Exception
-	 */
-	public function filter(string $name, array $options = [])
-	{
-		if (isset($this->customFiltersCallbacks[$name]))
-			$this->model->error('Duplicate custom filter ' . $name);
-
-		$d = $this->customFiltersForm->add($name, $options);
-		if (!$d)
-			return false;
-
-		if (isset($options['callback'])) {
-			$this->customFiltersCallbacks[$name] = $options['callback'];
-		} elseif (!isset($options['admin-type'])) {
-			$this->customFiltersCallbacks[$name] = function ($v) use ($d) {
-				return [
-					[$d->options['field'], '=', $v],
-				];
-			};
-		}
-
-		return $d;
-	}
-
-	/**
-	 * Getter for the form of custom filters
-	 *
-	 * @return Form
-	 */
-	public function getCustomFiltersForm(): Form
-	{
-		return $this->customFiltersForm;
-	}
-
-	/**
-	 * Given a controller name, return the corresponding url.
-	 *
-	 * @param string|bool $controller
-	 * @param int|bool $id
-	 * @param array $tags
-	 * @param array $opt
-	 * @return bool|string
-	 */
-	public function getUrl(string $controller = null, $id = false, array $tags = [], array $opt = [])
-	{
-		switch ($controller) {
-			case 'AdminLogin':
-				return ($this->url ? $this->url . '/' : '') . 'login';
-				break;
-			default:
-				return false;
-				break;
-		}
-	}
-
-	/**
-	 * Retrieves the array of pages
-	 *
-	 * @return array
-	 */
-	public function getPages(): array
-	{
-		$config = $this->retrieveConfig();
-
-		$pages = [];
-
-		if (isset($config['url']) and is_array($config['url'])) {
-			foreach ($config['url'] as $u) {
-				if (is_array($u) and $u['path'] == $this->url) {
-					$pages = $u['pages'];
-					break;
-				}
-			}
-		}
-
-		if (isset(\Model\Core\Globals::$data['adminAdditionalPages']))
-			$pages = array_merge($pages, \Model\Core\Globals::$data['adminAdditionalPages']);
-
-		return $pages;
-	}
-
-	/**
-	 * Returns an array with the possible actions that the user can take
-	 *
-	 * @param array $request
-	 * @return array
-	 * @throws \Model\Core\Exception
-	 */
-	public function getActions(array $request = null): array
-	{
-		if ($request === null)
-			$request = $this->request;
-
-		$actions = [];
-
-		if (!(isset($this->options['table']) and $this->options['table']) and !(isset($this->options['element']) and $this->options['element']))
-			return [];
-
-		if ($this->canUser('C')) {
-			$actions['new'] = [
-				'text' => 'Nuovo',
-				'action' => 'new',
+			return [
+				'order_by' => $field . ' ' . $dir,
+				'joins' => [],
 			];
 		}
-		if ($this->canUser('D')) {
-			$actions['delete'] = [
-				'text' => 'Elimina',
-				'action' => 'delete',
-			];
-		}
-
-		if (!isset($request[1]))
-			$request[1] = '';
-
-		switch ($request[1]) {
-			case 'edit':
-				if ($this->canUser('U')) {
-					$actions['save'] = [
-						'text' => 'Salva',
-						'action' => 'save',
-					];
-				}
-				if (isset($request[2]) and $this->canUser('C')) {
-					$actions['duplicate'] = [
-						'text' => 'Duplica',
-						'action' => 'duplicate',
-					];
-				}
-				break;
-		}
-
-		return $actions;
-	}
-
-	/**
-	 * Can the current user do something? (Privilege check, basically)
-	 *
-	 * @param string $what
-	 * @param string $page
-	 * @param Element $el
-	 * @return bool
-	 * @throws \Model\Core\Exception
-	 */
-	public function canUser(string $what, string $page = null, Element $el = null): bool
-	{
-		if ($page === null)
-			$page = $this->request[0];
-		if ($el === null)
-			$el = $this->model->element;
-
-		if ($this->privilegesCache === false) {
-			$this->privilegesCache = $this->model->_Db->select_all('admin_privileges', [
-				'or' => [
-					['user', $this->model->_User_Admin->logged()],
-					['user', null],
-				],
-			], ['order_by' => 'id DESC']);
-		}
-
-		$currentGuess = [
-			'row' => false,
-			'C' => $this->options['privileges']['C'],
-			'R' => $this->options['privileges']['R'],
-			'U' => $this->options['privileges']['U'],
-			'D' => $this->options['privileges']['D'],
-			'L' => $this->options['privileges']['L'],
-		];
-		if (!array_key_exists($what, $currentGuess) or $what === 'row')
-			$this->model->error('Requested unknown privilege.');
-
-		$groups = $this->findPageGroups($this->getPages(), $page);
-		if ($groups === false)
-			return $currentGuess[$what];
-
-		foreach ($this->privilegesCache as $p) {
-			if (
-				((in_array($p['group'], $groups) or $p['page'] === $page or ($p['page'] === null and $p['group'] === null and $currentGuess['row']['page'] === null)) and ($currentGuess['row'] === false or ($currentGuess['row']['user'] === null and $p['user'] !== null)))
-				or ($currentGuess['row']['group'] === null and $currentGuess['row']['page'] === null and in_array($p['group'], $groups))
-				or ($currentGuess['row']['page'] === null and $p['page'] === $page)
-			) {
-				$currentGuess['row'] = $p;
-
-				foreach ($currentGuess as $idx => $priv) {
-					if ($idx === 'row')
-						continue;
-					if ($p[$idx . '_special']) {
-						eval('$currentGuess[$idx] = function($el){ return ' . $p[$idx . '_special'] . '; }');
-					} else {
-						$currentGuess[$idx] = $p[$idx];
-					}
-				}
-			}
-		}
-
-		if (!is_string($currentGuess[$what]) and is_callable($currentGuess[$what])) {
-			return (bool)call_user_func($currentGuess[$what], $el);
-		} else {
-			return (bool)$currentGuess[$what];
-		}
-	}
-
-	/**
-	 * @param array $pages
-	 * @param string $page
-	 * @return array|bool
-	 */
-	private function findPageGroups(array $pages, string $page)
-	{
-		foreach ($pages as $p) {
-			if (isset($p['rule']) and $p['rule'] == $page) {
-				return [
-					$p['name'],
-				];
-			} elseif (isset($p['sub'])) {
-				$search = $this->findPageGroups($p['sub'], $page);
-				if ($search !== false) {
-					array_unshift($search, $p['name']);
-					return $search;
-				}
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Clears all the fields of the form (in order to add new custom fields)
-	 *
-	 * @return bool
-	 */
-	public function clearForm(): bool
-	{
-		if ($this->form)
-			return $this->form->clear();
-		else
-			return false;
-	}
-
-	/**
-	 * Adds or edits a field in the form
-	 *
-	 * @param string $name
-	 * @param array|string $options
-	 * @return MField|bool
-	 * @throws \Model\Core\Exception
-	 */
-	public function field(string $name, $options = [])
-	{
-		if (!$this->form)
-			return false;
-
-		if (!is_array($options))
-			$options = ['type' => $options];
-
-		if (isset($this->form[$name])) {
-			$datum = $this->form[$name];
-			$datum->options = array_merge($datum->options, $options);
-		} else {
-			$datum = $this->form->add($name, $options);
-		}
-
-		return $datum;
 	}
 
 	/**
@@ -1146,7 +570,7 @@ class Admin extends Module
 
 		$arr = [
 			'data' => [
-				'_model_version' => $this->model->_Db->getVersionLock($element->getTable(), $element['id']),
+				'_model_version' => $this->model->_Db->getVersionLock($element->getTable(), $element[$element->settings['primary']]),
 			],
 			'children' => [],
 		];
@@ -1157,18 +581,34 @@ class Admin extends Module
 		}
 
 		foreach ($this->sublists as $s) {
-			$options = $element->getChildrenOptions($s['name']);
+			$options = $element->getChildrenOptions($s['options']['children']);
 			if (!$options)
-				$this->model->error($s['name'] . ' is not a children list of the element!');
+				$this->model->error($s['options']['children'] . ' is not a children list of the element!');
 
-			$arr['children'][$s['name'] . '-' . $s['options']['cont']] = [
+			$visualizer = null;
+			if (isset($s['options']['visualizer']) and $s['options']['visualizer']) {
+				$className = Autoloader::searchFile('DataVisualizer', $s['options']['visualizer']);
+				if ($className) {
+					$visualizer = new $className($this->model, [
+						'name' => $s['name'],
+						'table' => $options['table'],
+						'element' => $options['element'],
+					]);
+				}
+			}
+
+			$arr['children'][$s['name']] = [
 				'primary' => $options['primary'],
 				'list' => [],
 			];
 
-			foreach ($element->{$s['name']} as $chId => $ch) {
+			foreach ($element->{$s['options']['children']} as $chId => $ch) {
 				$chArr = [];
-				$form = $this->getSublistRowForm($ch, $s['options']);
+				if ($visualizer) {
+					$form = $visualizer->getRowForm($ch, $s['options']);
+				} else {
+					$form = $this->getSublistRowForm($ch, $s['options']);
+				}
 				$keys = array_keys($form->getDataset());
 
 				$chArr[$options['primary']] = $ch[$options['primary']];
@@ -1176,7 +616,7 @@ class Admin extends Module
 					$chArr[$k] = $form[$k]->getJsValue(false);
 				}
 
-				$arr['children'][$s['name'] . '-' . $s['options']['cont']]['list'][] = $chArr;
+				$arr['children'][$s['name']]['list'][] = $chArr;
 			}
 		}
 
@@ -1184,85 +624,64 @@ class Admin extends Module
 	}
 
 	/**
-	 * Returns the custom form of a single sublist row
+	 * Registers a custom filter
 	 *
-	 * @param Element $el
+	 * @param string $name
 	 * @param array $options
-	 * @return Form
+	 * @return MField
 	 * @throws \Model\Core\Exception
 	 */
-	public function getSublistRowForm(Element $el, array $options): Form
+	public function filter(string $name, array $options = []): MField
 	{
-		$form = $el->getForm();
-		if (count($options['fields']) > 0) {
-			$newForm = clone $form;
-			$newForm->clear();
+		if (isset($this->customFiltersCallbacks[$name]))
+			$this->model->error('Duplicate custom filter ' . $name);
 
-			$keys = [];
-			foreach ($options['fields'] as $f => $fOpt) {
-				if (!is_string($fOpt) and is_callable($fOpt)) {
-					$fOpt = [
-						'type' => 'custom',
-						'custom' => $fOpt,
-					];
-				} elseif (is_numeric($f)) {
-					$f = $fOpt;
-					$fOpt = [];
-				}
+		$d = $this->customFiltersForm->add($name, $options);
 
-				$keys[] = $f;
-				$newForm->add(isset($form[$f]) ? $form[$f] : $f, $fOpt);
-			}
-
-			$form = $newForm;
+		if (isset($options['callback'])) {
+			$this->customFiltersCallbacks[$name] = $options['callback'];
+		} elseif (!isset($options['admin-type'])) {
+			$this->customFiltersCallbacks[$name] = function ($v) use ($d) {
+				return [
+					[$d->options['field'], '=', $v],
+				];
+			};
 		}
 
-		return $form;
+		return $d;
 	}
 
 	/**
-	 * Saves data in the current element, via JS instant-save function
-	 * Returns an array of elements that got changed in the process
+	 * Clears all the fields of the form (in order to add new custom fields)
 	 *
-	 * @param array $data
-	 * @param array $instant
-	 * @return array|bool
+	 * @return bool
+	 */
+	public function clearForm(): bool
+	{
+		return $this->form->clear();
+	}
+
+	/**
+	 * Adds or edits a field in the form
+	 *
+	 * @param string $name
+	 * @param array|string $options
+	 * @return MField
 	 * @throws \Model\Core\Exception
 	 */
-	public function saveElementViaInstant(array $data, array $instant = [])
+	public function field(string $name, $options = []): MField
 	{
-		$this->model->on('Db_update', function ($e) use ($instant) {
-			$primary = $this->model->element->settings['primary'];
-			if (isset($e['where'][$primary])) {
-				if (in_array($e['where'][$primary], $instant) and !in_array($e['where'][$primary], $this->instantSaveIds))
-					$this->instantSaveIds[] = $e['where'][$primary];
-			}
-		});
+		if (!is_array($options))
+			$options = ['type' => $options];
 
-		if (!$this->saveElement($data))
-			return false;
-
-		$changed = [];
-
-		if ($this->instantSaveIds) {
-			foreach ($this->instantSaveIds as $id) {
-				$el = $this->model->_ORM->one($this->options['element'], $id);
-				$arr_el = [];
-
-				foreach ($this->options['columns'] as $k => $cOpt) {
-					$cOpt['html'] = true;
-					$c = $this->getElementColumn($el, $cOpt);
-					$arr_el[$k] = $c;
-				}
-
-				$changed[$id] = [
-					'element' => $el,
-					'columns' => $arr_el,
-				];
-			}
+		if (isset($this->form[$name])) {
+			$datum = $this->form[$name];
+			$datum->options = array_merge($datum->options, $options);
+		} else {
+			$datum = $this->form->add($name, $options);
 		}
 
-		return $changed;
+		return $datum;
 	}
 
 	/**
@@ -1286,6 +705,31 @@ class Admin extends Module
 	}
 
 	/**
+	 * Deletes the element with the specified id
+	 *
+	 * @param int $id
+	 * @throws \Model\Core\Exception
+	 */
+	public function delete(int $id)
+	{
+		$element = $this->model->_ORM->one($this->options['element'] ?: 'Element', $id, [
+			'table' => $this->options['table'],
+		]);
+
+		$this->form = $element->getForm();
+
+		if (!$this->canUser('D', null, $element))
+			$this->model->error('Can\'t delete, permission denied.');
+
+		if ($this->page->beforeDelete($element)) {
+			if ($element->delete())
+				$this->page->afterDelete($id, $element);
+			else
+				$this->model->error('Error while deleting.');
+		}
+	}
+
+	/**
 	 * Adds a sublist in the array, so that it will be rendered
 	 *
 	 * @param string $name
@@ -1294,9 +738,8 @@ class Admin extends Module
 	public function sublist(string $name, array $options = [])
 	{
 		$options = array_merge([
-			'type' => 'row',
-			'fields' => [],
-			'cont' => $name,
+			'visualizer' => 'FormList',
+			'children' => $name,
 		], $options);
 
 		$this->sublists[] = [
@@ -1306,70 +749,37 @@ class Admin extends Module
 	}
 
 	/**
-	 * Renders a sublist (via the loaded template module)
-	 * $name has to be a declared children-set of the current element
+	 * Returns the custom form of a single sublist row
 	 *
-	 * @param string $name
+	 * @param Element $el
 	 * @param array $options
-	 */
-	public function renderSublist(string $name, array $options = [])
-	{
-		if (!$this->template)
-			return;
-
-		$defaultOptions = [];
-		foreach ($this->sublists as $s) {
-			if ($s['name'] === $name) {
-				$defaultOptions = $s['options'];
-				break;
-			}
-		}
-		$options = array_merge($defaultOptions, $options);
-
-		$this->template->renderSublist($name, $options);
-	}
-
-	/**
-	 * @return string
+	 * @return Form
 	 * @throws \Model\Core\Exception
 	 */
-	public function getUrlPrefix(): string
+	public function getSublistRowForm(Element $el, array $options): Form
 	{
-		return $this->model->prefix() . ($this->url ? $this->url . '/' : '');
-	}
+		$form = $el->getForm();
+		if (isset($options['fields']) and count($options['fields']) > 0) {
+			$newForm = clone $form;
+			$newForm->clear();
 
-	/**
-	 * @return array
-	 */
-	private function getDictionary(): array
-	{
-		if ($this->dictionary === null) {
-			$adminDictionaryFile = INCLUDE_PATH . 'app' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'Admin' . DIRECTORY_SEPARATOR . 'dictionary.php';
+			foreach ($options['fields'] as $f => $fOpt) {
+				if (!is_string($fOpt) and is_callable($fOpt)) {
+					$fOpt = [
+						'type' => 'custom',
+						'custom' => $fOpt,
+					];
+				} elseif (is_numeric($f)) {
+					$f = $fOpt;
+					$fOpt = [];
+				}
 
-			$dictionary = [];
-			if (file_exists($adminDictionaryFile))
-				require($adminDictionaryFile);
-
-			$this->dictionary = [];
-			foreach ($dictionary as $w => $langs) {
-				$this->dictionary[$w] = count($langs) > 0 ? ($langs['it'] ?? reset($langs)) : '';
+				$newForm->add($form[$f] ?? $f, $fOpt);
 			}
+
+			$form = $newForm;
 		}
 
-		return $this->dictionary;
-	}
-
-	/**
-	 * @param string $w
-	 * @return string
-	 */
-	public function word(string $w): string
-	{
-		if ($this->model->isLoaded('Multilang')) {
-			return $this->model->_Multilang->word('admin.' . $w);
-		} else {
-			$dictionary = $this->getDictionary();
-			return $dictionary[$w] ?? '';
-		}
+		return $form;
 	}
 }
