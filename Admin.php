@@ -464,12 +464,12 @@ class Admin extends Module
 	 * Extension of getSortingRules method, here I look at the rules for the specific column
 	 * Returns false if the column is not sortable
 	 *
-	 * @param string $field
+	 * @param string|null $field
 	 * @param string $dir
 	 * @param int $idx
 	 * @return array|null
 	 */
-	public function getSortingRulesFor(string $field, string $dir, int $idx)
+	public function getSortingRulesFor($field, string $dir, int $idx)
 	{
 		if (!$field)
 			return null;
