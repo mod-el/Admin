@@ -636,6 +636,7 @@ class Admin extends Module
 		if (isset($this->customFiltersCallbacks[$name]))
 			$this->model->error('Duplicate custom filter ' . $name);
 
+		$options['nullable'] = true;
 		$d = $this->customFiltersForm->add($name, $options);
 
 		if (isset($options['callback'])) {
