@@ -61,6 +61,7 @@ class Admin extends Module
 				'L' => true,
 			],
 			'joins' => [],
+			'required' => [],
 		], $pageOptions);
 
 		if ($this->options['element'] and !$this->options['table'])
@@ -691,6 +692,7 @@ class Admin extends Module
 	 * @param array $data
 	 * @param int $versionLock
 	 * @return int
+	 * @throws \Exception
 	 */
 	public function saveElement(array $data, int $versionLock = null): int
 	{
@@ -699,10 +701,48 @@ class Admin extends Module
 				$data[$k] = null;
 		}
 
+		foreach ($this->options['required'] as $mandatoryField) {
+			if (!$this->checkMandatoryField($mandatoryField, $data)) {
+				if (is_array($mandatoryField)) {
+					$this->model->error('Missing mandatory field (on of the following: ' . implode(',', $mandatoryField));
+				} else {
+					$this->model->error('Missing mandatory field "' . $mandatoryField . '"');
+				}
+			}
+		}
+
 		return $this->model->element->save($data, [
 			'children' => true,
 			'version' => $versionLock,
 		]);
+	}
+
+	/**
+	 * Checks (recurively in case of multiple fields) if a mandatory field was compiled
+	 *
+	 * @param string|array $field
+	 * @param array $data
+	 * @return bool
+	 */
+	private function checkMandatoryField($field, array $data): bool
+	{
+		if (is_array($field)) {
+			$atLeastOne = false;
+			foreach ($field as $subfield) {
+				if ($this->checkMandatoryField($subfield, $data)) {
+					$atLeastOne = true;
+					break;
+				}
+			}
+			return $atLeastOne;
+		} elseif (isset($data[$field]) or !$this->model->element->exists()) { // For new elements, all fields must be present. For a subsequent edit, they can be missing
+			if ($data[$field] ?? null)
+				return true;
+			else
+				return false;
+		} else {
+			return true;
+		}
 	}
 
 	/**
