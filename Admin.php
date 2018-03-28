@@ -5,7 +5,6 @@ use Model\Core\Module;
 use Model\Form\Form;
 use Model\Form\MField;
 use Model\ORM\Element;
-use Model\ORM\ElementsIterator;
 use Model\Paginator\Paginator;
 
 class Admin extends Module
@@ -108,10 +107,10 @@ class Admin extends Module
 	 * Returns the list of elements, filtered by specified options
 	 *
 	 * @param array $options
-	 * @return ElementsIterator
+	 * @return \Generator
 	 * @throws \Model\Core\Exception
 	 */
-	public function getList(array $options = []): ElementsIterator
+	public function getList(array $options = []): \Generator
 	{
 		$options = array_merge([
 			'p' => 1,
@@ -212,9 +211,7 @@ class Admin extends Module
 		];
 
 		$elementName = $this->options['element'] ?: 'Element';
-		$elements = $this->model->_ORM->all($elementName, $where, $queryOptions);
-
-		return $elements;
+		return $this->model->_ORM->all($elementName, $where, $queryOptions);
 	}
 
 	/**
