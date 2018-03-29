@@ -108,7 +108,6 @@ class Admin extends Module
 	 *
 	 * @param array $options
 	 * @return \Generator
-	 * @throws \Model\Core\Exception
 	 */
 	public function getList(array $options = []): \Generator
 	{
@@ -219,7 +218,6 @@ class Admin extends Module
 	 *
 	 * @param string $type
 	 * @return array
-	 * @throws \Model\Core\Exception
 	 */
 	public function getActions(string $type): array
 	{
@@ -276,7 +274,6 @@ class Admin extends Module
 	 * @param string $page
 	 * @param Element $el
 	 * @return bool
-	 * @throws \Model\Core\Exception
 	 */
 	public function canUser(string $what, string $page = null, Element $el = null): bool
 	{
@@ -337,7 +334,6 @@ class Admin extends Module
 	 *
 	 * @param array $f
 	 * @return bool|array
-	 * @throws \Model\Core\Exception
 	 */
 	private function getWhereFromFilter(array $f)
 	{
@@ -426,7 +422,6 @@ class Admin extends Module
 	 * @param array $sortBy
 	 * @param array $joins
 	 * @return array
-	 * @throws \Model\Core\Exception
 	 */
 	private function getSortingRules(array $sortBy, array $joins): array
 	{
@@ -627,7 +622,6 @@ class Admin extends Module
 	 * @param string $name
 	 * @param array $options
 	 * @return MField
-	 * @throws \Model\Core\Exception
 	 */
 	public function filter(string $name, array $options = []): MField
 	{
@@ -666,7 +660,6 @@ class Admin extends Module
 	 * @param string $name
 	 * @param array|string $options
 	 * @return MField
-	 * @throws \Model\Core\Exception
 	 */
 	public function field(string $name, $options = []): MField
 	{
@@ -689,7 +682,6 @@ class Admin extends Module
 	 * @param array $data
 	 * @param int $versionLock
 	 * @return int
-	 * @throws \Exception
 	 */
 	public function saveElement(array $data, int $versionLock = null): int
 	{
@@ -746,7 +738,6 @@ class Admin extends Module
 	 * Deletes the element with the specified id
 	 *
 	 * @param int $id
-	 * @throws \Model\Core\Exception
 	 */
 	public function delete(int $id)
 	{
@@ -792,7 +783,6 @@ class Admin extends Module
 	 * @param Element $el
 	 * @param array $options
 	 * @return Form
-	 * @throws \Model\Core\Exception
 	 */
 	public function getSublistRowForm(Element $el, array $options): Form
 	{
