@@ -27,6 +27,8 @@ class Admin extends Module
 	public $usedWhere = [];
 	/** @var array */
 	public $sublists = [];
+	/** @var array */
+	public $fieldsCustomizations = [];
 
 	public function init(array $options)
 	{
@@ -98,6 +100,7 @@ class Admin extends Module
 		}
 
 		$this->page->customize();
+		$this->runFormThroughAdminCustomizations($this->form);
 
 		if ($this->form)
 			$this->form->setValues($values);
@@ -210,7 +213,23 @@ class Admin extends Module
 		];
 
 		$elementName = $this->options['element'] ?: 'Element';
-		return $this->model->_ORM->all($elementName, $where, $queryOptions);
+		return $this->adminListGenerator($elementName, $where, $queryOptions);
+	}
+
+	/**
+	 * Iteratively returns a list of form-customized elements
+	 *
+	 * @param string $elementName
+	 * @param array $where
+	 * @param array $queryOptions
+	 * @return \Generator
+	 */
+	protected function adminListGenerator(string $elementName, array $where, array $queryOptions): \Generator
+	{
+		foreach ($this->model->_ORM->all($elementName, $where, $queryOptions) as $el) {
+			$this->runFormThroughAdminCustomizations($el->getForm());
+			yield $el;
+		}
 	}
 
 	/**
@@ -659,21 +678,30 @@ class Admin extends Module
 	 *
 	 * @param string $name
 	 * @param array|string $options
-	 * @return MField
 	 */
-	public function field(string $name, $options = []): MField
+	public function field(string $name, $options = [])
 	{
 		if (!is_array($options))
 			$options = ['type' => $options];
 
-		if (isset($this->form[$name])) {
-			$datum = $this->form[$name];
-			$datum->options = array_merge($datum->options, $options);
-		} else {
-			$datum = $this->form->add($name, $options);
-		}
+		$this->fieldsCustomizations[$name] = array_merge($this->fieldsCustomizations[$name] ?? [], $options);
+	}
 
-		return $datum;
+	/**
+	 * Takes a form as argument and runs it against all the customization made in the admin page
+	 *
+	 * @param Form $form
+	 */
+	public function runFormThroughAdminCustomizations(Form $form)
+	{
+		foreach ($this->fieldsCustomizations as $name => $options) {
+			if (isset($form[$name])) {
+				$datum = $form[$name];
+				$datum->options = array_merge($datum->options, $options);
+			} else {
+				$form->add($name, $options);
+			}
+		}
 	}
 
 	/**
