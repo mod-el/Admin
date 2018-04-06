@@ -100,10 +100,11 @@ class Admin extends Module
 		}
 
 		$this->page->customize();
-		$this->runFormThroughAdminCustomizations($this->form);
 
-		if ($this->form)
+		if ($this->form) {
+			$this->runFormThroughAdminCustomizations($this->form);
 			$this->form->setValues($values);
+		}
 	}
 
 	/**
