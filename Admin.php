@@ -715,8 +715,17 @@ class Admin extends Module
 	public function saveElement(array $data, int $versionLock = null): int
 	{
 		foreach ($this->model->element->getForm()->getDataset() as $k => $d) {
-			if (isset($data[$k]) and $d->options['nullable'] and $data[$k] === '')
-				$data[$k] = null;
+			if (isset($data[$k])) {
+				if ($d->options['nullable'] and $data[$k] === '')
+					$data[$k] = null;
+
+				if ($d->options['type'] === 'password') {
+					if ($data[$k])
+						$data[$k] = sha1(md5($data[$k]));
+					else
+						unset($data[$k]);
+				}
+			}
 		}
 
 		foreach ($this->options['required'] as $mandatoryField) {
