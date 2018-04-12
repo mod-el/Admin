@@ -706,15 +706,19 @@ class Admin extends Module
 	}
 
 	/**
-	 * Saves the data in the current element
+	 * Saves the data in the provided element (or in the current one if not provided)
 	 *
 	 * @param array $data
 	 * @param int $versionLock
+	 * @param Element|null $element
 	 * @return int
 	 */
-	public function saveElement(array $data, int $versionLock = null): int
+	public function saveElement(array $data, int $versionLock = null, Element $element = null): int
 	{
-		foreach ($this->model->element->getForm()->getDataset() as $k => $d) {
+		if ($element === null)
+			$element = $this->model->element;
+
+		foreach ($element->getForm()->getDataset() as $k => $d) {
 			if (isset($data[$k])) {
 				if ($d->options['nullable'] and $data[$k] === '')
 					$data[$k] = null;
@@ -738,7 +742,7 @@ class Admin extends Module
 			}
 		}
 
-		return $this->model->element->save($data, [
+		return $element->save($data, [
 			'children' => true,
 			'version' => $versionLock,
 		]);
