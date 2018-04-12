@@ -718,6 +718,14 @@ class Admin extends Module
 		if ($element === null)
 			$element = $this->model->element;
 
+		if ($element->exists())
+			$privilege = 'U';
+		else
+			$privilege = 'C';
+
+		if (!$this->canUser($privilege, null, $element))
+			$this->model->error('Can\'t save, permission denied.');
+
 		foreach ($element->getForm()->getDataset() as $k => $d) {
 			if (isset($data[$k])) {
 				if ($d->options['nullable'] and $data[$k] === '')
