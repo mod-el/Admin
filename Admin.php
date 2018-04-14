@@ -3,7 +3,7 @@
 use Model\Core\Autoloader;
 use Model\Core\Module;
 use Model\Form\Form;
-use Model\Form\MField;
+use Model\Form\Field;
 use Model\ORM\Element;
 use Model\Paginator\Paginator;
 
@@ -641,9 +641,9 @@ class Admin extends Module
 	 *
 	 * @param string $name
 	 * @param array $options
-	 * @return MField
+	 * @return Field
 	 */
-	public function filter(string $name, array $options = []): MField
+	public function filter(string $name, array $options = []): Field
 	{
 		if (isset($this->customFiltersCallbacks[$name]))
 			$this->model->error('Duplicate custom filter ' . $name);
