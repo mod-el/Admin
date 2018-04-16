@@ -308,7 +308,10 @@ class Admin extends Module
 					['user', $this->model->_User_Admin->logged()],
 					['user', null],
 				],
-			], ['order_by' => 'id DESC']);
+			], [
+				'order_by' => 'id DESC',
+				'stream' => false,
+			]);
 		}
 
 		$currentGuess = [
