@@ -94,6 +94,8 @@ class Admin extends Module
 			]);
 
 			$element = $this->model->_ORM->loadMainElement($this->options['element'] ?: 'Element', $options['id'] ?: false, ['table' => $this->options['table']]);
+			if (!$element)
+				die('Requested element does not exist');
 			$this->form = $element->getForm();
 
 			$values = $this->form->getValues();
