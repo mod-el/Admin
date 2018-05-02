@@ -3,9 +3,9 @@
 	"description": "A higly configurable Content Management System",
 	"version": "1.0.1",
 	"dependencies": {
-		"Db": ">=1.2.0",
-		"ORM": ">=1.5.2",
-		"Form": ">=1.4.2",
+		"Db": ">=1.4.0",
+		"ORM": ">=1.6.0",
+		"Form": ">=1.4.4",
 		"Paginator": ">=1.2.0"
 	},
 	"file-types": {
