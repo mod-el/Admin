@@ -119,6 +119,7 @@ class Admin extends Module
 	{
 		$options = array_merge([
 			'p' => 1,
+			'goTo' => null,
 			'perPage' => $this->options['perPage'],
 			'sortBy' => [],
 			'filters' => [],
@@ -196,6 +197,29 @@ class Admin extends Module
 			'joins' => $this->options['joins'],
 		]);
 
+		// Get the rules to apply to the query, in order to sort as requested (what joins do I need to make and what order by clause I need to use)
+		$sortingRules = $this->getSortingRules($options['sortBy'], $this->options['joins']);
+
+		// If I am asked to go to a specific element, I calculate its position in the list to pick the right page
+		if ($options['goTo'] and $options['perPage'] and $count > 0) {
+			$customList = $this->model->_Db->select_all($this->options['table'], $where, [
+				'joins' => $sortingRules['joins'],
+				'order_by' => $sortingRules['order_by'],
+			]);
+			$c_element = 0;
+			$element_found = false;
+			$tableModel = $this->model->_Db->getTable($this->options['table']);
+			foreach ($customList as $row) {
+				if ($row[$tableModel->primary] == $options['goTo']) {
+					$element_found = $c_element;
+					break;
+				}
+				$c_element++;
+			}
+			if ($element_found !== false)
+				$options['p'] = ceil($element_found / $options['perPage']);
+		}
+
 		// I pass the parameters to the paginator, so that it will calculate the total number of pages and the start limit
 		$this->paginator->setOptions([
 			'tot' => $count,
@@ -203,9 +227,6 @@ class Admin extends Module
 			'pag' => $options['p'],
 		]);
 		$limit = $options['perPage'] ? $this->paginator->getStartLimit() . ',' . $options['perPage'] : null;
-
-		// Get the rules to apply to the query, in order to sort as requested (what joins do I need to make and what order by clause I need to use)
-		$sortingRules = $this->getSortingRules($options['sortBy'], $this->options['joins']);
 
 		$queryOptions = [
 			'stream' => true,
