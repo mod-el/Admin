@@ -722,12 +722,9 @@ class Admin extends Module
 	public function runFormThroughAdminCustomizations(Form $form)
 	{
 		foreach ($this->fieldsCustomizations as $name => $options) {
-			if (isset($form[$name])) {
-				$datum = $form[$name];
-				$datum->options = array_merge($datum->options, $options);
-			} else {
-				$form->add($name, $options);
-			}
+			if (isset($form[$name]))
+				$options = array_merge($form[$name]->options, $options);
+			$form->add($name, $options);
 		}
 	}
 
