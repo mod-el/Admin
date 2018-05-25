@@ -862,7 +862,8 @@ class Admin extends Module
 		$form = $el->getForm();
 		if (isset($options['fields']) and count($options['fields']) > 0) {
 			$newForm = clone $form;
-			$newForm->clear();
+			if (!isset($options['clear-form']) or $options['clear-form'])
+				$newForm->clear();
 
 			foreach ($options['fields'] as $f => $fOpt) {
 				if (!is_string($fOpt) and is_callable($fOpt)) {
