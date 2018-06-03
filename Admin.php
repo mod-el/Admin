@@ -675,6 +675,19 @@ class Admin extends Module
 			$this->model->error('Duplicate custom filter ' . $name);
 
 		$options['nullable'] = true;
+		if (isset($options['admin-type'])) {
+			switch ($options['admin-type']) {
+				case 'empty':
+					$options['type'] = 'select';
+					$options['depending-on'] = false;
+					$options['options'] = [
+						'' => '',
+						0 => 'No',
+						1 => 'Sì',
+					];
+					break;
+			}
+		}
 		$d = $this->customFiltersForm->add($name, $options);
 
 		if (isset($options['callback'])) {
