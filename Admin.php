@@ -226,7 +226,7 @@ class Admin extends Module
 			'perPage' => $options['perPage'] ?: false,
 			'pag' => $options['p'],
 		]);
-		$limit = $options['perPage'] ? $this->paginator->getStartLimit() . ',' . $options['perPage'] : null;
+		$limit = $options['perPage'] ? $this->paginator->getStartLimit() . ',' . $options['perPage'] : false;
 
 		$queryOptions = [
 			'stream' => true,
