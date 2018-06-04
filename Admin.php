@@ -53,6 +53,10 @@ class Admin extends Module
 			'table' => null,
 			'where' => [],
 			'order_by' => false,
+			'group_by' => false,
+			'having' => [],
+			'max' => [],
+			'sum' => [],
 			'perPage' => 20,
 			'privileges' => [
 				'C' => true,
@@ -234,6 +238,10 @@ class Admin extends Module
 			'order_by' => $sortingRules['order_by'],
 			'limit' => $limit,
 			'table' => $this->options['table'],
+			'group_by' => $this->options['group_by'],
+			'having' => $this->options['having'],
+			'sum' => $this->options['sum'],
+			'max' => $this->options['max'],
 		];
 
 		$elementName = $this->options['element'] ?: 'Element';
