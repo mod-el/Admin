@@ -862,6 +862,7 @@ class Admin extends Module
 	{
 		$options = array_merge([
 			'visualizer' => 'FormList',
+			'privileges' => false,
 			'children' => $name,
 		], $options);
 
