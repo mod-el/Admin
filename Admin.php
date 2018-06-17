@@ -683,6 +683,8 @@ class Admin extends Module
 			$this->model->error('Duplicate custom filter ' . $name);
 
 		$options['nullable'] = true;
+		if (!isset($options['default']))
+			$options['default'] = null;
 		if (isset($options['admin-type'])) {
 			switch ($options['admin-type']) {
 				case 'empty':
