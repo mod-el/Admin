@@ -779,7 +779,7 @@ class Admin extends Module
 
 				if ($d->options['type'] === 'password') {
 					if ($data[$k])
-						$data[$k] = sha1(md5($data[$k]));
+						$data[$k] = $this->model->_User_Admin->crypt($data[$k]);
 					else
 						unset($data[$k]);
 				}
