@@ -169,6 +169,9 @@ class Admin extends Module
 						break;
 					case 'varchar':
 					case 'char':
+					case 'longtext':
+					case 'mediumtext':
+					case 'smalltext':
 					case 'text':
 					case 'tinytext':
 					case 'enum':
