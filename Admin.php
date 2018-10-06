@@ -356,11 +356,11 @@ class Admin extends Module
 
 		$currentGuess = [
 			'score' => 0,
-			'C' => $this->options['privileges']['C'],
-			'R' => $this->options['privileges']['R'],
-			'U' => $this->options['privileges']['U'],
-			'D' => $this->options['privileges']['D'],
-			'L' => $this->options['privileges']['L'],
+			'C' => $this->options['privileges']['C'] ?? true,
+			'R' => $this->options['privileges']['R'] ?? true,
+			'U' => $this->options['privileges']['U'] ?? true,
+			'D' => $this->options['privileges']['D'] ?? true,
+			'L' => $this->options['privileges']['L'] ?? true,
 		];
 		if (!array_key_exists($what, $currentGuess) or $what === 'score')
 			$this->model->error('Requested unknown privilege.');
