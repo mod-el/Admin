@@ -108,7 +108,8 @@ class Admin extends Module
 		$this->page->customize();
 
 		if ($this->form) {
-			$this->runFormThroughAdminCustomizations($this->form);
+			$replaceValues = $this->runFormThroughAdminCustomizations($this->form);
+			$values = array_merge($values, $replaceValues);
 			$this->form->setValues($values);
 		}
 	}
@@ -744,14 +745,20 @@ class Admin extends Module
 	 * Takes a form as argument and runs it against all the customization made in the admin page
 	 *
 	 * @param Form $form
+	 * @return array
 	 */
-	public function runFormThroughAdminCustomizations(Form $form)
+	public function runFormThroughAdminCustomizations(Form $form): array
 	{
+		$replaceValues = [];
 		foreach ($this->fieldsCustomizations as $name => $options) {
+			if (array_key_exists('default', $options))
+				$replaceValues[$name] = $options['default'];
+
 			if (isset($form[$name]))
 				$options = array_merge($form[$name]->options, $options);
 			$form->add($name, $options);
 		}
+		return $replaceValues;
 	}
 
 	/**
