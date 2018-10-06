@@ -328,9 +328,10 @@ class Admin extends Module
 	 * @param string $what
 	 * @param string $page
 	 * @param Element $el
+	 * @param string $subpage
 	 * @return bool
 	 */
-	public function canUser(string $what, string $page = null, Element $el = null): bool
+	public function canUser(string $what, string $page = null, Element $el = null, string $subpage = null): bool
 	{
 		if ($page === null)
 			$page = $this->options['page'];
@@ -340,8 +341,12 @@ class Admin extends Module
 		if ($this->privilegesCache === false) {
 			$this->privilegesCache = $this->model->_Db->select_all('admin_privileges', [
 				'or' => [
+//					['profile', TODO],
 					['user', $this->model->_User_Admin->logged()],
-					['user', null],
+					'and' => [
+						['profile', null],
+						['user', null],
+					],
 				],
 			], [
 				'order_by' => 'id DESC',
@@ -350,26 +355,41 @@ class Admin extends Module
 		}
 
 		$currentGuess = [
-			'row' => false,
+			'score' => 0,
 			'C' => $this->options['privileges']['C'],
 			'R' => $this->options['privileges']['R'],
 			'U' => $this->options['privileges']['U'],
 			'D' => $this->options['privileges']['D'],
 			'L' => $this->options['privileges']['L'],
 		];
-		if (!array_key_exists($what, $currentGuess) or $what === 'row')
+		if (!array_key_exists($what, $currentGuess) or $what === 'score')
 			$this->model->error('Requested unknown privilege.');
 
-
 		foreach ($this->privilegesCache as $p) {
-			if (
-				(($p['page'] === $page or ($p['page'] === null and $currentGuess['row']['page'] === null)) and ($currentGuess['row'] === false or ($currentGuess['row']['user'] === null and $p['user'] !== null)))
-				or ($currentGuess['row']['page'] === null and $p['page'] === $page)
-			) {
-				$currentGuess['row'] = $p;
+			$score = 1;
+
+			if ($p['user'])
+				$score += 2;
+			elseif ($p['profile'])
+				$score += 1;
+
+			if ($p['page']) {
+				if ($p['page'] !== $page)
+					continue;
+				$score++;
+
+				if ($p['subpage']) {
+					if ($p['subpage'] !== $subpage)
+						continue;
+					$score++;
+				}
+			}
+
+			if ($score > $currentGuess['score']) {
+				$currentGuess['score'] = $score;
 
 				foreach ($currentGuess as $idx => $priv) {
-					if ($idx === 'row')
+					if ($idx === 'score')
 						continue;
 					if ($p[$idx . '_special']) {
 						eval('$currentGuess[$idx] = function($el){ return ' . $p[$idx . '_special'] . '; }');
