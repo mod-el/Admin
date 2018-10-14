@@ -709,19 +709,37 @@ class Admin extends Module
 		$options['nullable'] = true;
 		if (!isset($options['default']))
 			$options['default'] = null;
-		if (isset($options['admin-type'])) {
-			switch ($options['admin-type']) {
-				case 'empty':
-					$options['type'] = 'select';
-					$options['depending-on'] = false;
-					$options['options'] = [
-						'' => '',
-						0 => 'No',
-						1 => 'Sì',
-					];
-					break;
-			}
+
+		switch ($options['admin-type'] ?? null) {
+			case 'empty':
+				$options['type'] = 'select';
+				$options['depending-on'] = false;
+				$options['options'] = [
+					'' => '',
+					0 => 'No',
+					1 => 'Sì',
+				];
+				break;
+			default:
+				$customAdminForm = clone $this->form;
+				$this->runFormThroughAdminCustomizations($customAdminForm);
+
+				if (isset($customAdminForm[$name])) {
+					switch ($customAdminForm[$name]->options['type'] ?? 'text') {
+						case 'checkbox':
+							$options['type'] = 'select';
+							$options['depending-on'] = false;
+							$options['options'] = [
+								'' => '',
+								0 => 'No',
+								1 => 'Sì',
+							];
+							break;
+					}
+				}
+				break;
 		}
+
 		$d = $this->customFiltersForm->add($name, $options);
 
 		if (isset($options['callback'])) {
