@@ -958,4 +958,25 @@ class Admin extends Module
 
 		return $form;
 	}
+
+	/**
+	 * Given an Element, returns the page that handles it (if any)
+	 * TODO: make this info be cached by Admin, and not looked up in runtime
+	 *
+	 * @param string $element
+	 * @return null|string
+	 */
+	public function getAdminPageForElement(string $element): ?string
+	{
+		$adminPages = Autoloader::getFilesByType('AdminPage');
+		foreach ($adminPages as $module => $files) {
+			foreach ($files as $name => $className) {
+				$adminPage = new $className($this->model);
+				$pageOptions = $adminPage->options();
+				if (($pageOptions['element'] ?? null) === $element)
+					return $name;
+			}
+		}
+		return null;
+	}
 }
