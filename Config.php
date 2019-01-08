@@ -4,6 +4,8 @@ use Model\Core\Module_Config;
 
 class Config extends Module_Config
 {
+	public $configurable = true;
+
 	/**
 	 * @param array $data
 	 * @return mixed
@@ -28,7 +30,17 @@ class Config extends Module_Config
 			  `L_special` VARCHAR(250) NULL,
 			  PRIMARY KEY (`id`)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;');
-		return true;
+
+		return $this->saveConfig('init', ['api-path' => 'api']);
+	}
+
+	/**
+	 * @param string $type
+	 * @return null|string
+	 */
+	public function getTemplate(string $type): ?string
+	{
+		return $type === 'config' ? 'config' : null;
 	}
 
 	/**
