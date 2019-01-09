@@ -55,8 +55,11 @@ class Admin extends Module
 			'order_by' => false,
 			'group_by' => false,
 			'having' => [],
+			'min' => [],
 			'max' => [],
 			'sum' => [],
+			'avg' => [],
+			'count' => [],
 			'perPage' => 20,
 			'privileges' => [
 				'C' => true,
@@ -244,8 +247,11 @@ class Admin extends Module
 			'table' => $this->options['table'],
 			'group_by' => $this->options['group_by'],
 			'having' => $this->options['having'],
-			'sum' => $this->options['sum'],
+			'min' => $this->options['min'],
 			'max' => $this->options['max'],
+			'sum' => $this->options['sum'],
+			'avg' => $this->options['avg'],
+			'count' => $this->options['count'],
 		];
 
 		$elementName = $this->options['element'] ?: 'Element';
