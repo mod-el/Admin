@@ -397,6 +397,9 @@ class Admin extends Module
 				foreach ($currentGuess as $idx => $priv) {
 					if ($idx === 'score')
 						continue;
+					if ($currentGuess[$idx] !== true)
+						continue;
+
 					if ($p[$idx . '_special']) {
 						eval('$currentGuess[$idx] = function($el){ return ' . $p[$idx . '_special'] . '; }');
 					} else {
@@ -407,7 +410,7 @@ class Admin extends Module
 		}
 
 		if (!is_string($currentGuess[$what]) and is_callable($currentGuess[$what])) {
-			return (bool)call_user_func($currentGuess[$what], $el);
+			return ($el and $el->exists()) ? (bool)call_user_func($currentGuess[$what], $el) : true;
 		} else {
 			return (bool)$currentGuess[$what];
 		}
