@@ -12,6 +12,9 @@ class Config extends Module_Config
 	 */
 	public function init(?array $data = null): bool
 	{
+		if (!$this->model->moduleExists('Db'))
+			return false;
+
 		$this->model->_Db->query('CREATE TABLE IF NOT EXISTS `admin_privileges` (
 			  `id` int(11) NOT NULL AUTO_INCREMENT,
 			  `page` varchar(250) COLLATE utf8_unicode_ci DEFAULT NULL,
