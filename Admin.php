@@ -1027,22 +1027,25 @@ class Admin extends Module
 	}
 
 	/**
+	 * @param string $path
 	 * @return User
 	 */
-	public function loadUserModule(): User
+	public function loadUserModule(string $path): User
 	{
 		if (!$this->model->isLoaded('User', 'Admin')) {
 			$config = $this->retrieveConfig();
 
-			$user_table = 'admin_users';
+			$user_table = null;
 			if (isset($config['url']) and is_array($config['url'])) {
 				foreach ($config['url'] as $u) {
-					if (is_array($u) and $u['path'] == $this->url) {
+					if (is_array($u) and $u['path'] == $path) {
 						$user_table = $u['table'];
 						break;
 					}
 				}
 			}
+			if (!$user_table)
+				$this->model->error('Wrong admin path');
 
 			$this->model->load('User', [
 				'table' => $user_table,

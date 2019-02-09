@@ -11,7 +11,6 @@ class AdminApiController extends Controller
 			if (($this->model->getRequest(1) ?? '') !== 'user' and !in_array($token, $_SESSION['admin-auth-tokens'] ?? []))
 				$this->model->error('Unauthorized', ['code' => 401]);
 
-			$this->model->_Admin->loadUserModule();
 			$this->model->_AdminFront->initialize($this->model->getRequest(2) ?? null, $this->model->getRequest(3) ?? null);
 		} catch (\Exception $e) {
 			$this->respond(['error' => getErr($e)], (int)$e->getCode());
@@ -33,10 +32,10 @@ class AdminApiController extends Controller
 				case 'get':
 					$adminPage = $this->model->getRequest(2) ?? null;
 					if (!$adminPage)
-						$this->model->error('No page name defined', 400);
+						$this->model->error('No page name defined', ['code' => 400]);
 					$id = $this->model->getRequest(3) ?? null;
 					if (!$id or !is_numeric($id) or $id < 1)
-						$this->model->error('Id should be a number greater than 0', 400);
+						$this->model->error('Id should be a number greater than 0', ['code' => 400]);
 
 					$arr = $this->model->_Admin->getEditArray();
 					$this->respond($arr);
@@ -50,12 +49,12 @@ class AdminApiController extends Controller
 							$this->respond([]);
 							break;
 						default:
-							$this->model->error('Unknown action', 400);
+							$this->model->error('Unknown action', ['code' => 400]);
 							break;
 					}
 					break;
 				default:
-					$this->model->error('Unknown action', 400);
+					$this->model->error('Unknown action', ['code' => 400]);
 					break;
 			}
 		} catch (\Exception $e) {
@@ -74,24 +73,31 @@ class AdminApiController extends Controller
 					$subrequest = $this->model->getRequest(2) ?? null;
 					switch ($subrequest) {
 						case 'login':
-							if ($id = $this->model->_User_Admin->login($this->model->getInput('username'), $this->model->getInput('password'))) {
-								$tokenInfo = $this->model->_User_Admin->getLoginToken();
-								$token = base64_encode(json_encode(['token' => $tokenInfo['token'], 'iv' => $tokenInfo['iv']]));
+							$path = $this->model->getInput('path');
+							$user = $this->model->_Admin->loadUserModule($path);
+
+							if ($id = $user->login($this->model->getInput('username'), $this->model->getInput('password'))) {
+								$token = $this->model->_JWT->build([
+									'path' => $path,
+									'id' => $id,
+								]);
 								$this->respond(['token' => $token]);
 							} else {
-								$this->model->error('Dati errati', 400);
+								$this->model->error('Wrong username or password', ['code' => 401]);
 							}
 							break;
 						case 'auth':
 							$token = $this->model->getInput('token');
 							if (!$token)
-								$this->model->error('Token not provided', 401);
+								$this->model->error('Token not provided', ['code' => 401]);
 
-							$decodedToken = json_decode(base64_decode($token), true);
-							if (!$decodedToken)
-								$this->model->error('Invalid auth token', 401);
+							try {
+								$decodedToken = $this->model->_JWT->verify($token);
+							} catch (\Exception $e) {
+								$decodedToken = null;
+							}
 
-							if ($this->model->_User_Admin->tokenLogin($decodedToken)) {
+							if ($decodedToken and isset($decodedToken['id'], $decodedToken['path'])) {
 								if (!isset($_SESSION['admin-auth-tokens']))
 									$_SESSION['admin-auth-tokens'] = [];
 								if (!in_array($token, $_SESSION['admin-auth-tokens']))
@@ -102,17 +108,16 @@ class AdminApiController extends Controller
 									'username' => $this->model->_User_Admin->get($usernameColumn),
 								]);
 							} else {
-								setcookie('admin-user', '', 0, $this->model->_AdminFront->getUrlPrefix());
-								$this->model->error('Invalid auth token', 401);
+								$this->model->error('Invalid auth token', ['code' => 401]);
 							}
 							break;
 						default:
-							$this->model->error('Unknown action', 400);
+							$this->model->error('Unknown action', ['code' => 400]);
 							break;
 					}
 					break;
 				default:
-					$this->model->error('Unknown action', 400);
+					$this->model->error('Unknown action', ['code' => 400]);
 					break;
 			}
 		} catch (\Exception $e) {
