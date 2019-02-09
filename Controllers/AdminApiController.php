@@ -40,19 +40,6 @@ class AdminApiController extends Controller
 					$arr = $this->model->_Admin->getEditArray();
 					$this->respond($arr);
 					break;
-				case 'user':
-					$subrequest = $this->model->getRequest(2) ?? null;
-					switch ($subrequest) {
-						case 'logout':
-							$this->model->_User_Admin->logout();
-							setcookie('admin-user', '', 0, $this->model->_AdminFront->getUrlPrefix());
-							$this->respond([]);
-							break;
-						default:
-							$this->model->error('Unknown action', ['code' => 400]);
-							break;
-					}
-					break;
 				default:
 					$this->model->error('Unknown action', ['code' => 400]);
 					break;
