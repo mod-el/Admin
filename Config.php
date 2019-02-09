@@ -38,6 +38,20 @@ class Config extends Module_Config
 	}
 
 	/**
+	 *
+	 */
+	protected function assetsList()
+	{
+		$this->addAsset('data', 'cache.php', function () {
+			$arr = [
+				'rules' => [],
+				'macro' => [],
+			];
+			return "<?php\n\$cache = " . var_export($arr, true) . ";\n";
+		});
+	}
+
+	/**
 	 * @param string $type
 	 * @return null|string
 	 */
