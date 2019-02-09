@@ -7,6 +7,7 @@ use Model\Form\Field;
 use Model\ORM\Element;
 use Model\Paginator\Paginator;
 use Model\User\User;
+use Model\Core\Globals;
 
 class Admin extends Module
 {
@@ -1056,5 +1057,76 @@ class Admin extends Module
 		}
 
 		return $this->model->_User_Admin;
+	}
+
+	/**
+	 * Retrieves the array of pages
+	 *
+	 * @param string $path
+	 * @return array
+	 */
+	public function getPages(string $path): array
+	{
+		$config = $this->retrieveConfig();
+
+		$pages = [];
+
+		if (isset($config['url']) and is_array($config['url'])) {
+			foreach ($config['url'] as $u) {
+				if (is_array($u) and $u['path'] == $path) {
+					$pages = $u['pages'];
+					break;
+				}
+			}
+		}
+
+		if (isset(Globals::$data['adminAdditionalPages'])) {
+			foreach (Globals::$data['adminAdditionalPages'] as $p) {
+				$pages[] = array_merge([
+					'name' => '',
+					'rule' => '',
+					'page' => null,
+					'visualizer' => 'Table',
+					'mobile-visualizer' => 'Table',
+					'direct' => null,
+					'hidden' => false,
+					'sub' => [],
+				], $p);
+			}
+		}
+
+		$usersAdminPage = 'AdminUsers';
+		if (isset($config['url']) and is_array($config['url'])) {
+			foreach ($config['url'] as $u) {
+				if (is_array($u) and $u['path'] == $path and ($u['admin-page'] ?? '')) {
+					$usersAdminPage = $u['admin-page'];
+					break;
+				}
+			}
+		}
+
+		$pages[] = [
+			'name' => 'Users',
+			'page' => $usersAdminPage,
+			'rule' => 'admin-users',
+			'visualizer' => 'Table',
+			'mobile-visualizer' => 'Table',
+			'direct' => null,
+			'hidden' => false,
+			'sub' => [
+				[
+					'name' => 'Privileges',
+					'page' => 'AdminPrivileges',
+					'rule' => 'admin-privileges',
+					'visualizer' => 'FormList',
+					'mobile-visualizer' => 'FormList',
+					'direct' => null,
+					'hidden' => false,
+					'sub' => [],
+				],
+			],
+		];
+
+		return $pages;
 	}
 }
