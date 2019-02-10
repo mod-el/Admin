@@ -7,14 +7,28 @@ class AdminApiController extends Controller
 {
 	/** @var array */
 	private $token = null;
+	/** @var array */
+	private $request = [];
 
+	/**
+	 *
+	 */
 	public function init()
 	{
-		if ($this->model->getRequest(1) !== 'user' or $this->model->getRequest(2) !== 'login') {
+		$config = $this->model->_Admin->retrieveConfig();
+		$this->loadRequest($config['api-path'] ?? 'admin-api');
+
+		if ($this->request[0] !== 'user' or $this->request[1] !== 'login') {
 			$auth = new Auth($this->model);
 			$this->token = $auth->getToken();
 			if (!$this->token)
 				$this->model->error('Invalid auth token', ['code' => 401]);
+
+			$this->model->_Admin->setPath($this->token['path']);
+
+			$user = $this->model->_Admin->loadUserModule();
+			if ($user->logged() != $this->token['id'])
+				$user->directLogin($this->token['id'], false);
 		}
 	}
 
@@ -23,21 +37,18 @@ class AdminApiController extends Controller
 	 */
 	public function get()
 	{
-		$request = $this->model->getRequest(1) ?? '';
+		$request = $this->request[0] ?? '';
 		try {
 			switch ($request) {
 				case 'user':
-					$subrequest = $this->model->getRequest(2) ?? null;
+					$subrequest = $this->request[1] ?? null;
 					switch ($subrequest) {
 						case 'auth':
 							// Token was already loaded in the "init" method
-							$user = $this->model->_Admin->loadUserModule($this->token['path']);
-
-							$user->directLogin($this->token['id'], false);
-							$usernameColumn = $user->getUsernameColumn();
+							$usernameColumn = $this->model->_User_Admin->getUsernameColumn();
 							$this->respond([
 								'id' => $this->token['id'],
-								'username' => $user->get($usernameColumn),
+								'username' => $this->model->_User_Admin->get($usernameColumn),
 							]);
 							break;
 						default:
@@ -50,16 +61,34 @@ class AdminApiController extends Controller
 					$cleanPages = $this->cleanPages($pages);
 					$this->respond($cleanPages);
 					break;
-				case 'get':
-					$adminPage = $this->model->getRequest(2) ?? null;
+				case 'page':
+					$adminPage = $this->request[1] ?? null;
 					if (!$adminPage)
 						$this->model->error('No page name defined', ['code' => 400]);
-					$id = $this->model->getRequest(3) ?? null;
-					if (!$id or !is_numeric($id) or $id < 1)
+
+					$action = $this->request[2] ?? null;
+					if (!$adminPage)
+						$this->model->error('No action defined', ['code' => 400]);
+
+					$id = $this->request[3] ?? null;
+					if ($id !== null and (!is_numeric($id) or $id <= 0))
 						$this->model->error('Id should be a number greater than 0', ['code' => 400]);
 
-					$arr = $this->model->_Admin->getEditArray();
-					$this->respond($arr);
+					$this->model->_Admin->init([
+						'path' => $this->token['path'],
+						'rule' => $adminPage,
+						'id' => $id,
+					]);
+
+					switch ($action) {
+						case 'data':
+							$arr = $this->model->_Admin->getEditArray();
+							$this->respond($arr);
+							break;
+						default:
+							$this->model->error('Unrecognized action', ['code' => 400]);
+							break;
+					}
 					break;
 				default:
 					$this->model->error('Unknown action', ['code' => 400]);
@@ -77,11 +106,11 @@ class AdminApiController extends Controller
 	 */
 	public function post()
 	{
-		$request = $this->model->getRequest(1) ?? '';
+		$request = $this->request[0] ?? '';
 		try {
 			switch ($request) {
 				case 'user':
-					$subrequest = $this->model->getRequest(2) ?? null;
+					$subrequest = $this->request[1] ?? null;
 					switch ($subrequest) {
 						case 'login':
 							$path = $this->model->getInput('path');
@@ -148,5 +177,17 @@ class AdminApiController extends Controller
 			];
 		}
 		return $cleanPages;
+	}
+
+	/**
+	 * @param string $path
+	 */
+	private function loadRequest(string $path)
+	{
+		$mainRequest = implode('/', $this->model->getRequest());
+		$request = substr($mainRequest, strlen($path));
+		if ($request{0} === '/')
+			$request = substr($request, 1);
+		$this->request = explode('/', $request);
 	}
 }

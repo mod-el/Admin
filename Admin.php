@@ -13,6 +13,8 @@ class Admin extends Module
 {
 	/** @var AdminPage */
 	public $page = null;
+	/** @var string */
+	private $path = null;
 	/** @var array */
 	public $options = [];
 	/** @var Paginator */
@@ -35,12 +37,27 @@ class Admin extends Module
 	public function init(array $options)
 	{
 		$options = array_merge([
+			'path' => null,
 			'page' => null,
+			'rule' => null,
 			'id' => null,
 		], $options);
 
-		if (!$options['page'])
-			return;
+		if ($options['path'] !== null)
+			$this->path = $options['path'];
+
+		if (!$options['page']) {
+			if ($options['rule']) {
+				$pages = $this->getPages($options['path']);
+				$rule = $this->seekForRule($pages, $options['rule']);
+				if (!$rule or !$rule['page'])
+					return;
+				$options['page'] = $rule['page'];
+			}
+
+			if (!$options['page'])
+				return;
+		}
 
 		$className = Autoloader::searchFile('AdminPage', $options['page']);
 		if (!$className)
@@ -117,6 +134,21 @@ class Admin extends Module
 			$values = array_merge($values, $replaceValues);
 			$this->form->setValues($values);
 		}
+	}
+
+	/**
+	 * @param string $path
+	 */
+	public function setPath(string $path)
+	{
+		$this->path = $path;
+	}
+
+	/**
+	 */
+	public function getPath(): string
+	{
+		return $this->path;
 	}
 
 	/**
@@ -1028,12 +1060,15 @@ class Admin extends Module
 	}
 
 	/**
-	 * @param string $path
+	 * @param string|null $path
 	 * @return User
 	 */
-	public function loadUserModule(string $path): User
+	public function loadUserModule(?string $path = null): User
 	{
 		if (!$this->model->isLoaded('User', 'Admin')) {
+			if ($path === null)
+				$path = $this->path;
+
 			$config = $this->retrieveConfig();
 
 			$user_table = null;
@@ -1062,11 +1097,14 @@ class Admin extends Module
 	/**
 	 * Retrieves the array of pages
 	 *
-	 * @param string $path
+	 * @param string|null $path
 	 * @return array
 	 */
-	public function getPages(string $path): array
+	public function getPages(?string $path = null): array
 	{
+		if ($path === null)
+			$path = $this->path;
+
 		$config = $this->retrieveConfig();
 
 		$pages = [];
@@ -1128,5 +1166,26 @@ class Admin extends Module
 		];
 
 		return $pages;
+	}
+
+	/**
+	 * Recursively looks for the rule corresponding to a given request, in the pages and sub-pages
+	 *
+	 * @param array $pages
+	 * @param string $request
+	 * @return array|null
+	 */
+	public function seekForRule(array $pages, string $request): ?array
+	{
+		foreach ($pages as $p) {
+			if (isset($p['rule']) and $p['rule'] === $request)
+				return $p;
+			if (isset($p['sub'])) {
+				$rule = $this->seekForRule($p['sub'], $request);
+				if ($rule)
+					return $rule;
+			}
+		}
+		return null;
 	}
 }

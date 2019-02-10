@@ -138,9 +138,6 @@ $config = ' . var_export($config, true) . ';
 			if (isset($p['controller']) and !isset($p['rule']))
 				$p['rule'] = str_replace(' ', '-', strtolower($p['name']));
 
-			if (in_array($p['rule'] ?? '', ['login', 'logout', 'sw.js']))
-				$this->model->error('"' . $p['rule'] . '" is a reserved admin path, you cannot assign that rule to a page');
-
 			if (isset($p['sub']))
 				$p['sub'] = $this->parsePages($p['sub']);
 		}
