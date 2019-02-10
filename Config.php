@@ -152,7 +152,9 @@ $config = ' . var_export($config, true) . ';
 	public function retrieveConfig(): array
 	{
 		$config = parent::retrieveConfig();
-		if (!isset($config['url'])) { // Transition from the old version (where pages where managed by AdminFront) to the current one
+
+		// Transition from the old version (where pages where managed by AdminFront) to the current one
+		if (!isset($config['url'])) {
 			$adminFrontClass = new \Model\AdminFront\Config($this->model);
 			$adminFrontConfig = $adminFrontClass->retrieveConfig();
 			if (isset($adminFrontConfig['url'])) {
@@ -161,6 +163,11 @@ $config = ' . var_export($config, true) . ';
 				parent::saveConfig('config', $config);
 				$adminFrontClass->saveConfig('config', $adminFrontConfig);
 			}
+		}
+
+		if (!isset($config['api-path'])) {
+			$config['api-path'] = 'admin-api';
+			parent::saveConfig('config', $config);
 		}
 
 		return $config;
