@@ -243,7 +243,7 @@ $config = ' . var_export($config, true) . ';
 
 		$ret = [
 			'rules' => [
-				'api' => $config['api-path'],
+				'api' => $config['api-path'] ?? 'admin-api',
 			],
 			'controllers' => [
 				'AdminApi',
