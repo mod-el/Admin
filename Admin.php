@@ -1,5 +1,6 @@
 <?php namespace Model\Admin;
 
+use Model\AdminFront\DataVisualizer;
 use Model\Core\Autoloader;
 use Model\Core\Module;
 use Model\Form\Form;
@@ -13,10 +14,12 @@ class Admin extends Module
 {
 	/** @var AdminPage */
 	public $page = null;
+	/** @var array */
+	public $pageRule = null;
 	/** @var string */
 	private $path = null;
 	/** @var array */
-	public $options = [];
+	private $options = null;
 	/** @var Paginator */
 	public $paginator;
 	/** @var Form */
@@ -34,7 +37,7 @@ class Admin extends Module
 	/** @var array */
 	public $fieldsCustomizations = [];
 
-	public function init(array $options)
+	/*public function init(array $options)
 	{
 		$options = array_merge([
 			'path' => null,
@@ -134,7 +137,7 @@ class Admin extends Module
 			$values = array_merge($values, $replaceValues);
 			$this->form->setValues($values);
 		}
-	}
+	}*/
 
 	/**
 	 * @param string $path
@@ -149,6 +152,187 @@ class Admin extends Module
 	public function getPath(): string
 	{
 		return $this->path;
+	}
+
+	/**
+	 * @param string $rule
+	 */
+	public function setPage(string $rule)
+	{
+		$pages = $this->getPages($this->path);
+		$rule = $this->seekForRule($pages, $rule);
+		if (!$rule or !$rule['page'])
+			return;
+
+		$className = Autoloader::searchFile('AdminPage', $rule['page']);
+		if (!$className)
+			$this->model->error('Admin Page class not found');
+
+		$this->page = new $className($this->model);
+		$this->pageRule = $rule;
+	}
+
+	private function getPageOptions(): array
+	{
+		$options = $this->page->options();
+
+		if ($this->options === null) {
+			$this->options = array_merge_recursive_distinct([ // TODO: da rivedere
+				'element' => null,
+				'table' => null,
+				'where' => [],
+				'order_by' => false,
+				'group_by' => false,
+				'having' => [],
+				'min' => [],
+				'max' => [],
+				'sum' => [],
+				'avg' => [],
+				'count' => [],
+				'perPage' => 20,
+				'privileges' => [
+					'C' => true,
+					'R' => true,
+					'U' => true,
+					'D' => true,
+					'L' => true,
+				],
+				'joins' => [],
+				'required' => [],
+			], $options);
+
+			if ($this->options['element'] and !$this->options['table'])
+				$this->options['table'] = $this->model->_ORM->getTableFor($this->options['element']);
+
+			if ($this->options['table']) {
+				if ($this->options['order_by'] === false) {
+					$tableModel = $this->model->_Db->getTable($this->options['table']);
+					$this->options['order_by'] = $tableModel->primary . ' DESC';
+
+					if ($this->options['element']) {
+						$elementData = $this->model->_ORM->getElementData($this->options['element']);
+						if ($elementData and $elementData['order_by']) {
+							$this->options['order_by'] = [];
+							foreach ($elementData['order_by']['depending_on'] as $field)
+								$this->options['order_by'][] = $field . ' ASC';
+							$this->options['order_by'][] = $elementData['order_by']['field'] . ' ASC';
+
+							$this->options['order_by'] = implode(',', $this->options['order_by']);
+						}
+					}
+				}
+			}
+		}
+
+		return $this->options;
+	}
+
+	/**
+	 * Returns current page details for the APIs
+	 *
+	 * @return array
+	 */
+	public function getPageDetails(): array
+	{
+		$options = $this->getPageOptions();
+		$visualizerOptions = $this->page->visualizerOptions();
+
+		$finalOptions = [
+			'type' => $this->pageRule['visualizer'],
+		];
+
+		if ($this->pageRule['visualizer'] and $this->pageRule['visualizer'] !== 'Custom') {
+			$visualizer = $this->getVisualizer();
+
+			$finalOptions = array_merge(
+				$finalOptions,
+				$visualizer->elaboratePageDetails($options, $visualizerOptions, $this->getFieldsList())
+			);
+		} else {
+
+		}
+		switch ($this->pageRule['visualizer']) {
+			case 'Table':
+				if (isset($visualizerOptions['columns'])) {
+
+					unset($visualizerOptions['columns']);
+				}
+				break;
+			case 'FormList':
+				if (isset($visualizerOptions['fields'])) {
+					// TODO: elaborate
+					unset($visualizerOptions['fields']);
+				}
+				break;
+		}
+
+		$finalOptions['visualizer-options'] = $visualizerOptions;
+
+		return $finalOptions;
+	}
+
+	/**
+	 * @param string|null $visualizer
+	 * @return DataVisualizer|null
+	 */
+	private function getVisualizer(string $visualizer = null): ?DataVisualizer
+	{
+		if ($visualizer === null)
+			$visualizer = $this->pageRule['visualizer'] ?? null;
+		if ($visualizer === null)
+			return null;
+
+		$className = Autoloader::searchFile('DataVisualizer', $visualizer);
+		if (!$className)
+			return null;
+
+		return new $className($this->model);
+	}
+
+	/**
+	 * Automatic field  extraction
+	 *
+	 * @param array $options
+	 * @return array
+	 */
+	public function getFieldsList(array $options = null): array
+	{
+		if ($options === null)
+			$options = $this->options;
+
+		$fields = [];
+
+		$tableModel = $this->model->_Db->getTable($options['table']);
+		$excludeColumns = array_merge([
+			'zk_deleted',
+		], ($options['exclude'] ?? []));
+
+		if ($options['element']) {
+			$elementData = $this->model->_ORM->getElementData($options['element']);
+			if ($elementData and $elementData['order_by'])
+				$excludeColumns[] = $elementData['order_by']['field'];
+		}
+
+		foreach ($tableModel->columns as $k => $col) {
+			if (in_array($k, $excludeColumns))
+				continue;
+
+			$fields[] = $k;
+		}
+
+		if ($this->model->isLoaded('Multilang') and array_key_exists($options['table'], $this->model->_Multilang->tables)) {
+			$mlTableOptions = $this->model->_Multilang->tables[$options['table']];
+			$mlTable = $options['table'] . $mlTableOptions['suffix'];
+			$mlTableModel = $this->model->_Db->getTable($mlTable);
+			foreach ($mlTableModel->columns as $k => $col) {
+				if ($k === $mlTableModel->primary or isset($fields[$k]) or $k === $mlTableOptions['keyfield'] or $k === $mlTableOptions['lang'] or in_array($k, $excludeColumns))
+					continue;
+
+				$fields[] = $k;
+			}
+		}
+
+		return $fields;
 	}
 
 	/**
@@ -672,7 +856,7 @@ class Admin extends Module
 	/**
 	 * Returns an array to use in the "edit" section
 	 */
-	public function getEditArray(): array
+	public function getElementData(): array
 	{
 		$element = $this->model->_ORM->element;
 

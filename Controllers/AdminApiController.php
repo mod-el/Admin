@@ -66,24 +66,22 @@ class AdminApiController extends Controller
 					if (!$adminPage)
 						$this->model->error('No page name defined', ['code' => 400]);
 
+					$this->model->_Admin->setPage($adminPage);
+
 					$action = $this->request[2] ?? null;
-					if (!$adminPage)
-						$this->model->error('No action defined', ['code' => 400]);
 
 					$id = $this->request[3] ?? null;
 					if ($id !== null and (!is_numeric($id) or $id <= 0))
 						$this->model->error('Id should be a number greater than 0', ['code' => 400]);
 
-					$this->model->_Admin->init([
-						'path' => $this->token['path'],
-						'rule' => $adminPage,
-						'id' => $id,
-					]);
-
 					switch ($action) {
 						case 'data':
-							$arr = $this->model->_Admin->getEditArray();
-							$this->respond($arr);
+							$response = $this->model->_Admin->getElementData();
+							$this->respond($response);
+							break;
+						case null:
+							$response = $this->model->_Admin->getPageDetails();
+							$this->respond($response);
 							break;
 						default:
 							$this->model->error('Unrecognized action', ['code' => 400]);
