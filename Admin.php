@@ -172,6 +172,9 @@ class Admin extends Module
 		$this->pageRule = $rule;
 	}
 
+	/**
+	 * @return array
+	 */
 	private function getPageOptions(): array
 	{
 		$options = $this->page->options();
@@ -199,6 +202,8 @@ class Admin extends Module
 				],
 				'joins' => [],
 				'required' => [],
+				'columns' => [],
+				'fields' => [],
 			], $options);
 
 			if ($this->options['element'] and !$this->options['table'])
@@ -237,56 +242,108 @@ class Admin extends Module
 		$options = $this->getPageOptions();
 		$visualizerOptions = $this->page->visualizerOptions();
 
-		$finalOptions = [
-			'type' => $this->pageRule['visualizer'],
-		];
-
-		if ($this->pageRule['visualizer'] and $this->pageRule['visualizer'] !== 'Custom') {
-			$visualizer = $this->getVisualizer();
-
-			$finalOptions = array_merge(
-				$finalOptions,
-				$visualizer->elaboratePageDetails($options, $visualizerOptions, $this->getFieldsList())
-			);
-		} else {
-
-		}
 		switch ($this->pageRule['visualizer']) {
 			case 'Table':
 				if (isset($visualizerOptions['columns'])) {
-
+					$options['columns'] = array_merge_recursive_distinct($options['columns'], $visualizerOptions['columns']);
 					unset($visualizerOptions['columns']);
 				}
 				break;
 			case 'FormList':
 				if (isset($visualizerOptions['fields'])) {
-					// TODO: elaborate
+					$options['fields'] = array_merge_recursive_distinct($options['fields'], $visualizerOptions['fields']);
 					unset($visualizerOptions['fields']);
 				}
 				break;
 		}
 
-		$finalOptions['visualizer-options'] = $visualizerOptions;
+		$pageDetails = [
+			'type' => $this->pageRule['visualizer'],
+			'visualizer-options' => $visualizerOptions,
+		];
 
-		return $finalOptions;
+		if ($this->pageRule['visualizer'] and $this->pageRule['visualizer'] !== 'Custom') {
+			$dummy = $this->getDummy();
+			$fields = $this->getAllFieldsList();
+
+			/* COLUMNS */
+
+			if (isset($options['columns'])) {
+				$defaultColumns = $options['columns'];
+				$allColumns = $options['columns'];
+
+				foreach ($fields as $field => $fieldOptions) {
+					if (!isset($allColumns[$field]) and !in_array($field, $allColumns))
+						$allColumns[] = $field;
+				}
+			} else {
+				$defaultColumns = array_keys($fields);
+				$allColumns = array_keys($fields);
+			}
+
+			$columns = $this->elaborateColumns($allColumns, $options['table']);
+			$defaultColumns = array_keys($this->elaborateColumns($defaultColumns, $options['table']));
+
+			$finalColumns = [];
+			foreach ($columns as $idx => $column) {
+				$finalColumns[$idx] = [
+					'label' => $column['label'],
+					'editable' => $column['editable'],
+					'sortable' => $column['sortable'],
+				];
+			}
+
+			$pageDetails['fields'] = $finalColumns;
+			$pageDetails['default-fields'] = $defaultColumns;
+
+			/* FILTERS */
+
+			$filtersForm = clone $dummy->getForm();
+			$defaultFilters = $options['filters'] ?? [];
+
+			foreach ($defaultFilters as $field => $filterOptions)
+				$filtersForm->add($field, $filterOptions);
+
+			$pageDetails['filters'] = [];
+			foreach ($filtersForm->getDataset() as $field => $filter) {
+				$filter = $this->convertFieldToFilter($filter);
+				$pageDetails['filters'][$field] = $this->convertFieldToArrayDescription($filter);
+			}
+
+			$pageDetails['default-filters'] = [
+				'primary' => [
+					'zk-all' => ['type' => '='],
+				],
+				'secondary' => [],
+			];
+
+			foreach ($defaultFilters as $defaultFilter => $defaultFilterOptions) {
+				$position = $defaultFilterOptions['position'] ?? 'secondary';
+				$filterType = $defaultFilterOptions['filter-type'] ?? '=';
+
+				$pageDetails['default-filters'][$position][$defaultFilter] = [
+					'type' => $filterType,
+				];
+			}
+		}
+
+		$pageDetails['js'] = [];
+		$pageDetails['css'] = [];
+		$pageDetails['cache'] = $options['cache'] ?? true;
+
+		return $pageDetails;
 	}
 
 	/**
-	 * @param string|null $visualizer
-	 * @return DataVisualizer|null
+	 * @param array|null $options
+	 * @return Element
 	 */
-	private function getVisualizer(string $visualizer = null): ?DataVisualizer
+	public function getDummy(array $options = null): Element
 	{
-		if ($visualizer === null)
-			$visualizer = $this->pageRule['visualizer'] ?? null;
-		if ($visualizer === null)
-			return null;
+		if ($options === null)
+			$options = $this->options;
 
-		$className = Autoloader::searchFile('DataVisualizer', $visualizer);
-		if (!$className)
-			return null;
-
-		return new $className($this->model);
+		return $this->model->_ORM->create($options['element'] ?: 'Element', ['table' => $options['table']]);
 	}
 
 	/**
@@ -295,7 +352,7 @@ class Admin extends Module
 	 * @param array $options
 	 * @return array
 	 */
-	public function getFieldsList(array $options = null): array
+	public function getAllFieldsList(array $options = null): array
 	{
 		if ($options === null)
 			$options = $this->options;
@@ -317,7 +374,7 @@ class Admin extends Module
 			if (in_array($k, $excludeColumns))
 				continue;
 
-			$fields[] = $k;
+			$fields[$k] = $col;
 		}
 
 		if ($this->model->isLoaded('Multilang') and array_key_exists($options['table'], $this->model->_Multilang->tables)) {
@@ -328,11 +385,176 @@ class Admin extends Module
 				if ($k === $mlTableModel->primary or isset($fields[$k]) or $k === $mlTableOptions['keyfield'] or $k === $mlTableOptions['lang'] or in_array($k, $excludeColumns))
 					continue;
 
-				$fields[] = $k;
+				$fields[$k] = $col;
 			}
 		}
 
 		return $fields;
+	}
+
+	/**
+	 * @param array $columns
+	 * @param string|null $table
+	 * @return array
+	 */
+	private function elaborateColumns(array $columns, ?string $table): array
+	{
+		$tableModel = $table ? $this->model->_Db->getTable($table) : false;
+
+		$new_columns = []; // I loop through the columns to standardize the format
+		foreach ($columns as $k => $column) {
+			/*
+			 * ACCEPTED FORMATS: *
+			 * 'field'
+			 * * A single string, will be used as column id, label and as field name
+			 * 'label'=>function(){}
+			 * * The key is both column id and label, the callback will be used as "display" value
+			 * 'label'=>'campo'
+			 * * The key is both column id and label, the value is the db field to use
+			 * 'label'=>array()
+			 * * The key is the column id, in the array there will be the remaining options (if a label is not provided, the column is will be used)
+			*/
+			if (is_numeric($k)) {
+				if (is_array($column)) {
+					if (isset($column['display']) and (is_string($column['display']) or is_numeric($column['display'])))
+						$k = $column['display'];
+					elseif (isset($k['field']) and (is_string($column['field']) or is_numeric($column['field'])))
+						$k = $column['field'];
+				} else {
+					if (is_string($column) or is_numeric($column))
+						$k = $column;
+				}
+				$k = str_replace('"', '', $this->makeLabel($k));
+			}
+
+			if (!is_array($column)) {
+				if (is_string($column) or is_numeric($column)) {
+					$column = array(
+						'field' => $column,
+						'display' => $column,
+					);
+				} elseif (is_callable($column)) {
+					$column = array(
+						'field' => false,
+						'display' => $column,
+					);
+				} else {
+					$this->model->error('Unknown column format with label "' . entities($k) . '"');
+				}
+			}
+
+			if (!isset($column['field']) and !isset($column['display']))
+				$column['field'] = $k;
+
+			$column = array_merge([
+				'label' => $k,
+				'field' => false,
+				'display' => false,
+				'empty' => '',
+				'editable' => false,
+				'clickable' => true,
+				'print' => true,
+				'total' => false,
+				'price' => false,
+			], $column);
+
+			if (is_string($column['display']) and !$column['field'] and $column['display'])
+				$column['field'] = $column['display'];
+			if ($column['field'] === false and $tableModel and array_key_exists($k, $tableModel->columns))
+				$column['field'] = $k;
+			if (is_string($column['field']) and $column['field'] and !$column['display'])
+				$column['display'] = $column['field'];
+
+			$k = $this->standardizeLabel($k);
+			if ($k == '') {
+				if ($column['field'])
+					$k = $column['field'];
+				if (!$k)
+					$this->model->error('Can\'t assign id to column with label "' . entities($column['label']) . '"');
+			}
+
+			$column['sortable'] = $this->getSortingRulesFor($this->getFieldNameFromColumn($column), 'ASC', 0) ? true : false;
+			$new_columns[$k] = $column;
+		}
+
+		return $new_columns;
+	}
+
+	/**
+	 * Removes all unnecessary characters of a label to generate a column id
+	 *
+	 * @param string $k
+	 * @return string
+	 */
+	private function standardizeLabel(string $k): string
+	{
+		return preg_replace('/[^a-z0-9]/i', '', entities(strtolower($k)));
+	}
+
+	/**
+	 * Converts a field name in a human-readable label
+	 *
+	 * @param string $k
+	 * @return string
+	 */
+	private function makeLabel(string $k): string
+	{
+		return ucwords(str_replace(array('-', '_'), ' ', $k));
+	}
+
+	/**
+	 * @param array $column
+	 * @return string|null
+	 */
+	private function getFieldNameFromColumn(array $column)
+	{
+		if ($column['display'] and is_string($column['display'])) {
+			return $column['display'];
+		} elseif ($column['field'] and is_string($column['field'])) {
+			return $column['field'];
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * @param Field $field
+	 * @return Field
+	 */
+	private function convertFieldToFilter(Field $field): Field
+	{
+		switch ($field->options['type']) {
+			case 'checkbox':
+				$field->options['type'] = 'select';
+				$field->options['options'] = [
+					'' => '',
+					0 => 'No',
+					1 => 'Sì',
+				];
+				break;
+		}
+
+		return $field;
+	}
+
+	/**
+	 * @param Field $field
+	 * @return array
+	 */
+	private function convertFieldToArrayDescription(Field $field): array
+	{
+		$response = [
+			'type' => $field->options['type'],
+		];
+
+		switch ($field->options['type']) {
+			case 'select':
+				$field->loadSelectOptions();
+				$response['options'] = $field->options['options'];
+				break;
+		}
+
+		return $response;
 	}
 
 	/**
