@@ -242,6 +242,7 @@ class Admin extends Module
 		$options = $this->getPageOptions();
 		$visualizerOptions = $this->page->visualizerOptions();
 
+		// Backward compatibility
 		switch ($this->pageRule['visualizer']) {
 			case 'Table':
 				if (isset($visualizerOptions['columns'])) {
@@ -327,8 +328,18 @@ class Admin extends Module
 			}
 		}
 
-		$pageDetails['js'] = [];
-		$pageDetails['css'] = [];
+		$pageDetails['js'] = array_map(function ($path) {
+			if (strtolower(substr($path, 0, 4)) === 'http')
+				return $path;
+			else
+				return PATH . $path;
+		}, $options['js'] ?? []);
+		$pageDetails['css'] = array_map(function ($path) {
+			if (strtolower(substr($path, 0, 4)) === 'http')
+				return $path;
+			else
+				return PATH . $path;
+		}, $options['css'] ?? []);
 		$pageDetails['cache'] = $options['cache'] ?? true;
 
 		return $pageDetails;

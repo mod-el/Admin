@@ -75,12 +75,12 @@ class AdminApiController extends Controller
 						$this->model->error('Id should be a number greater than 0', ['code' => 400]);
 
 					switch ($action) {
-						case 'data':
-							$response = $this->model->_Admin->getElementData();
-							$this->respond($response);
-							break;
 						case null:
 							$response = $this->model->_Admin->getPageDetails();
+							$this->respond($response);
+							break;
+						case 'data':
+							$response = $this->model->_Admin->getElementData();
 							$this->respond($response);
 							break;
 						default:
