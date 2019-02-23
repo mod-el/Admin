@@ -63,12 +63,21 @@ class AdminApiController extends Controller
 					break;
 				case 'page':
 					$adminPage = $this->request[1] ?? null;
-					if (!$adminPage)
-						$this->model->error('No page name defined', ['code' => 400]);
+					$action = $this->request[2] ?? null;
+
+					if (!$adminPage) {
+						if ($action === null) { // Dashboard
+							$this->respond([
+								'type' => 'Custom',
+								'js' => [],
+								'css' => [],
+							]);
+						} else {
+							$this->model->error('No page name defined', ['code' => 400]);
+						}
+					}
 
 					$this->model->_Admin->setPage($adminPage);
-
-					$action = $this->request[2] ?? null;
 
 					$id = $this->request[3] ?? null;
 					if ($id !== null and (!is_numeric($id) or $id <= 0))

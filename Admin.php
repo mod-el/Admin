@@ -302,29 +302,50 @@ class Admin extends Module
 			$filtersForm = clone $dummy->getForm();
 			$defaultFilters = $options['filters'] ?? [];
 
-			foreach ($defaultFilters as $field => $filterOptions)
-				$filtersForm->add($field, $filterOptions);
+			foreach ($defaultFilters as $filter) {
+				if (!isset($filter['field']))
+					continue;
 
-			$pageDetails['filters'] = [];
-			foreach ($filtersForm->getDataset() as $field => $filter) {
+				$field = $filter['field'];
+				unset($filter['field']);
+
+				$filtersForm->add($field, $filter);
+			}
+
+			$pageDetails['filters'] = [
+				'zk-all' => [
+					'type' => 'text',
+					'label' => 'Ricerca generale',
+				],
+			];
+			foreach ($filtersForm->getDataset() as $filter) {
 				$filter = $this->convertFieldToFilter($filter);
-				$pageDetails['filters'][$field] = $this->convertFieldToArrayDescription($filter);
+				$pageDetails['filters'][$filter->options['name']] = $this->convertFieldToArrayDescription($filter);
 			}
 
 			$pageDetails['default-filters'] = [
 				'primary' => [
-					'zk-all' => ['type' => '='],
+					[
+						'filter' => 'zk-all',
+						'type' => '=',
+					],
 				],
 				'secondary' => [],
 			];
 
-			foreach ($defaultFilters as $defaultFilter => $defaultFilterOptions) {
-				$position = $defaultFilterOptions['position'] ?? 'secondary';
-				$filterType = $defaultFilterOptions['filter-type'] ?? '=';
+			if ($options['wipe-filters'] ?? false)
+				$pageDetails['default-filters']['primary'] = [];
 
-				$pageDetails['default-filters'][$position][$defaultFilter] = [
-					'type' => $filterType,
-				];
+			if ($defaultFilters) {
+				foreach ($defaultFilters as $defaultFilterOptions) {
+					$position = $defaultFilterOptions['position'] ?? 'secondary';
+					$filterType = $defaultFilterOptions['filter-type'] ?? '=';
+
+					$pageDetails['default-filters'][$position][] = [
+						'filter' => $defaultFilterOptions['field'],
+						'type' => $filterType,
+					];
+				}
 			}
 		}
 
@@ -556,6 +577,7 @@ class Admin extends Module
 	{
 		$response = [
 			'type' => $field->options['type'],
+			'label' => $field->getLabel(),
 		];
 
 		switch ($field->options['type']) {
