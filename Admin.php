@@ -591,6 +591,85 @@ class Admin extends Module
 	}
 
 	/**
+	 * Builds the query from the provided search string and filters
+	 *
+	 * @param string $search
+	 * @param array $filters
+	 * @param array|null $searchFields
+	 * @return array|null
+	 */
+	public function makeSearchQuery(string $search = '', array $filters = [], array $searchFields = []): ?array
+	{
+		$options = $this->getPageOptions();
+
+		$where = $options['where'];
+
+		$search = trim($search);
+		if ($search) {
+			$tableModel = $this->model->_Db->getTable($options['table']);
+			$columns = $tableModel->columns;
+
+			if ($this->model->isLoaded('Multilang') and array_key_exists($options['table'], $this->model->_Multilang->tables)) {
+				$mlTableOptions = $this->model->_Multilang->tables[$options['table']];
+				$mlTable = $options['table'] . $mlTableOptions['suffix'];
+				$mlTableModel = $this->model->_Db->getTable($mlTable);
+				foreach ($mlTableModel->columns as $k => $col) {
+					if (isset($columns[$k]) or $k == $mlTableOptions['keyfield'] or $k == $mlTableOptions['lang'])
+						continue;
+					$columns[$k] = $col;
+				}
+			}
+
+			$arr = [];
+			foreach ($columns as $k => $col) {
+				if ($tableModel->primary === $k or $col['foreign_key'] or ($searchFields and !in_array($k, $searchFields)))
+					continue;
+
+				switch ($col['type']) {
+					case 'tinyint':
+					case 'smallint':
+					case 'int':
+					case 'mediumint':
+					case 'bigint':
+						if (is_numeric($search))
+							$arr[] = [$k, '=', $search];
+						break;
+					case 'decimal':
+						if (is_numeric($search))
+							$arr[] = [$k, 'LIKE', $search . '.%'];
+						break;
+					case 'varchar':
+					case 'char':
+					case 'longtext':
+					case 'mediumtext':
+					case 'smalltext':
+					case 'text':
+					case 'tinytext':
+					case 'enum':
+						$arr[] = [$k, 'REGEXP', '(^|[^a-z0-9])' . preg_quote($search)];
+						break;
+				}
+			}
+
+			if (count($searchFields)>0 and count($arr)===0) { // If specific columns are provided and no criteria matched, then it's impossible
+				return null;
+			} else {
+				$where = array_merge($where, [
+					['sub' => $arr, 'operator' => 'OR'],
+				]);
+			}
+		}
+
+		foreach ($filters as $filter) {
+			$f_where = $this->getWhereFromFilter($filter);
+			if ($f_where !== null)
+				$where = array_merge($where, $f_where);
+		}
+
+		return $where;
+	}
+
+	/**
 	 * Returns the list of elements, filtered by specified options
 	 *
 	 * @param array $options
@@ -892,84 +971,76 @@ class Admin extends Module
 	/**
 	 * Given a input filter, returns a "where" array usable for Db module
 	 *
-	 * @param array $f
-	 * @return bool|array
+	 * @param array $filter
+	 * @return array|null
 	 */
-	private function getWhereFromFilter(array $f)
+	private function getWhereFromFilter(array $filter): ?array
 	{
-		if (!is_array($f) or count($f) < 2 or count($f) > 3)
-			return false;
+		if (!is_array($filter) or count($filter) !== 3 or !isset($filter['filter'], $filter['type'], $filter['value']))
+			return null;
 
-		$k = $f[0];
+		$k = $filter['filter'];
 
-		if (isset($this->customFiltersCallbacks[$k])) {
-			if (count($f) != 2)
-				return false;
-			if (!is_callable($this->customFiltersCallbacks[$k]))
-				$this->model->error('Wrong callback format for filter ' . $k);
-
-			return call_user_func($this->customFiltersCallbacks[$k], $f[1]);
-		} else {
-			if (count($f) != 3 and (count($f) != 4 or $f[1] !== 'range'))
-				return false;
-
-			switch ($f[1]) {
-				case '=':
-				case '<':
-				case '<=':
-				case '>':
-				case '>=':
-					return [$f];
-					break;
-				case '<>':
-				case '!=':
-					return [
-						[
-							'sub' => [
-								[$k, '!=', $f[2]],
-								[$k, '=', null],
-							],
-							'operator' => 'OR',
+		switch ($filter['type']) {
+			case '=':
+			case '<':
+			case '<=':
+			case '>':
+			case '>=':
+				return [
+					[
+						$k,
+						$filter['type'],
+						$filter['value'],
+					],
+				];
+				break;
+			case '<>':
+			case '!=':
+				return [
+					[
+						'sub' => [
+							[$k, '!=', $filter['value']],
+							[$k, '=', null],
 						],
-					];
-					break;
-				case 'contains':
-					return [
-						[$k, 'LIKE', '%' . $f[2] . '%'],
-					];
-					break;
-				case 'starts':
-					return [
-						[$k, 'LIKE', $f[2] . '%'],
-					];
-					break;
-				case 'empty':
-					switch ($f[2]) {
-						case 0:
-							return [
-								[$k, '!=', null],
-								[$k, '!=', ''],
-							];
-							break;
-						case 1:
-							return [
-								[
-									'sub' => [
-										[$k, ''],
-										[$k, null],
-									],
-									'operator' => 'OR',
+						'operator' => 'OR',
+					],
+				];
+				break;
+			case 'contains':
+				return [
+					[$k, 'LIKE', '%' . $filter['value'] . '%'],
+				];
+				break;
+			case 'starts':
+				return [
+					[$k, 'LIKE', $filter['value'] . '%'],
+				];
+				break;
+			case 'empty':
+				switch ($filter['value']) {
+					case 0:
+						return [
+							[$k, '!=', null],
+							[$k, '!=', ''],
+						];
+						break;
+					case 1:
+						return [
+							[
+								'sub' => [
+									[$k, ''],
+									[$k, null],
 								],
-							];
-							break;
-					}
-					break;
-				case 'range':
-					return [
-						[$k, 'BETWEEN', $f[2], $f[3]],
-					];
-					break;
-			}
+								'operator' => 'OR',
+							],
+						];
+						break;
+				}
+				break;
+			default:
+				$this->model->error('Unrecognized filter type');
+				break;
 		}
 
 		return [];

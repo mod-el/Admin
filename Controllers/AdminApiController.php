@@ -138,6 +138,47 @@ class AdminApiController extends Controller
 							break;
 					}
 					break;
+				case 'page':
+					$adminPage = $this->request[1] ?? null;
+					$action = $this->request[2] ?? null;
+
+					if (!$adminPage) {
+						if ($action === null) { // Dashboard
+							$this->respond([
+								'type' => 'Custom',
+								'js' => [],
+								'css' => [],
+							]);
+						} else {
+							$this->model->error('No page name defined', ['code' => 400]);
+						}
+					}
+
+					$this->model->_Admin->setPage($adminPage);
+
+					$id = $this->request[3] ?? null;
+					if ($id !== null and (!is_numeric($id) or $id <= 0))
+						$this->model->error('Id should be a number greater than 0', ['code' => 400]);
+
+					switch ($action) {
+						case 'search':
+							$where = $this->model->_Admin->makeSearchQuery(
+								$input['search'] ?? '',
+								$input['filters'] ?? [],
+								$input['search-fields'] ?? []
+							);
+
+							$token = $where !== null ? $this->model->_JWT->build($where) : null;
+
+							$this->respond([
+								'search-token' => $token,
+							]);
+							break;
+						default:
+							$this->model->error('Unrecognized action', ['code' => 400]);
+							break;
+					}
+					break;
 				default:
 					$this->model->error('Unknown action', ['code' => 400]);
 					break;
