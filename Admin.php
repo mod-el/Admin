@@ -1019,7 +1019,7 @@ class Admin extends Module
 					[$k, 'LIKE', '%' . $filter['value'] . '%'],
 				];
 				break;
-			case 'starts':
+			case 'begins':
 				return [
 					[$k, 'LIKE', $filter['value'] . '%'],
 				];
@@ -1036,8 +1036,8 @@ class Admin extends Module
 						return [
 							[
 								'sub' => [
-									[$k, ''],
-									[$k, null],
+									[$k, '=', ''],
+									[$k, '=', null],
 								],
 								'operator' => 'OR',
 							],

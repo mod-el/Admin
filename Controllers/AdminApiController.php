@@ -113,6 +113,8 @@ class AdminApiController extends Controller
 	 */
 	public function post()
 	{
+		$input = $this->getInput();
+
 		$request = $this->request[0] ?? '';
 		try {
 			switch ($request) {
@@ -120,10 +122,10 @@ class AdminApiController extends Controller
 					$subrequest = $this->request[1] ?? null;
 					switch ($subrequest) {
 						case 'login':
-							$path = $this->model->getInput('path');
+							$path = $input['path'];
 							$user = $this->model->_Admin->loadUserModule($path);
 
-							if ($id = $user->login($this->model->getInput('username'), $this->model->getInput('password'), false)) {
+							if ($id = $user->login($input['username'], $input['password'], false)) {
 								$token = $this->model->_JWT->build([
 									'path' => $path,
 									'id' => $id,
@@ -188,6 +190,24 @@ class AdminApiController extends Controller
 		} catch (\Error $e) {
 			$this->respond(['error' => $e->getMessage() . ' in file ' . $e->getFile() . ' at line ' . $e->getLine()], 500);
 		}
+	}
+
+	/**
+	 * Returns API request
+	 *
+	 * @return array|null
+	 */
+	private function getInput(): ?array
+	{
+		$body = file_get_contents('php://input');
+		if (empty($body))
+			return null;
+
+		$body = json_decode($body, true);
+		if ($body === null)
+			$this->respond(['error' => 'Invalid request syntax'], 400);
+
+		return $body;
 	}
 
 	/**
