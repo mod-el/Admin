@@ -556,6 +556,10 @@ class Admin extends Module
 	private function convertFieldToFilter(Field $field): Field
 	{
 		switch ($field->options['type']) {
+			case 'textarea':
+			case 'ckeditor':
+				$field->options['type'] = 'text';
+				break;
 			case 'checkbox':
 				$field->options['type'] = 'select';
 				$field->options['options'] = [
@@ -586,6 +590,9 @@ class Admin extends Module
 				$response['options'] = $field->options['options'];
 				break;
 		}
+
+		if ($field->options['default'])
+			$response['default'] = $field->options['default'];
 
 		return $response;
 	}
@@ -651,7 +658,7 @@ class Admin extends Module
 				}
 			}
 
-			if (count($searchFields)>0 and count($arr)===0) { // If specific columns are provided and no criteria matched, then it's impossible
+			if (count($searchFields) > 0 and count($arr) === 0) { // If specific columns are provided and no criteria matched, then it's impossible
 				return null;
 			} else {
 				$where = array_merge($where, [
