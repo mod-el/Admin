@@ -587,7 +587,15 @@ class Admin extends Module
 		switch ($field->options['type']) {
 			case 'select':
 				$field->loadSelectOptions();
-				$response['options'] = $field->options['options'];
+				$response['options'] = [];
+				foreach ($field->options['options'] as $k => $v) {
+					if ($k === '')
+						continue;
+					$response['options'][] = [
+						'id' => $k,
+						'text' => $v,
+					];
+				}
 				break;
 		}
 
