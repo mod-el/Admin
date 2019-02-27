@@ -1,6 +1,5 @@
 <?php namespace Model\Admin;
 
-use Model\AdminFront\DataVisualizer;
 use Model\Core\Autoloader;
 use Model\Core\Module;
 use Model\Form\Form;
@@ -20,8 +19,6 @@ class Admin extends Module
 	private $path = null;
 	/** @var array */
 	private $options = null;
-	/** @var Paginator */
-	public $paginator;
 	/** @var Form */
 	public $customFiltersForm;
 	/** @var array */
@@ -30,8 +27,6 @@ class Admin extends Module
 	public $form;
 	/** @var array|bool */
 	protected $privilegesCache = false;
-	/** @var array */
-	public $usedWhere = [];
 	/** @var array */
 	public $sublists = [];
 	/** @var array */
@@ -114,8 +109,6 @@ class Admin extends Module
 					}
 				}
 			}
-
-			$this->paginator = new Paginator();
 
 			$this->customFiltersForm = new Form([
 				'table' => $this->options['table'],
@@ -227,6 +220,20 @@ class Admin extends Module
 					}
 				}
 			}
+
+			// Backward compatibility
+			$visualizerOptions = $this->page->visualizerOptions();
+
+			switch ($this->pageRule['visualizer']) {
+				case 'Table':
+					if (isset($visualizerOptions['columns']))
+						$options['columns'] = array_merge_recursive_distinct($options['columns'], $visualizerOptions['columns']);
+					break;
+				case 'FormList':
+					if (isset($visualizerOptions['fields']))
+						$options['fields'] = array_merge_recursive_distinct($options['fields'], $visualizerOptions['fields']);
+					break;
+			}
 		}
 
 		return $this->options;
@@ -245,16 +252,12 @@ class Admin extends Module
 		// Backward compatibility
 		switch ($this->pageRule['visualizer']) {
 			case 'Table':
-				if (isset($visualizerOptions['columns'])) {
-					$options['columns'] = array_merge_recursive_distinct($options['columns'], $visualizerOptions['columns']);
+				if (isset($visualizerOptions['columns']))
 					unset($visualizerOptions['columns']);
-				}
 				break;
 			case 'FormList':
-				if (isset($visualizerOptions['fields'])) {
-					$options['fields'] = array_merge_recursive_distinct($options['fields'], $visualizerOptions['fields']);
+				if (isset($visualizerOptions['fields']))
 					unset($visualizerOptions['fields']);
-				}
 				break;
 		}
 
@@ -264,41 +267,23 @@ class Admin extends Module
 		];
 
 		if ($this->pageRule['visualizer'] and $this->pageRule['visualizer'] !== 'Custom') {
-			$dummy = $this->getDummy();
-			$fields = $this->getAllFieldsList();
+			$fields = $this->getColumnsList();
 
-			/* COLUMNS */
-
-			if (isset($options['columns'])) {
-				$defaultColumns = $options['columns'];
-				$allColumns = $options['columns'];
-
-				foreach ($fields as $field => $fieldOptions) {
-					if (!isset($allColumns[$field]) and !in_array($field, $allColumns))
-						$allColumns[] = $field;
-				}
-			} else {
-				$defaultColumns = array_keys($fields);
-				$allColumns = array_keys($fields);
-			}
-
-			$columns = $this->elaborateColumns($allColumns, $options['table']);
-			$defaultColumns = array_keys($this->elaborateColumns($defaultColumns, $options['table']));
-
-			$finalColumns = [];
-			foreach ($columns as $idx => $column) {
-				$finalColumns[$idx] = [
+			$columns = [];
+			foreach ($fields['fields'] as $idx => $column) {
+				$columns[$idx] = [
 					'label' => $column['label'],
 					'editable' => $column['editable'],
 					'sortable' => $column['sortable'],
 				];
 			}
 
-			$pageDetails['fields'] = $finalColumns;
-			$pageDetails['default-fields'] = $defaultColumns;
+			$pageDetails['fields'] = $columns;
+			$pageDetails['default-fields'] = $fields['default'];
 
 			/* FILTERS */
 
+			$dummy = $this->getDummy();
 			$filtersForm = clone $dummy->getForm();
 			$defaultFilters = $options['filters'] ?? [];
 
@@ -364,6 +349,36 @@ class Admin extends Module
 		$pageDetails['cache'] = $options['cache'] ?? true;
 
 		return $pageDetails;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getColumnsList(): array
+	{
+		$options = $this->getPageOptions();
+		$fields = $this->getAllFieldsList();
+
+		if (count($options['columns'] ?? []) > 0) {
+			$defaultColumns = $options['columns'];
+			$allColumns = $options['columns'];
+
+			foreach ($fields as $field => $fieldOptions) {
+				if (!isset($allColumns[$field]) and !in_array($field, $allColumns))
+					$allColumns[] = $field;
+			}
+		} else {
+			$defaultColumns = array_keys($fields);
+			$allColumns = array_keys($fields);
+		}
+
+		$columns = $this->elaborateColumns($allColumns, $options['table']);
+		$defaultColumns = array_keys($this->elaborateColumns($defaultColumns, $options['table']));
+
+		return [
+			'fields' => $columns,
+			'default' => $defaultColumns,
+		];
 	}
 
 	/**
@@ -510,6 +525,49 @@ class Admin extends Module
 		}
 
 		return $new_columns;
+	}
+
+	/**
+	 * Returns text and value to be shown by the visualizer, for the given column of the given element
+	 *
+	 * @param Element $el
+	 * @param array $column
+	 * @return array
+	 */
+	public function getElementColumn(Element $el, array $column): array
+	{
+		$c = [
+			'value' => null,
+			'text' => '',
+		];
+
+		if (!is_string($column['display'])) {
+			if (is_callable($column['display'])) {
+				$c['text'] = call_user_func($column['display'], $el);
+			} else {
+				$this->model->error('Unknown display format in a column - either string or callable is expected');
+			}
+		} else {
+			$form = $el->getForm();
+
+			if (isset($form[$column['display']])) {
+				$d = $form[$column['display']];
+//				$c['text'] = $d->getText(array_merge($config, ['preview' => true]));
+				$c['text'] = $d->getText(['preview' => true]);
+			} else {
+				$c['text'] = $el[$column['display']];
+			}
+
+			if (strlen($c['text']) > 150)
+				$c['text'] = textCutOff($c['text'], 150);
+
+			$c['text'] = entities($c['text']);
+		}
+
+		if ($column['field'])
+			$c['value'] = $el[$column['field']];
+
+		return $c;
 	}
 
 	/**
@@ -688,87 +746,19 @@ class Admin extends Module
 	 * Returns the list of elements, filtered by specified options
 	 *
 	 * @param array $options
-	 * @return \Generator
+	 * @return array
 	 */
-	public function getList(array $options = []): \Generator
+	public function getList(array $options = []): array
 	{
 		$options = array_merge([
+			'where' => [],
 			'p' => 1,
 			'goTo' => null,
 			'perPage' => $this->options['perPage'],
 			'sortBy' => [],
-			'filters' => [],
-			'search-columns' => false,
-			'html' => false,
 		], $options);
 
-		// Create the filters array
-		$where = $this->options['where'];
-
-		$this->customFiltersCallbacks['all'] = function ($v) use ($options) { // "all" is a special filter, that searches in all string columns
-			$tableModel = $this->model->_Db->getTable($this->options['table']);
-			$columns = $tableModel->columns;
-
-			if ($this->model->isLoaded('Multilang') and array_key_exists($this->options['table'], $this->model->_Multilang->tables)) {
-				$mlTableOptions = $this->model->_Multilang->tables[$this->options['table']];
-				$mlTable = $this->options['table'] . $mlTableOptions['suffix'];
-				$mlTableModel = $this->model->_Db->getTable($mlTable);
-				foreach ($mlTableModel->columns as $k => $col) {
-					if (isset($columns[$k]) or $k == $mlTableOptions['keyfield'] or $k == $mlTableOptions['lang'])
-						continue;
-					$columns[$k] = $col;
-				}
-			}
-
-			$arr = [];
-			foreach ($columns as $k => $col) {
-				if ($tableModel->primary === $k or $col['foreign_key'] or ($options['search-columns'] and !in_array($k, $options['search-columns'])))
-					continue;
-
-				switch ($col['type']) {
-					case 'tinyint':
-					case 'smallint':
-					case 'int':
-					case 'mediumint':
-					case 'bigint':
-						if (is_numeric($v))
-							$arr[] = [$k, '=', $v];
-						break;
-					case 'decimal':
-						if (is_numeric($v))
-							$arr[] = [$k, 'LIKE', $v . '.%'];
-						break;
-					case 'varchar':
-					case 'char':
-					case 'longtext':
-					case 'mediumtext':
-					case 'smalltext':
-					case 'text':
-					case 'tinytext':
-					case 'enum':
-						$arr[] = [$k, 'REGEXP', '(^|[^a-z0-9])' . preg_quote($v)];
-						break;
-				}
-			}
-
-			if ($options['search-columns'] and empty($arr)) { // If specific columns are provided and no criteria matched, then it's impossible, I return a never-matching query
-				return [
-					'1=2',
-				];
-			} else {
-				return [
-					['sub' => $arr, 'operator' => 'OR'],
-				];
-			}
-		};
-
-		foreach ($options['filters'] as $f) {
-			$f_where = $this->getWhereFromFilter($f);
-			if ($f_where)
-				$where = array_merge($where, $f_where);
-		}
-
-		$this->usedWhere = $where;
+		$where = $options['where'];
 
 		// Count how many total elements there are
 		$count = $this->model->_Db->count($this->options['table'], $where, [
@@ -799,12 +789,13 @@ class Admin extends Module
 		}
 
 		// I pass the parameters to the paginator, so that it will calculate the total number of pages and the start limit
-		$this->paginator->setOptions([
+		$paginator = new Paginator();
+		$paginator->setOptions([
 			'tot' => $count,
 			'perPage' => $options['perPage'] ?: false,
 			'pag' => $options['p'],
 		]);
-		$limit = $options['perPage'] ? $this->paginator->getStartLimit() . ',' . $options['perPage'] : false;
+		$limit = $options['perPage'] ? $paginator->getStartLimit() . ',' . $options['perPage'] : false;
 
 		$queryOptions = [
 			'stream' => true,
@@ -822,7 +813,12 @@ class Admin extends Module
 		];
 
 		$elementName = $this->options['element'] ?: 'Element';
-		return $this->adminListGenerator($elementName, $where, $queryOptions);
+		return [
+			'count' => $count,
+			'pages' => $paginator->tot,
+			'page' => $paginator->pag,
+			'list' => $this->adminListGenerator($elementName, $where, $queryOptions),
+		];
 	}
 
 	/**
@@ -907,7 +903,7 @@ class Admin extends Module
 	public function canUser(string $what, string $page = null, Element $el = null, string $subpage = null): bool
 	{
 		if ($page === null)
-			$page = $this->options['page'];
+			$page = $this->pageRule['page'];
 		if ($el === null)
 			$el = $this->model->element;
 

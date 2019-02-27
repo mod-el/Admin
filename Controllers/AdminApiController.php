@@ -170,11 +170,57 @@ class AdminApiController extends Controller
 								$input['search-fields'] ?? []
 							);
 
-							$token = $where !== null ? $this->model->_JWT->build($where) : null;
+							$options = [
+								'where' => $where,
+							];
+							if (isset($input['page']))
+								$options['p'] = $input['page'];
+							if (isset($input['go-to']))
+								$options['goTo'] = $input['go-to'];
+							if (isset($input['per-page']))
+								$options['perPage'] = $input['per-page'];
+//							if (isset($input['sort-by'])) // TODO
 
-							$this->respond([
-								'search-token' => $token,
-							]);
+							$list = $this->model->_Admin->getList($options);
+
+							$response = [
+								'count' => $list['count'],
+								'pages' => $list['pages'],
+								'current' => $list['page'],
+								'list' => [],
+							];
+
+							foreach ($list['list'] as $element) {
+								$element_array = [
+									'id' => $element[$element->settings['primary']],
+									'permissions' => [
+										'R' => $this->model->_Admin->canUser('R', null, $element),
+										'U' => $this->model->_Admin->canUser('U', null, $element),
+										'D' => $this->model->_Admin->canUser('D', null, $element),
+									],
+									'data' => [],
+								];
+
+								$fields = $this->model->_Admin->getColumnsList();
+
+								if (count($input['fields'] ?? []) > 0) {
+									$fieldsList = $input['fields'];
+								} else {
+									$fieldsList = $fields['default'];
+								}
+
+								foreach ($fieldsList as $idx) {
+									if (!isset($fields['fields'][$idx]))
+										$this->model->error('"' . $idx . '" field not existing');
+
+									$column = $fields['fields'][$idx];
+									$element_array['data'][$idx] = $this->model->_Admin->getElementColumn($element, $column);
+								}
+
+								$response['list'][] = $element_array;
+							}
+
+							$this->respond($response);
 							break;
 						default:
 							$this->model->error('Unrecognized action', ['code' => 400]);
