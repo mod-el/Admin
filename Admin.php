@@ -227,11 +227,11 @@ class Admin extends Module
 			switch ($this->pageRule['visualizer']) {
 				case 'Table':
 					if (isset($visualizerOptions['columns']))
-						$options['columns'] = array_merge_recursive_distinct($options['columns'], $visualizerOptions['columns']);
+						$options['columns'] = array_merge_recursive_distinct($options['columns'] ?? [], $visualizerOptions['columns']);
 					break;
 				case 'FormList':
 					if (isset($visualizerOptions['fields']))
-						$options['fields'] = array_merge_recursive_distinct($options['fields'], $visualizerOptions['fields']);
+						$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['fields']);
 					break;
 			}
 		}
