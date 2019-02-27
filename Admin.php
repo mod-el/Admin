@@ -814,7 +814,7 @@ class Admin extends Module
 
 		$elementName = $this->options['element'] ?: 'Element';
 		return [
-			'count' => $count,
+			'tot' => $count,
 			'pages' => $paginator->tot,
 			'page' => $paginator->pag,
 			'list' => $this->adminListGenerator($elementName, $where, $queryOptions),

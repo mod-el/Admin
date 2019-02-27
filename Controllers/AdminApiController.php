@@ -184,7 +184,7 @@ class AdminApiController extends Controller
 							$list = $this->model->_Admin->getList($options);
 
 							$response = [
-								'count' => $list['count'],
+								'tot' => $list['tot'],
 								'pages' => $list['pages'],
 								'current' => $list['page'],
 								'list' => [],
