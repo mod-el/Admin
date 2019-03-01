@@ -332,6 +332,17 @@ class Admin extends Module
 					];
 				}
 			}
+
+			$pageDetails['custom-order'] = false;
+			if ($options['element']) {
+				$elementData = $this->model->_ORM->getElementData($options['element']);
+				if ($elementData and $elementData['order_by'] and $elementData['order_by']['custom']) {
+					$pageDetails['custom-order'] = [
+						'field' => $elementData['order_by']['field'],
+						'depending_on' => $elementData['order_by']['depending_on'],
+					];
+				}
+			}
 		}
 
 		$pageDetails['js'] = array_map(function ($path) {
@@ -560,10 +571,9 @@ class Admin extends Module
 
 			if (strlen($c['text']) > 150)
 				$c['text'] = textCutOff($c['text'], 150);
-
-			$c['text'] = entities($c['text']);
 		}
 
+		$c['text'] = (string)$c['text'];
 		if ($column['field'])
 			$c['value'] = $el[$column['field']];
 
@@ -758,25 +768,27 @@ class Admin extends Module
 			'sortBy' => [],
 		], $options);
 
+		$pageOptions = $this->getPageOptions();
+
 		$where = $options['where'];
 
 		// Count how many total elements there are
-		$count = $this->model->_Db->count($this->options['table'], $where, [
-			'joins' => $this->options['joins'],
+		$count = $this->model->_Db->count($pageOptions['table'], $where, [
+			'joins' => $pageOptions['joins'],
 		]);
 
 		// Get the rules to apply to the query, in order to sort as requested (what joins do I need to make and what order by clause I need to use)
-		$sortingRules = $this->getSortingRules($options['sortBy'], $this->options['joins']);
+		$sortingRules = $this->getSortingRules($options['sortBy'], $pageOptions['joins']);
 
 		// If I am asked to go to a specific element, I calculate its position in the list to pick the right page
 		if ($options['goTo'] and $options['perPage'] and $count > 0) {
-			$customList = $this->model->_Db->select_all($this->options['table'], $where, [
+			$customList = $this->model->_Db->select_all($pageOptions['table'], $where, [
 				'joins' => $sortingRules['joins'],
 				'order_by' => $sortingRules['order_by'],
 			]);
 			$c_element = 0;
 			$element_found = false;
-			$tableModel = $this->model->_Db->getTable($this->options['table']);
+			$tableModel = $this->model->_Db->getTable($pageOptions['table']);
 			foreach ($customList as $row) {
 				if ($row[$tableModel->primary] == $options['goTo']) {
 					$element_found = $c_element;
@@ -802,21 +814,29 @@ class Admin extends Module
 			'joins' => $sortingRules['joins'],
 			'order_by' => $sortingRules['order_by'],
 			'limit' => $limit,
-			'table' => $this->options['table'],
-			'group_by' => $this->options['group_by'],
-			'having' => $this->options['having'],
-			'min' => $this->options['min'],
-			'max' => $this->options['max'],
-			'sum' => $this->options['sum'],
-			'avg' => $this->options['avg'],
-			'count' => $this->options['count'],
+			'table' => $pageOptions['table'],
+			'group_by' => $pageOptions['group_by'],
+			'having' => $pageOptions['having'],
+			'min' => $pageOptions['min'],
+			'max' => $pageOptions['max'],
+			'sum' => $pageOptions['sum'],
+			'avg' => $pageOptions['avg'],
+			'count' => $pageOptions['count'],
 		];
 
-		$elementName = $this->options['element'] ?: 'Element';
+		$customOrder = null;
+		if ($pageOptions['element']) {
+			$elementData = $this->model->_ORM->getElementData($pageOptions['element']);
+			if ($elementData and $elementData['order_by'] and $elementData['order_by']['custom'])
+				$customOrder = $elementData['order_by']['field'];
+		}
+
+		$elementName = $pageOptions['element'] ?: 'Element';
 		return [
 			'tot' => $count,
 			'pages' => $paginator->tot,
 			'page' => $paginator->pag,
+			'custom-order' => $customOrder,
 			'list' => $this->adminListGenerator($elementName, $where, $queryOptions),
 		];
 	}
@@ -832,7 +852,7 @@ class Admin extends Module
 	protected function adminListGenerator(string $elementName, array $where, array $queryOptions): \Generator
 	{
 		foreach ($this->model->_ORM->all($elementName, $where, $queryOptions) as $el) {
-			$this->runFormThroughAdminCustomizations($el->getForm());
+			$this->runFormThroughAdminCustomizations($el->getForm()); // TODO: serve ancora?
 			yield $el;
 		}
 	}

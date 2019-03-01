@@ -199,7 +199,11 @@ class AdminApiController extends Controller
 										'D' => $this->model->_Admin->canUser('D', null, $element),
 									],
 									'data' => [],
+									'order-idx' => null,
 								];
+
+								if ($list['custom-order'])
+									$element_array['order-idx'] = $element[$list['custom-order']];
 
 								$fields = $this->model->_Admin->getColumnsList();
 
