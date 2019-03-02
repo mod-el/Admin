@@ -371,16 +371,18 @@ class Admin extends Module
 		$options = $this->getPageOptions();
 		$fields = $this->getAllFieldsList();
 
-		if (count($options['columns'] ?? []) > 0 and ($options['wipe-columns'] ?? true)) {
-			$defaultColumns = $options['columns'];
+		$defaultColumns = array_keys($fields);
+		if (count($options['columns'] ?? []) > 0) {
 			$allColumns = $options['columns'];
 
 			foreach ($fields as $field => $fieldOptions) {
 				if (!isset($allColumns[$field]) and !in_array($field, $allColumns))
 					$allColumns[] = $field;
 			}
+
+			if ($options['wipe-columns'] ?? true)
+				$defaultColumns = $options['columns'];
 		} else {
-			$defaultColumns = array_keys($fields);
 			$allColumns = array_keys($fields);
 		}
 
@@ -483,7 +485,6 @@ class Admin extends Module
 					if (is_string($column) or is_numeric($column))
 						$k = $column;
 				}
-				$k = str_replace('"', '', $this->makeLabel($k));
 			}
 
 			if (!is_array($column)) {
@@ -498,7 +499,7 @@ class Admin extends Module
 						'display' => $column,
 					);
 				} else {
-					$this->model->error('Unknown column format with label "' . entities($k) . '"');
+					$this->model->error('Unknown column format "' . entities($k) . '"');
 				}
 			}
 
@@ -506,7 +507,7 @@ class Admin extends Module
 				$column['field'] = $k;
 
 			$column = array_merge([
-				'label' => $k,
+				'label' => str_replace('"', '', $this->makeLabel($k)),
 				'field' => false,
 				'display' => false,
 				'empty' => '',
