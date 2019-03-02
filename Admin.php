@@ -275,6 +275,7 @@ class Admin extends Module
 					'label' => $column['label'],
 					'editable' => $column['editable'],
 					'sortable' => $column['sortable'],
+					'price' => $column['price'],
 				];
 			}
 
@@ -370,7 +371,7 @@ class Admin extends Module
 		$options = $this->getPageOptions();
 		$fields = $this->getAllFieldsList();
 
-		if (count($options['columns'] ?? []) > 0) {
+		if (count($options['columns'] ?? []) > 0 and ($options['wipe-columns'] ?? true)) {
 			$defaultColumns = $options['columns'];
 			$allColumns = $options['columns'];
 
