@@ -525,7 +525,7 @@ class Admin extends Module
 			if (is_string($column['field']) and $column['field'] and !$column['display'])
 				$column['display'] = $column['field'];
 
-			$k = $this->standardizeLabel($k);
+			$k = $this->fromLabelToColumnId($k);
 			if ($k == '') {
 				if ($column['field'])
 					$k = $column['field'];
@@ -533,7 +533,7 @@ class Admin extends Module
 					$this->model->error('Can\'t assign id to column with label "' . entities($column['label']) . '"');
 			}
 
-			$column['sortable'] = $this->getSortingRulesFor($this->getFieldNameFromColumn($column), 'ASC', 0) ? true : false;
+			$column['sortable'] = $this->getSortingRulesFor($column, 'ASC', 0) ? true : false;
 			$new_columns[$k] = $column;
 		}
 
@@ -588,7 +588,7 @@ class Admin extends Module
 	 * @param string $k
 	 * @return string
 	 */
-	private function standardizeLabel(string $k): string
+	private function fromLabelToColumnId(string $k): string
 	{
 		return preg_replace('/[^a-z0-9]/i', '', entities(strtolower($k)));
 	}
@@ -1089,14 +1089,16 @@ class Admin extends Module
 	 */
 	private function getSortingRules(array $sortBy, array $joins): array
 	{
-		if ($sortBy) {
+		if (count($sortBy) > 0) {
 			$order_by = [];
 
+			$columns = $this->getColumnsList();
+
 			foreach ($sortBy as $idx => $sort) {
-				if (!is_array($sort) or count($sort) != 2 or !in_array(strtolower($sort['dir']), ['asc', 'desc']))
+				if (!is_array($sort) or !isset($sort['field'], $columns['fields'][$sort['field']]) or !in_array(strtolower($sort['dir']), ['asc', 'desc']))
 					$this->model->error('Wrong "sortBy" format!');
 
-				$rules = $this->getSortingRulesFor($sort['field'], $sort['dir'], $idx);
+				$rules = $this->getSortingRulesFor($columns['fields'][$sort['field']], $sort['dir'], $idx);
 				if (!$rules)
 					$this->model->error('Column ' . $sort['field'] . ' is not sortable!');
 
@@ -1121,13 +1123,14 @@ class Admin extends Module
 	 * Extension of getSortingRules method, here I look at the rules for the specific column
 	 * Returns false if the column is not sortable
 	 *
-	 * @param string|null $field
+	 * @param array $column
 	 * @param string $dir
 	 * @param int $idx
 	 * @return array|null
 	 */
-	public function getSortingRulesFor($field, string $dir, int $idx)
+	public function getSortingRulesFor(array $column, string $dir, int $idx): ?array
 	{
+		$field = $this->getFieldNameFromColumn($column);
 		if (!$field)
 			return null;
 
