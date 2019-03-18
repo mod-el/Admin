@@ -192,7 +192,7 @@ $config = ' . var_export($config, true) . ';
 		$rules = [];
 		$macro = [];
 
-		foreach ($config['url'] as $path) {
+		foreach (($config['url'] ?? []) as $path) {
 			if (in_array($path['path'], $macro))
 				$this->model->error('Duplicate admin path "' . $path['path'] . '""');
 
