@@ -1093,12 +1093,12 @@ class Admin extends Module
 			$order_by = [];
 
 			foreach ($sortBy as $idx => $sort) {
-				if (!is_array($sort) or count($sort) != 2 or !in_array(strtolower($sort[1]), ['asc', 'desc']))
+				if (!is_array($sort) or count($sort) != 2 or !in_array(strtolower($sort['dir']), ['asc', 'desc']))
 					$this->model->error('Wrong "sortBy" format!');
 
-				$rules = $this->getSortingRulesFor($sort[0], $sort[1], $idx);
+				$rules = $this->getSortingRulesFor($sort['field'], $sort['dir'], $idx);
 				if (!$rules)
-					$this->model->error('Column ' . $sort[0] . ' is not sortable!');
+					$this->model->error('Column ' . $sort['field'] . ' is not sortable!');
 
 				$order_by[] = $rules['order_by'];
 				if ($rules['joins']) {

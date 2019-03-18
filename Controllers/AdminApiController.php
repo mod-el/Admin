@@ -179,7 +179,8 @@ class AdminApiController extends Controller
 								$options['goTo'] = $input['go-to'];
 							if (isset($input['per-page']))
 								$options['perPage'] = $input['per-page'];
-//							if (isset($input['sort-by'])) // TODO
+							if (isset($input['sort-by']))
+								$options['sortBy'] = $input['sort-by'];
 
 							$list = $this->model->_Admin->getList($options);
 
