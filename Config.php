@@ -35,7 +35,7 @@ class Config extends Module_Config
 				  PRIMARY KEY (`id`)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;');
 
-			if ($this->saveConfig('init', ['api-path' => $data['api-path']])) {
+			if ($this->saveConfig('init', $data)) {
 				if (isset($data['make-users-table'])) {
 					$this->model->_Db->query('CREATE TABLE IF NOT EXISTS `' . $data['table'] . '` (
 						  `id` int(11) NOT NULL AUTO_INCREMENT,
