@@ -1060,6 +1060,15 @@ class Admin extends Module
 	}
 
 	/**
+	 * @return array
+	 */
+	public function getAdminPaths(): array
+	{
+		$config = $this->retrieveConfig();
+		return $config['url'] ?? [];
+	}
+
+	/**
 	 * @param string|null $path
 	 * @return User
 	 */
