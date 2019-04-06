@@ -12,29 +12,48 @@ class Config extends Module_Config
 	 */
 	public function init(?array $data = null): bool
 	{
-		if (!$this->model->moduleExists('Db'))
+		if ($data === null or !$this->model->moduleExists('Db'))
 			return false;
 
-		$this->model->_Db->query('CREATE TABLE IF NOT EXISTS `admin_privileges` (
-			  `id` int(11) NOT NULL AUTO_INCREMENT,
-			  `page` varchar(250) COLLATE utf8_unicode_ci DEFAULT NULL,
-			  `subpage` varchar(250) COLLATE utf8_unicode_ci DEFAULT NULL,
-			  `profile` int(11) DEFAULT NULL,
-			  `user` int(11) DEFAULT NULL,
-			  `C` tinyint(4) NOT NULL,
-			  `C_special` varchar(250) NULL,
-			  `R` tinyint(4) NOT NULL,
-			  `R_special` varchar(250) NULL,
-			  `U` tinyint(4) NOT NULL,
-			  `U_special` varchar(250) NULL,
-			  `D` tinyint(4) NOT NULL,
-			  `D_special` varchar(250) NULL,
-			  `L` TINYINT NOT NULL,
-			  `L_special` VARCHAR(250) NULL,
-			  PRIMARY KEY (`id`)
-			) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;');
+		if (isset($data['api-path'])) {
+			$this->model->_Db->query('CREATE TABLE IF NOT EXISTS `admin_privileges` (
+				  `id` int(11) NOT NULL AUTO_INCREMENT,
+				  `page` varchar(250) COLLATE utf8_unicode_ci DEFAULT NULL,
+				  `subpage` varchar(250) COLLATE utf8_unicode_ci DEFAULT NULL,
+				  `profile` int(11) DEFAULT NULL,
+				  `user` int(11) DEFAULT NULL,
+				  `C` tinyint(4) NOT NULL,
+				  `C_special` varchar(250) NULL,
+				  `R` tinyint(4) NOT NULL,
+				  `R_special` varchar(250) NULL,
+				  `U` tinyint(4) NOT NULL,
+				  `U_special` varchar(250) NULL,
+				  `D` tinyint(4) NOT NULL,
+				  `D_special` varchar(250) NULL,
+				  `L` TINYINT NOT NULL,
+				  `L_special` VARCHAR(250) NULL,
+				  PRIMARY KEY (`id`)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;');
 
-		return $this->saveConfig('init', ['api-path' => 'admin-api']);
+			if ($this->saveConfig('init', ['api-path' => $data['api-path']])) {
+				if (isset($data['make-users-table'])) {
+					$this->model->_Db->query('CREATE TABLE IF NOT EXISTS `' . $data['table'] . '` (
+						  `id` int(11) NOT NULL AUTO_INCREMENT,
+						  `username` varchar(250) NOT NULL,
+						  `password` varchar(250) NOT NULL,
+						  PRIMARY KEY (`id`)
+						) ENGINE=InnoDB DEFAULT CHARSET=utf8;');
+				}
+				if (isset($data['make-account']))
+					$this->model->_Db->query('INSERT INTO `' . $data['table'] . '`(username,password) VALUES(' . $this->model->_Db->quote($data['username']) . ',' . $this->model->_Db->quote(password_hash($data['password'], PASSWORD_DEFAULT)) . ')');
+
+				return true;
+			} else {
+				$this->model->error('Error while saving config data');
+			}
+		}
+
+		return false;
 	}
 
 	/**

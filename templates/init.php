@@ -31,12 +31,11 @@
 		</tr>
 	</table>
 
-	<hr/>
-
 	<?php
 	if (empty($config['url'])) {
 		?>
 		<hr/>
+
 		<table>
 			<tr>
 				<td>
