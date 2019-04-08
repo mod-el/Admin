@@ -33,6 +33,11 @@ class AdminPage
 		return [];
 	}
 
+	public function warnings(Element $element): array
+	{
+		return [];
+	}
+
 	/**
 	 * @param Element $element
 	 * @return bool
