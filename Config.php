@@ -173,7 +173,7 @@ $config = ' . var_export($config, true) . ';
 		$config = parent::retrieveConfig();
 
 		// Transition from the old version (where pages where managed by AdminFront) to the current one
-		if (!isset($config['url'])) {
+		if (!isset($config['url']) and class_exists('\Model\AdminFront\Config')) {
 			$adminFrontClass = new \Model\AdminFront\Config($this->model);
 			$adminFrontConfig = $adminFrontClass->retrieveConfig();
 			if (isset($adminFrontConfig['url'])) {
