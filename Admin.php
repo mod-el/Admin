@@ -809,7 +809,7 @@ class Admin extends Module
 			'perPage' => $options['perPage'] ?: false,
 			'pag' => $options['p'],
 		]);
-		$limit = $options['perPage'] ? $paginator->getStartLimit() . ',' . $options['perPage'] : false;
+		$limit = $options['perPage'] ? $paginator->getLimit() : false;
 
 		$queryOptions = [
 			'stream' => true,
