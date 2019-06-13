@@ -170,9 +170,9 @@ class Admin extends Module
 	 */
 	private function getPageOptions(): array
 	{
-		$options = $this->page->options();
-
 		if ($this->options === null) {
+			$options = $this->page->options();
+
 			$this->options = array_merge_recursive_distinct([ // TODO: da rivedere
 				'element' => null,
 				'table' => null,
@@ -857,6 +857,23 @@ class Admin extends Module
 			$this->runFormThroughAdminCustomizations($el->getForm()); // TODO: serve ancora?
 			yield $el;
 		}
+	}
+
+	/**
+	 * Given a column and a where array, returns the total sum for that column
+	 *
+	 * @param array $column
+	 * @param array $where
+	 * @return float
+	 */
+	public function getColumnTotal(array $column, array $where): float
+	{
+		$pageOptions = $this->getPageOptions();
+
+		return $this->model->_Db->select($pageOptions['table'], $where, [
+			'joins' => $pageOptions['joins'],
+			'sum' => $column['field'],
+		]);
 	}
 
 	/**

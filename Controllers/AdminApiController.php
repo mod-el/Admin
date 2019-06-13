@@ -189,7 +189,21 @@ class AdminApiController extends Controller
 								'pages' => $list['pages'],
 								'current' => $list['page'],
 								'list' => [],
+								'totals' => [],
 							];
+
+							$fields = $this->model->_Admin->getColumnsList();
+
+							if (count($input['fields'] ?? []) > 0) {
+								$fieldsList = $input['fields'];
+							} else {
+								$fieldsList = $fields['default'];
+							}
+
+							foreach ($fieldsList as $idx) {
+								if (!isset($fields['fields'][$idx]))
+									$this->model->error('"' . $idx . '" field not existing');
+							}
 
 							foreach ($list['list'] as $element) {
 								$element_array = [
@@ -206,23 +220,17 @@ class AdminApiController extends Controller
 								if ($list['custom-order'])
 									$element_array['order-idx'] = $element[$list['custom-order']];
 
-								$fields = $this->model->_Admin->getColumnsList();
-
-								if (count($input['fields'] ?? []) > 0) {
-									$fieldsList = $input['fields'];
-								} else {
-									$fieldsList = $fields['default'];
-								}
-
 								foreach ($fieldsList as $idx) {
-									if (!isset($fields['fields'][$idx]))
-										$this->model->error('"' . $idx . '" field not existing');
-
 									$column = $fields['fields'][$idx];
 									$element_array['data'][$idx] = $this->model->_Admin->getElementColumn($element, $column);
 								}
 
 								$response['list'][] = $element_array;
+							}
+
+							foreach ($fieldsList as $idx) {
+								if ($fields['fields'][$idx]['total'])
+									$response['totals'][$idx] = $this->model->_Admin->getColumnTotal($fields['fields'][$idx], $where);
 							}
 
 							$this->respond($response);
