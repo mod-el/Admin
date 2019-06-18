@@ -221,6 +221,11 @@ class Admin extends Module
 				}
 			}
 
+			if (!$this->options['table']) {
+				$this->pageRule['visualizer'] = 'Custom';
+				$this->pageRule['mobile-visualizer'] = 'Custom';
+			}
+
 			// Backward compatibility
 			$visualizerOptions = $this->page->visualizerOptions();
 
