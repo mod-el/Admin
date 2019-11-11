@@ -228,7 +228,7 @@ $config = ' . var_export($config, true) . ';
 			return strlen($b) <=> strlen($a);
 		});
 
-		usort($macro, function ($a, $b) {
+		uasort($macro, function ($a, $b) {
 			return strlen($b) <=> strlen($a);
 		});
 
