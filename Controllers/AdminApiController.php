@@ -205,24 +205,28 @@ class AdminApiController extends Controller
 									$this->model->error('"' . $idx . '" field not existing');
 							}
 
-							foreach ($list['list'] as $element) {
+							foreach ($list['list'] as $item) {
 								$element_array = [
-									'id' => $element[$element->settings['primary']],
+									'id' => $item['element'][$item['element']->settings['primary']],
 									'permissions' => [
-										'R' => $this->model->_Admin->canUser('R', null, $element),
-										'U' => $this->model->_Admin->canUser('U', null, $element),
-										'D' => $this->model->_Admin->canUser('D', null, $element),
+										'R' => $this->model->_Admin->canUser('R', null, $item['element']),
+										'U' => $this->model->_Admin->canUser('U', null, $item['element']),
+										'D' => $this->model->_Admin->canUser('D', null, $item['element']),
 									],
 									'data' => [],
 									'order-idx' => null,
 								];
 
+								if ($item['background'])
+									$element_array['background'] = $item['background'];
+								if ($item['color'])
+									$element_array['color'] = $item['color'];
 								if ($list['custom-order'])
-									$element_array['order-idx'] = $element[$list['custom-order']];
+									$element_array['order-idx'] = $item['element'][$list['custom-order']];
 
 								foreach ($fieldsList as $idx) {
 									$column = $fields['fields'][$idx];
-									$element_array['data'][$idx] = $this->model->_Admin->getElementColumn($element, $column);
+									$element_array['data'][$idx] = $this->model->_Admin->getElementColumn($item['element'], $column);
 								}
 
 								$response['list'][] = $element_array;

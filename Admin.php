@@ -858,9 +858,24 @@ class Admin extends Module
 	 */
 	protected function adminListGenerator(string $elementName, array $where, array $queryOptions): \Generator
 	{
+		$pageOptions = $this->getPageOptions();
+
 		foreach ($this->model->_ORM->all($elementName, $where, $queryOptions) as $el) {
 			$this->runFormThroughAdminCustomizations($el->getForm()); // TODO: serve ancora?
-			yield $el;
+
+			$background = $pageOptions['background'] ?? null;
+			if($background and !is_string($background) and is_callable($background))
+				$background = $background($el);
+
+			$color = $pageOptions['color'] ?? null;
+			if($color and !is_string($color) and is_callable($color))
+				$color = $color($el);
+
+			yield [
+				'element' => $el,
+				'background' => $background,
+				'color' => $color,
+			];
 		}
 	}
 
