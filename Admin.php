@@ -197,6 +197,7 @@ class Admin extends Module
 				'required' => [],
 				'fields' => [],
 				'onclick' => null,
+				'actions' => [],
 			], $options);
 
 			if ($this->options['element'] and !$this->options['table'])
@@ -272,6 +273,7 @@ class Admin extends Module
 			'privileges' => [
 				'C' => $this->canUser('C'),
 			],
+			'actions' => $options['actions'],
 		];
 
 		if ($this->pageRule['visualizer'] and $this->pageRule['visualizer'] !== 'Custom') {
