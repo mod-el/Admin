@@ -273,7 +273,9 @@ class Admin extends Module
 			'privileges' => [
 				'C' => $this->canUser('C'),
 			],
-			'actions' => $options['actions'],
+			'actions' => array_filter($options['actions'], function ($action) {
+				return (!isset($action['specific']) or $action['specific'] === 'list');
+			}),
 		];
 
 		if ($this->pageRule['visualizer'] and $this->pageRule['visualizer'] !== 'Custom') {
