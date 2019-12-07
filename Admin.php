@@ -570,7 +570,6 @@ class Admin extends Module
 
 			if (isset($form[$column['display']])) {
 				$d = $form[$column['display']];
-//				$c['text'] = $d->getText(array_merge($config, ['preview' => true]));
 				$c['text'] = $d->getText(['preview' => true]);
 			} else {
 				$c['text'] = $el[$column['display']];
