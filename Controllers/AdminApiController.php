@@ -83,19 +83,22 @@ class AdminApiController extends Controller
 					if ($id !== null and (!is_numeric($id) or $id <= 0))
 						$this->model->error('Id should be a number greater than 0', ['code' => 400]);
 
-					switch ($action) {
+					$response = $this->model->_Admin->getPageDetails();
+					$this->respond($response);
+
+					/*switch ($action) {
 						case null:
 							$response = $this->model->_Admin->getPageDetails();
 							$this->respond($response);
 							break;
-						case 'data':
+						case 'data': // TODO: serve?
 							$response = $this->model->_Admin->getElementData();
 							$this->respond($response);
 							break;
 						default:
 							$this->model->error('Unrecognized action', ['code' => 400]);
 							break;
-					}
+					}*/
 					break;
 				default:
 					$this->model->error('Unknown action', ['code' => 400]);
@@ -221,6 +224,8 @@ class AdminApiController extends Controller
 									$element_array['background'] = $item['background'];
 								if ($item['color'])
 									$element_array['color'] = $item['color'];
+								if ($item['onclick'])
+									$element_array['onclick'] = $item['onclick'];
 								if ($list['custom-order'])
 									$element_array['order-idx'] = $item['element'][$list['custom-order']];
 

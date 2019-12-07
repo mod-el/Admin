@@ -196,6 +196,7 @@ class Admin extends Module
 				'joins' => [],
 				'required' => [],
 				'fields' => [],
+				'onclick' => null,
 			], $options);
 
 			if ($this->options['element'] and !$this->options['table'])
@@ -268,6 +269,9 @@ class Admin extends Module
 		$pageDetails = [
 			'type' => $this->pageRule['visualizer'],
 			'visualizer-options' => $visualizerOptions,
+			'privileges' => [
+				'C' => $this->canUser('C'),
+			],
 		];
 
 		if ($this->pageRule['visualizer'] and $this->pageRule['visualizer'] !== 'Custom') {
@@ -888,9 +892,14 @@ class Admin extends Module
 			if ($color and !is_string($color) and is_callable($color))
 				$color = $color($el);
 
+			$onclick = $pageOptions['onclick'] ?? null;
+			if ($onclick and !is_string($onclick) and is_callable($onclick))
+				$onclick = $onclick($el);
+
 			yield [
 				'element' => $el,
 				'background' => $background,
+				'onclick' => $onclick,
 				'color' => $color,
 			];
 		}
