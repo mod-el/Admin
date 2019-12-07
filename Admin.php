@@ -195,7 +195,6 @@ class Admin extends Module
 				],
 				'joins' => [],
 				'required' => [],
-				'columns' => [],
 				'fields' => [],
 			], $options);
 
@@ -232,7 +231,7 @@ class Admin extends Module
 			switch ($this->pageRule['visualizer']) {
 				case 'Table':
 					if (isset($visualizerOptions['columns']))
-						$options['columns'] = array_merge_recursive_distinct($options['columns'] ?? [], $visualizerOptions['columns']);
+						$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['columns']);
 					break;
 				case 'FormList':
 					if (isset($visualizerOptions['fields']))
@@ -377,16 +376,16 @@ class Admin extends Module
 		$fields = $this->getAllFieldsList();
 
 		$defaultColumns = array_keys($fields);
-		if (count($options['columns'] ?? []) > 0) {
-			$allColumns = $options['columns'];
+		if (count($options['fields'] ?? []) > 0) {
+			$allColumns = $options['fields'];
 
 			foreach ($fields as $field => $fieldOptions) {
 				if (!isset($allColumns[$field]) and !in_array($field, $allColumns))
 					$allColumns[] = $field;
 			}
 
-			if ($options['wipe-columns'] ?? true)
-				$defaultColumns = $options['columns'];
+			if ($options['wipe-fields'] ?? true)
+				$defaultColumns = $options['fields'];
 		} else {
 			$allColumns = array_keys($fields);
 		}
