@@ -279,6 +279,7 @@ class Admin extends Module
 					'label' => $column['label'],
 					'editable' => $column['editable'],
 					'sortable' => $column['sortable'],
+					'print' => $column['print'],
 					'price' => $column['price'],
 				];
 			}
@@ -594,6 +595,12 @@ class Admin extends Module
 			$color = $color($el);
 		if ($color)
 			$c['color'] = $color;
+
+		$clickable = $column['clickable'];
+		if ($clickable and !is_string($clickable) and is_callable($clickable))
+			$clickable = (bool)$clickable($el);
+		if (!$clickable)
+			$c['clickable'] = false;
 
 		return $c;
 	}
