@@ -583,6 +583,18 @@ class Admin extends Module
 		if ($column['field'])
 			$c['value'] = $el[$column['field']];
 
+		$background = $column['background'] ?? null;
+		if ($background and !is_string($background) and is_callable($background))
+			$background = $background($el);
+		if ($background)
+			$c['background'] = $background;
+
+		$color = $column['color'] ?? null;
+		if ($color and !is_string($color) and is_callable($color))
+			$color = $color($el);
+		if ($color)
+			$c['color'] = $color;
+
 		return $c;
 	}
 
@@ -863,11 +875,11 @@ class Admin extends Module
 			$this->runFormThroughAdminCustomizations($el->getForm()); // TODO: serve ancora?
 
 			$background = $pageOptions['background'] ?? null;
-			if($background and !is_string($background) and is_callable($background))
+			if ($background and !is_string($background) and is_callable($background))
 				$background = $background($el);
 
 			$color = $pageOptions['color'] ?? null;
-			if($color and !is_string($color) and is_callable($color))
+			if ($color and !is_string($color) and is_callable($color))
 				$color = $color($el);
 
 			yield [
