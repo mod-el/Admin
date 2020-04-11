@@ -1238,6 +1238,11 @@ class Admin extends Module
 						],
 					];
 				}
+
+				return [
+					'order_by' => $d->options['field'] . ' ' . $dir,
+					'joins' => [],
+				];
 			} elseif ($d->options['type'] === 'instant-search') {
 				if (isset($d->options['table'], $d->options['text-field'])) {
 					if (!is_array($d->options['text-field']))
