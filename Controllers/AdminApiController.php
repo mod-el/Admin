@@ -322,7 +322,7 @@ class AdminApiController extends Controller
 	{
 		$mainRequest = implode('/', $this->model->getRequest());
 		$request = substr($mainRequest, strlen($path));
-		if ($request{0} === '/')
+		if ($request[0] === '/')
 			$request = substr($request, 1);
 		$this->request = explode('/', $request);
 	}
