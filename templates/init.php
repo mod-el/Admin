@@ -46,43 +46,9 @@
 				</td>
 			</tr>
 			<tr>
-				<td class="label"></td>
-				<td class="field">
-					<input type="checkbox" name="make-users-table" id="utenti" checked/>
-					<label for="utenti">Create users table</label>
-				</td>
-			</tr>
-
-			<tr>
-				<td class="label"></td>
-				<td class="field">
-					<input type="checkbox" name="make-account" id="account" checked/>
-					<label for="account">Create first account</label>
-				</td>
-			</tr>
-
-			<?php
-			$defaults = [
-				'username' => 'admin',
-				'password' => 'admin',
-			];
-			?>
-			<tr>
-				<td class="label">Username</td>
-				<td class="field">
-					<input type="text" name="username" value="<?= $defaults['username'] ?>"/>
-				</td>
-			</tr>
-			<tr>
-				<td class="label">Password</td>
-				<td class="field">
-					<input type="password" name="password" value="<?= $defaults['password'] ?>"/>
-				</td>
-			</tr>
-			<tr>
-				<td class="label">Repeat password</td>
-				<td class="field">
-					<input type="password" name="repassword" value="<?= $defaults['password'] ?>"/>
+				<td></td>
+				<td>
+					<input type="checkbox" name="model-managed-table" id="model-managed-table" checked/> <label for="model-managed-table">Let ModEl manage the users table (uncheck if you wanna use a custom table)</label>
 				</td>
 			</tr>
 		</table>
