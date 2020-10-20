@@ -1287,11 +1287,12 @@ class Admin extends Module
 
 	/**
 	 * Returns an array to use in the "edit" section
+	 * @param int $id
+	 * @return array
 	 */
-	public function getElementData(): array
+	public function getElementData(int $id): array
 	{
-		$element = $this->model->_ORM->element;
-
+		$element = $this->getElement($id);
 		if (!$element)
 			$this->model->error('Element does not exist.');
 
@@ -1305,10 +1306,10 @@ class Admin extends Module
 			'children' => [],
 		];
 
-		$dataset = $this->form->getDataset();
-		foreach ($dataset as $k => $d) {
+		$form = $this->getForm();
+		$dataset = $form->getDataset();
+		foreach ($dataset as $k => $d)
 			$arr['data'][$k] = $d->getJsValue(false);
-		}
 
 		foreach ($this->sublists as $s) {
 			$options = $element->getChildrenOptions($s['options']['children']);
@@ -1445,15 +1446,31 @@ class Admin extends Module
 	}
 
 	/**
-	 * @return Form
+	 * @param int|null $id
+	 * @return Element|null
 	 */
-	public function getForm(): Form
+	public function getElement(?int $id = null): ?Element
 	{
 		$element = $this->model->element;
 		if (!$element) {
 			$pageOptions = $this->getPageOptions();
-			$element = $this->model->_ORM->loadMainElement($pageOptions['element'] ?: 'Element', false, ['table' => $pageOptions['table']]);
+			if (!$pageOptions['element'] and !$pageOptions['table'])
+				return null;
+
+			$element = $this->model->_ORM->loadMainElement($pageOptions['element'] ?: 'Element', $id ?: false, ['table' => $pageOptions['table']]);
 		}
+
+		return $element;
+	}
+
+	/**
+	 * @return Form|null
+	 */
+	public function getForm(): ?Form
+	{
+		$element = $this->getElement();
+		if (!$element)
+			return null;
 
 		return $this->runFormThroughAdminCustomizations($element->getForm());
 	}

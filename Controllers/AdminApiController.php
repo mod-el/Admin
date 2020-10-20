@@ -80,25 +80,22 @@ class AdminApiController extends Controller
 					$this->model->_Admin->setPage($adminPage);
 
 					$id = $this->request[3] ?? null;
-					if ($id !== null and (!is_numeric($id) or $id <= 0))
-						$this->model->error('Id should be a number greater than 0', ['code' => 400]);
+					if ($id !== null and (!is_numeric($id) or $id < 0))
+						$this->model->error('Id should be a number greater than or equal to 0', ['code' => 400]);
 
-					$response = $this->model->_Admin->getPageDetails();
-					$this->respond($response);
-
-					/*switch ($action) {
+					switch ($action) {
 						case null:
 							$response = $this->model->_Admin->getPageDetails();
 							$this->respond($response);
 							break;
-						case 'data': // TODO: serve?
-							$response = $this->model->_Admin->getElementData();
+						case 'data':
+							$response = $this->model->_Admin->getElementData($id);
 							$this->respond($response);
 							break;
 						default:
 							$this->model->error('Unrecognized action', ['code' => 400]);
 							break;
-					}*/
+					}
 					break;
 				default:
 					$this->model->error('Unknown action', ['code' => 400]);
@@ -162,8 +159,8 @@ class AdminApiController extends Controller
 					$this->model->_Admin->setPage($adminPage);
 
 					$id = $this->request[3] ?? null;
-					if ($id !== null and (!is_numeric($id) or $id <= 0))
-						$this->model->error('Id should be a number greater than 0', ['code' => 400]);
+					if ($id !== null and (!is_numeric($id) or $id < 0))
+						$this->model->error('Id should be a number greater than or equal to 0', ['code' => 400]);
 
 					switch ($action) {
 						case 'search':
