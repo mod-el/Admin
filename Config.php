@@ -16,37 +16,7 @@ class Config extends Module_Config
 			return false;
 
 		if (isset($data['api-path'])) {
-			$this->model->_Db->query('CREATE TABLE IF NOT EXISTS `admin_privileges` (
-				  `id` int(11) NOT NULL AUTO_INCREMENT,
-				  `page` varchar(250) COLLATE utf8_unicode_ci DEFAULT NULL,
-				  `subpage` varchar(250) COLLATE utf8_unicode_ci DEFAULT NULL,
-				  `profile` int(11) DEFAULT NULL,
-				  `user` int(11) DEFAULT NULL,
-				  `C` tinyint(4) NOT NULL,
-				  `C_special` varchar(250) NULL,
-				  `R` tinyint(4) NOT NULL,
-				  `R_special` varchar(250) NULL,
-				  `U` tinyint(4) NOT NULL,
-				  `U_special` varchar(250) NULL,
-				  `D` tinyint(4) NOT NULL,
-				  `D_special` varchar(250) NULL,
-				  `L` TINYINT NOT NULL,
-				  `L_special` VARCHAR(250) NULL,
-				  PRIMARY KEY (`id`)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;');
-
 			if ($this->saveConfig('init', $data)) {
-				if (isset($data['make-users-table'])) {
-					$this->model->_Db->query('CREATE TABLE IF NOT EXISTS `' . $data['table'] . '` (
-						  `id` int(11) NOT NULL AUTO_INCREMENT,
-						  `username` varchar(250) NOT NULL,
-						  `password` varchar(250) NOT NULL,
-						  PRIMARY KEY (`id`)
-						) ENGINE=InnoDB DEFAULT CHARSET=utf8;');
-				}
-				if (isset($data['make-account']))
-					$this->model->_Db->query('INSERT INTO `' . $data['table'] . '`(username,password) VALUES(' . $this->model->_Db->quote($data['username']) . ',' . $this->model->_Db->quote(password_hash($data['password'], PASSWORD_DEFAULT)) . ')');
-
 				return true;
 			} else {
 				$this->model->error('Error while saving config data');
@@ -103,6 +73,8 @@ class Config extends Module_Config
 					$url['element'] = $data[$idx . '-element'];
 				if (isset($data[$idx . '-admin-page']))
 					$url['admin-page'] = $data[$idx . '-admin-page'];
+
+				$url['model-managed'] = isset($data[$idx . '-model-managed']);
 				if (isset($data[$idx . '-pages']))
 					$url['pages'] = $this->parsePages(json_decode($data[$idx . '-pages'], true));
 				$config['url'][$idx] = $url;
@@ -122,6 +94,7 @@ class Config extends Module_Config
 				'table' => $data['table'],
 				'element' => '',
 				'admin-page' => '',
+				'model-managed' => isset($data['model-managed-table']),
 				'pages' => [],
 			];
 		}
@@ -277,21 +250,6 @@ $config = ' . var_export($config, true) . ';
 		];
 
 		return $ret;
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function postUpdate_1_1_0(): bool
-	{
-		$this->model->_Db->query('ALTER TABLE `admin_privileges` 
-			DROP COLUMN `group`,
-			DROP COLUMN `path`,
-			CHANGE COLUMN `page` `page` VARCHAR(250) CHARACTER SET \'utf8\' COLLATE \'utf8_unicode_ci\' NULL DEFAULT NULL AFTER `id`,
-			CHANGE COLUMN `user` `user` INT(11) NULL ,
-			ADD COLUMN `profile` INT NULL AFTER `page` ,
-			ADD COLUMN `subpage` VARCHAR(250) NULL AFTER `page`;');
-		return true;
 	}
 
 	/**

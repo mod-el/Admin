@@ -228,6 +228,9 @@
 				Users Admin Page
 			</td>
 			<td>
+				ModEl managed
+			</td>
+			<td>
 			</td>
 		</tr>
 		<?php
@@ -248,6 +251,9 @@
 				</td>
 				<td>
 					<input type="text" name="<?= $idx ?>-admin-page" value="<?= entities($url['admin-page'] ?? '') ?>"/>
+				</td>
+				<td>
+					<input type="checkbox" name="<?= $idx ?>-model-managed"<?= ($url['model-managed'] ?? true) ? ' checked' : '' ?> value="1"/>
 				</td>
 				<td>
 					[<a href="#" onclick="configPages('<?= $idx ?>'); return false"> config pages </a>]
