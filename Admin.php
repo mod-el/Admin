@@ -23,8 +23,6 @@ class Admin extends Module
 	public $customFiltersForm;
 	/** @var array */
 	private $customFiltersCallbacks = [];
-	/** @var Form */
-	public $form;
 	/** @var array|bool */
 	protected $privilegesCache = false;
 	/** @var array */
@@ -1417,16 +1415,6 @@ class Admin extends Module
 	}
 
 	/**
-	 * Clears all the fields of the form (in order to add new custom fields)
-	 *
-	 * @return bool
-	 */
-	public function clearForm(): bool
-	{
-		return $this->form->clear();
-	}
-
-	/**
 	 * Adds or edits a field in the form
 	 *
 	 * @param string $name
@@ -1444,20 +1432,30 @@ class Admin extends Module
 	 * Takes a form as argument and runs it against all the customization made in the admin page
 	 *
 	 * @param Form $form
-	 * @return array
+	 * @return Form
 	 */
-	public function runFormThroughAdminCustomizations(Form $form): array
+	private function runFormThroughAdminCustomizations(Form $form): Form
 	{
-		$replaceValues = [];
 		foreach ($this->fieldsCustomizations as $name => $options) {
-			if (array_key_exists('default', $options))
-				$replaceValues[$name] = $options['default'];
-
 			if (isset($form[$name]))
 				$options = array_merge($form[$name]->options, $options);
 			$form->add($name, $options);
 		}
-		return $replaceValues;
+		return $form;
+	}
+
+	/**
+	 * @return Form
+	 */
+	public function getForm(): Form
+	{
+		$element = $this->model->element;
+		if (!$element) {
+			$pageOptions = $this->getPageOptions();
+			$element = $this->model->_ORM->loadMainElement($pageOptions['element'] ?: 'Element', false, ['table' => $pageOptions['table']]);
+		}
+
+		return $this->runFormThroughAdminCustomizations($element->getForm());
 	}
 
 	/**
