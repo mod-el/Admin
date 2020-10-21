@@ -1321,6 +1321,10 @@ class Admin extends Module
 					return true;
 				return false;
 			}),
+			'privileges' => [
+				'U' => $this->canUser('U', null, $element),
+				'D' => $this->canUser('D', null, $element),
+			],
 		];
 
 		$form = $this->getForm();
