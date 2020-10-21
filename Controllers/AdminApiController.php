@@ -277,6 +277,20 @@ class AdminApiController extends Controller
 							$newElement = $element->duplicate();
 							$this->respond(['id' => $newElement['id']]);
 							break;
+						case 'change-order':
+							$element = $this->model->_Admin->getElement($id);
+							if (!$element or !$element->exists())
+								$this->model->error('Error: attempting to change order to a non existing element.');
+
+							$to = $input['to'] ?? null;
+							if (!$to or !is_numeric($to))
+								$this->model->error('Bad parameters');
+
+							if ($element->changeOrder($to))
+								$this->respond(['success' => true]);
+							else
+								throw new \Exception('Error while changing order');
+							break;
 						default:
 							$this->model->error('Unrecognized action', ['code' => 400]);
 							break;
