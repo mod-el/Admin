@@ -208,7 +208,7 @@ class AdminApiController extends Controller
 							foreach ($list['list'] as $item) {
 								$element_array = [
 									'id' => $item['element'][$item['element']->settings['primary']],
-									'permissions' => [
+									'privileges' => [
 										'R' => $this->model->_Admin->canUser('R', null, $item['element']),
 										'U' => $this->model->_Admin->canUser('U', null, $item['element']),
 										'D' => $this->model->_Admin->canUser('D', null, $item['element']),
@@ -241,6 +241,18 @@ class AdminApiController extends Controller
 
 							$this->respond($response);
 							break;
+						case 'delete':
+							$ids = $input['ids'] ?? [];
+
+							$this->model->_Db->beginTransaction();
+
+							foreach ($ids as $id)
+								$this->model->_Admin->delete($id);
+
+							$this->model->_Db->commit();
+
+							$this->respond(['deleted' => $ids]);
+							break;
 						default:
 							$this->model->error('Unrecognized action', ['code' => 400]);
 							break;
@@ -251,8 +263,12 @@ class AdminApiController extends Controller
 					break;
 			}
 		} catch (\Exception $e) {
+			if ($this->model->_Db->inTransaction())
+				$this->model->_Db->rollBack();
 			$this->respond(['error' => getErr($e)], (int)$e->getCode());
 		} catch (\Error $e) {
+			if ($this->model->_Db->inTransaction())
+				$this->model->_Db->rollBack();
 			$this->respond(['error' => $e->getMessage() . ' in file ' . $e->getFile() . ' at line ' . $e->getLine()], 500);
 		}
 	}

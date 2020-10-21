@@ -250,6 +250,9 @@ class Admin extends Module
 	 */
 	public function getPageDetails(): array
 	{
+		if (!$this->canUser('L'))
+			throw new \Exception('Unauthorized', 401);
+
 		$options = $this->getPageOptions();
 		$visualizerOptions = $this->page->visualizerOptions();
 
@@ -270,9 +273,10 @@ class Admin extends Module
 			'visualizer-options' => $visualizerOptions,
 			'privileges' => [
 				'C' => $this->canUser('C'),
+				'D' => $this->canUser('D'),
 			],
 			'actions' => array_filter($options['actions'], function ($action) {
-				return (!isset($action['specific']) or $action['specific'] === 'list');
+				return (!isset($action['specific']) or $action['specific'] === 'list' or $action['specific'] === 'table'); // Retrocompatibilità per "table"
 			}),
 		];
 
@@ -1299,11 +1303,24 @@ class Admin extends Module
 		if (!$this->canUser('R', null, $element))
 			$this->model->error('Can\'t read, permission denied.');
 
+		$pageOptions = $this->getPageOptions();
+
 		$arr = [
 			'data' => [
 				'_model_version' => $this->model->_Db->getVersionLock($element->getTable(), $element[$element->settings['primary']]),
 			],
 			'children' => [],
+			'actions' => array_filter($pageOptions['actions'], function ($action) use ($id) {
+				if (!isset($action['specific']))
+					return true;
+				if ($action['specific'] === 'element')
+					return true;
+				if ($id === 0 and $action['specific'] === 'element-new')
+					return true;
+				if ($id > 0 and $action['specific'] === 'element-edit')
+					return true;
+				return false;
+			}),
 		];
 
 		$form = $this->getForm();
@@ -1563,11 +1580,10 @@ class Admin extends Module
 	 */
 	public function delete(int $id)
 	{
-		$element = $this->model->_ORM->one($this->options['element'] ?: 'Element', $id, [
-			'table' => $this->options['table'],
+		$pageOptions = $this->getPageOptions();
+		$element = $this->model->_ORM->one($pageOptions['element'] ?: 'Element', $id, [
+			'table' => $pageOptions['table'],
 		]);
-
-		$this->form = $element->getForm();
 
 		if (!$this->canUser('D', null, $element))
 			$this->model->error('Can\'t delete, permission denied.');
