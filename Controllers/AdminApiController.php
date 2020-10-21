@@ -253,6 +253,14 @@ class AdminApiController extends Controller
 
 							$this->respond(['deleted' => $ids]);
 							break;
+						case 'duplicate':
+							$element = $this->model->_Admin->getElement($id);
+							if (!$element or !$element->exists())
+								$this->model->error('Error: attempting to duplicate a non existing element.');
+
+							$newElement = $element->duplicate();
+							$this->respond(['id' => $newElement['id']]);
+							break;
 						default:
 							$this->model->error('Unrecognized action', ['code' => 400]);
 							break;
