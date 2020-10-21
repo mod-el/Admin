@@ -1479,6 +1479,8 @@ class Admin extends Module
 				return null;
 
 			$element = $this->model->_ORM->loadMainElement($pageOptions['element'] ?: 'Element', $id ?: false, ['table' => $pageOptions['table']]);
+			if (!$element->exists() and $id)
+				throw new \Exception('L\'elemento non esiste');
 		}
 
 		return $element;
@@ -1504,10 +1506,10 @@ class Admin extends Module
 	 * @param Element|null $element
 	 * @return int
 	 */
-	public function saveElement(array $data, int $versionLock = null, Element $element = null): int
+	public function save(array $data, int $versionLock = null, Element $element = null): int
 	{
 		if ($element === null)
-			$element = $this->model->element;
+			$element = $this->getElement();
 
 		if ($element->exists())
 			$privilege = 'U';
@@ -1517,9 +1519,11 @@ class Admin extends Module
 		if (!$this->canUser($privilege, null, $element))
 			$this->model->error('Can\'t save, permission denied.');
 
-		$data = array_merge($this->options['where'], $data);
+		$pageOptions = $this->getPageOptions();
+		$data = array_merge($pageOptions['where'], $data);
 
-		foreach ($element->getForm()->getDataset() as $k => $d) {
+		$form = $this->getForm();
+		foreach ($form->getDataset() as $k => $d) {
 			if (isset($data[$k])) {
 				if ($d->options['nullable'] and $data[$k] === '')
 					$data[$k] = null;

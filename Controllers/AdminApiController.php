@@ -241,6 +241,22 @@ class AdminApiController extends Controller
 
 							$this->respond($response);
 							break;
+						case 'save':
+							$data = $input['save'] ?? null;
+							if (empty($data))
+								$this->model->error('Wrong data');
+
+							$versionLock = null;
+							if (isset($input['version']) and is_numeric($input['version']))
+								$versionLock = $input['version'];
+
+							$newId = $this->model->_Admin->save($data, $versionLock);
+							if ($newId !== false) {
+								$this->respond(['id' => $newId]);
+							} else {
+								$this->model->error('Error while saving');
+							}
+							break;
 						case 'delete':
 							$ids = $input['ids'] ?? [];
 
