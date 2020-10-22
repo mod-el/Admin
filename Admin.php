@@ -164,83 +164,100 @@ class Admin extends Module
 	}
 
 	/**
+	 * @param string|null $page
 	 * @return array
 	 */
-	private function getPageOptions(): array
+	private function getPageOptions(?string $page = null): array
 	{
-		if ($this->options === null) {
-			$options = $this->page->options();
+		if ($page !== null) {
+			$className = Autoloader::searchFile('AdminPage', $page);
+			if (!$className)
+				$this->model->error('Admin Page class not found');
 
-			$this->options = array_merge_recursive_distinct([ // TODO: da rivedere
-				'element' => null,
-				'table' => null,
-				'where' => [],
-				'order_by' => false,
-				'group_by' => false,
-				'having' => [],
-				'min' => [],
-				'max' => [],
-				'sum' => [],
-				'avg' => [],
-				'count' => [],
-				'perPage' => 20,
-				'privileges' => [
-					'C' => true,
-					'R' => true,
-					'U' => true,
-					'D' => true,
-					'L' => true,
-				],
-				'joins' => [],
-				'required' => [],
-				'fields' => [],
-				'onclick' => null,
-				'actions' => [],
-			], $options);
+			$referencePage = new $className($this->model);
+		} else {
+			if ($this->options !== null)
+				return $this->options;
 
-			if ($this->options['element'] and !$this->options['table'])
-				$this->options['table'] = $this->model->_ORM->getTableFor($this->options['element']);
+			$referencePage = $this->page;
+		}
+		if (!$referencePage)
+			throw new \Exception('No page to gather options from');
 
-			if ($this->options['table']) {
-				if ($this->options['order_by'] === false) {
-					$tableModel = $this->model->_Db->getTable($this->options['table']);
-					$this->options['order_by'] = $tableModel->primary . ' DESC';
+		$basicPageOptions = $referencePage->options();
 
-					if ($this->options['element']) {
-						$elementData = $this->model->_ORM->getElementData($this->options['element']);
-						if ($elementData and $elementData['order_by']) {
-							$this->options['order_by'] = [];
-							foreach ($elementData['order_by']['depending_on'] as $field)
-								$this->options['order_by'][] = $field . ' ASC';
-							$this->options['order_by'][] = $elementData['order_by']['field'] . ' ASC';
+		$options = array_merge_recursive_distinct([
+			'element' => null,
+			'table' => null,
+			'where' => [],
+			'order_by' => false,
+			'group_by' => false,
+			'having' => [],
+			'min' => [],
+			'max' => [],
+			'sum' => [],
+			'avg' => [],
+			'count' => [],
+			'perPage' => 20,
+			'privileges' => [
+				'C' => true,
+				'R' => true,
+				'U' => true,
+				'D' => true,
+				'L' => true,
+			],
+			'joins' => [],
+			'required' => [],
+			'fields' => [],
+			'onclick' => null,
+			'actions' => [],
+		], $basicPageOptions);
 
-							$this->options['order_by'] = implode(',', $this->options['order_by']);
-						}
+		if ($options['element'] and !$options['table'])
+			$options['table'] = $this->model->_ORM->getTableFor($options['element']);
+
+		if ($options['table']) {
+			if ($options['order_by'] === false) {
+				$tableModel = $this->model->_Db->getTable($options['table']);
+				$options['order_by'] = $tableModel->primary . ' DESC';
+
+				if ($options['element']) {
+					$elementData = $this->model->_ORM->getElementData($options['element']);
+					if ($elementData and $elementData['order_by']) {
+						$options['order_by'] = [];
+						foreach ($elementData['order_by']['depending_on'] as $field)
+							$options['order_by'][] = $field . ' ASC';
+						$options['order_by'][] = $elementData['order_by']['field'] . ' ASC';
+
+						$options['order_by'] = implode(',', $options['order_by']);
 					}
 				}
 			}
-
-			if (!$this->options['table']) {
-				$this->pageRule['visualizer'] = 'Custom';
-				$this->pageRule['mobile-visualizer'] = 'Custom';
-			}
-
-			// Backward compatibility
-			$visualizerOptions = $this->page->visualizerOptions();
-
-			switch ($this->pageRule['visualizer']) {
-				case 'Table':
-					if (isset($visualizerOptions['columns']))
-						$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['columns']);
-					break;
-				case 'FormList':
-					if (isset($visualizerOptions['fields']))
-						$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['fields']);
-					break;
-			}
 		}
 
-		return $this->options;
+		if (!$options['table']) {
+			$this->pageRule['visualizer'] = 'Custom';
+			$this->pageRule['mobile-visualizer'] = 'Custom';
+		}
+
+		// Backward compatibility
+		$visualizerOptions = $referencePage->visualizerOptions();
+
+		switch ($this->pageRule['visualizer']) {
+			case 'Table':
+				if (isset($visualizerOptions['columns']))
+					$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['columns']);
+				break;
+			case 'FormList':
+				if (isset($visualizerOptions['fields']))
+					$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['fields']);
+				break;
+		}
+
+		if ($this->options === null and $page === null)
+			$this->options = $options;
+
+		return $options;
 	}
 
 	/**
@@ -299,7 +316,7 @@ class Admin extends Module
 
 			/* FILTERS */
 
-			$dummy = $this->getDummy();
+			$dummy = $this->getElement();
 			$filtersForm = clone $dummy->getForm();
 			$defaultFilters = $options['filters'] ?? [];
 
@@ -411,18 +428,6 @@ class Admin extends Module
 	}
 
 	/**
-	 * @param array|null $options
-	 * @return Element
-	 */
-	public function getDummy(array $options = null): Element
-	{
-		if ($options === null)
-			$options = $this->options;
-
-		return $this->model->_ORM->create($options['element'] ?: 'Element', ['table' => $options['table']]);
-	}
-
-	/**
 	 * Automatic field  extraction
 	 *
 	 * @param array $options
@@ -431,7 +436,7 @@ class Admin extends Module
 	public function getAllFieldsList(array $options = null): array
 	{
 		if ($options === null)
-			$options = $this->options;
+			$options = $this->getPageOptions();
 
 		$fields = [];
 
@@ -476,6 +481,8 @@ class Admin extends Module
 	private function elaborateColumns(array $columns, ?string $table): array
 	{
 		$tableModel = $table ? $this->model->_Db->getTable($table) : false;
+
+		$adminForm = null;
 
 		$new_columns = []; // I loop through the columns to standardize the format
 		foreach ($columns as $k => $column) {
@@ -539,6 +546,16 @@ class Admin extends Module
 				$column['field'] = $k;
 			if (is_string($column['field']) and $column['field'] and !$column['display'])
 				$column['display'] = $column['field'];
+
+			if ($column['editable']) {
+				if ($adminForm === null)
+					$adminForm = $this->getForm();
+
+				if ($adminForm[$column['field']])
+					$column['editable'] = $this->convertFieldToArrayDescription($adminForm[$column['field']]);
+				else
+					$column['editable'] = false;
+			}
 
 			$k = $this->fromLabelToColumnId($k);
 			if ($k == '') {
@@ -798,7 +815,7 @@ class Admin extends Module
 			'where' => [],
 			'p' => 1,
 			'goTo' => null,
-			'perPage' => $this->options['perPage'],
+			'perPage' => $this->getPageOptions()['perPage'],
 			'sortBy' => [],
 		], $options);
 
@@ -938,7 +955,8 @@ class Admin extends Module
 	{
 		$actions = [];
 
-		if (!(isset($this->options['table']) and $this->options['table']) and !(isset($this->options['element']) and $this->options['element']))
+		$pageOptions = $this->getPageOptions();
+		if (!(isset($pageOptions['table']) and $pageOptions['table']) and !(isset($pageOptions['element']) and $pageOptions['element']))
 			return [];
 
 		if ($this->canUser('C')) {
@@ -998,6 +1016,8 @@ class Admin extends Module
 		if ($el === null)
 			$el = $this->model->element;
 
+		$pageOptions = $this->getPageOptions($page);
+
 		if ($this->privilegesCache === false) {
 			$this->privilegesCache = $this->model->_Db->select_all('admin_privileges', [
 				'or' => [
@@ -1016,11 +1036,11 @@ class Admin extends Module
 
 		$currentGuess = [
 			'score' => 0,
-			'C' => $this->options['privileges']['C'] ?? true,
-			'R' => $this->options['privileges']['R'] ?? true,
-			'U' => $this->options['privileges']['U'] ?? true,
-			'D' => $this->options['privileges']['D'] ?? true,
-			'L' => $this->options['privileges']['L'] ?? true,
+			'C' => $pageOptions['privileges']['C'] ?? true,
+			'R' => $pageOptions['privileges']['R'] ?? true,
+			'U' => $pageOptions['privileges']['U'] ?? true,
+			'D' => $pageOptions['privileges']['D'] ?? true,
+			'L' => $pageOptions['privileges']['L'] ?? true,
 		];
 		if (!array_key_exists($what, $currentGuess) or $what === 'score')
 			$this->model->error('Requested unknown privilege.');
@@ -1179,7 +1199,7 @@ class Admin extends Module
 			}
 			$order_by = implode(',', $order_by);
 		} else {
-			$order_by = $this->options['order_by'];
+			$order_by = $this->getPageOptions()['order_by'];
 		}
 
 		return [
@@ -1203,10 +1223,11 @@ class Admin extends Module
 		if (!$field)
 			return null;
 
-		if (isset($this->form[$field])) {
-			$d = $this->form[$field];
+		$form = $this->getForm();
+		if (isset($form[$field])) {
+			$d = $form[$field];
 			if (in_array($d->options['type'], ['select', 'radio', 'select-cascade'])) {
-				$tableModel = $this->model->_Db->getTable($this->options['table']);
+				$tableModel = $this->model->_Db->getTable($this->getPageOptions()['table']);
 				if ($tableModel and isset($tableModel->columns[$d->options['field']]) and $tableModel->columns[$d->options['field']]['type'] == 'enum') {
 					return [
 						'order_by' => $d->options['field'] . ' ' . $dir,
@@ -1402,11 +1423,9 @@ class Admin extends Module
 				];
 				break;
 			default:
-				$customAdminForm = clone $this->form;
-				$this->runFormThroughAdminCustomizations($customAdminForm);
-
-				if (isset($customAdminForm[$name])) {
-					switch ($customAdminForm[$name]->options['type'] ?? 'text') {
+				$adminForm = $this->getForm();
+				if (isset($adminForm[$name])) {
+					switch ($adminForm[$name]->options['type'] ?? 'text') {
 						case 'checkbox':
 							$options['type'] = 'select';
 							$options['depending-on'] = false;
@@ -1501,15 +1520,14 @@ class Admin extends Module
 	/**
 	 * Saves the data in the provided element (or in the current one if not provided)
 	 *
+	 * @param int $id
 	 * @param array $data
-	 * @param int $versionLock
-	 * @param Element|null $element
+	 * @param int|null $versionLock
 	 * @return int
 	 */
-	public function save(array $data, int $versionLock = null, Element $element = null): int
+	public function save(int $id, array $data, int $versionLock = null): int
 	{
-		if ($element === null)
-			$element = $this->getElement();
+		$element = $this->getElement($id);
 
 		if ($element->exists())
 			$privilege = 'U';
@@ -1537,7 +1555,7 @@ class Admin extends Module
 			}
 		}
 
-		foreach ($this->options['required'] as $mandatoryField) {
+		foreach ($this->getPageOptions()['required'] as $mandatoryField) {
 			if (!$this->checkMandatoryField($mandatoryField, $data)) {
 				if (is_array($mandatoryField)) {
 					$this->model->error('Missing mandatory field (on of the following: ' . implode(',', $mandatoryField));
