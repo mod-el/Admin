@@ -297,7 +297,10 @@ class Admin extends Module
 			}),
 		];
 
-		if ($this->pageRule['visualizer'] and $this->pageRule['visualizer'] !== 'Custom') {
+		if ($pageDetails['type'] === 'FormList' and !isset($pageDetails['visualizer-options']['type']))
+			$pageDetails['visualizer-options']['type'] = 'inner-template';
+
+		if ($pageDetails['type'] !== 'Custom') {
 			$fields = $this->getColumnsList();
 
 			$columns = [];
@@ -1327,6 +1330,7 @@ class Admin extends Module
 		$pageOptions = $this->getPageOptions();
 
 		$arr = [
+			'fields' => [],
 			'data' => [
 				'_model_version' => $this->model->_Db->getVersionLock($element->getTable(), $element[$element->settings['primary']]),
 			],
@@ -1350,8 +1354,10 @@ class Admin extends Module
 
 		$form = $this->getForm();
 		$dataset = $form->getDataset();
-		foreach ($dataset as $k => $d)
+		foreach ($dataset as $k => $d) {
+			$arr['fields'][$k] = $this->convertFieldToArrayDescription($d);
 			$arr['data'][$k] = $d->getJsValue(false);
+		}
 
 		foreach ($this->sublists as $s) {
 			$options = $element->getChildrenOptions($s['options']['children']);
