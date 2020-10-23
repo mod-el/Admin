@@ -704,6 +704,8 @@ class Admin extends Module
 		$response = [
 			'type' => $field->options['type'],
 			'label' => $field->getLabel(),
+			'required' => $field->options['mandatory'],
+			'multilang' => $field->options['multilang'],
 		];
 
 		switch ($field->options['type']) {
@@ -1330,10 +1332,9 @@ class Admin extends Module
 		$pageOptions = $this->getPageOptions();
 
 		$arr = [
+			'version' => $this->model->_Db->getVersionLock($element->getTable(), $element[$element->settings['primary']]),
 			'fields' => [],
-			'data' => [
-				'_model_version' => $this->model->_Db->getVersionLock($element->getTable(), $element[$element->settings['primary']]),
-			],
+			'data' => [],
 			'children' => [],
 			'actions' => array_filter($pageOptions['actions'], function ($action) use ($id) {
 				if (!isset($action['specific']))
@@ -1483,9 +1484,13 @@ class Admin extends Module
 	 */
 	private function runFormThroughAdminCustomizations(Form $form): Form
 	{
+		$pageOptions = $this->getPageOptions();
+
 		foreach ($this->fieldsCustomizations as $name => $options) {
 			if (isset($form[$name]))
 				$options = array_merge($form[$name]->options, $options);
+			if (in_array($name, $pageOptions['required'] ?? []))
+				$options['mandatory'] = true;
 			$form->add($name, $options);
 		}
 		return $form;
@@ -1561,12 +1566,12 @@ class Admin extends Module
 			}
 		}
 
-		foreach ($this->getPageOptions()['required'] as $mandatoryField) {
-			if (!$this->checkMandatoryField($mandatoryField, $data)) {
-				if (is_array($mandatoryField)) {
-					$this->model->error('Missing mandatory field (on of the following: ' . implode(',', $mandatoryField));
+		foreach ($this->getPageOptions()['required'] as $requiredField) {
+			if (!$this->checkRequiredField($requiredField, $data)) {
+				if (is_array($requiredField)) {
+					$this->model->error('Missing required field (on of the following: ' . implode(',', $requiredField));
 				} else {
-					$this->model->error('Missing mandatory field "' . $mandatoryField . '"');
+					$this->model->error('Missing required field "' . $requiredField . '"');
 				}
 			}
 		}
@@ -1578,18 +1583,18 @@ class Admin extends Module
 	}
 
 	/**
-	 * Checks (recurively in case of multiple fields) if a mandatory field was compiled
+	 * Checks (recurively in case of multiple fields) if a required field was compiled
 	 *
 	 * @param string|array $field
 	 * @param array $data
 	 * @return bool
 	 */
-	private function checkMandatoryField($field, array $data): bool
+	private function checkRequiredField($field, array $data): bool
 	{
 		if (is_array($field)) {
 			$atLeastOne = false;
 			foreach ($field as $subfield) {
-				if ($this->checkMandatoryField($subfield, $data)) {
+				if ($this->checkRequiredField($subfield, $data)) {
 					$atLeastOne = true;
 					break;
 				}
