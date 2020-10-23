@@ -1484,6 +1484,9 @@ class Admin extends Module
 	 */
 	private function runFormThroughAdminCustomizations(Form $form): Form
 	{
+		$form = clone $form;
+		$form->options['render-only-placeholders'] = true;
+
 		$pageOptions = $this->getPageOptions();
 
 		foreach ($this->fieldsCustomizations as $name => $options) {
