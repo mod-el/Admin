@@ -18,7 +18,7 @@ class Admin extends Module
 	/** @var string */
 	private $path = null;
 	/** @var array */
-	private $options = null;
+	private $pageOptions = null;
 	/** @var Form */
 	public $customFiltersForm;
 	/** @var array */
@@ -30,9 +30,9 @@ class Admin extends Module
 	/** @var array */
 	public $fieldsCustomizations = [];
 
-	/*public function init(array $options)
+	public function init(array $options)
 	{
-		$options = array_merge([
+		/*$options = array_merge([
 			'path' => null,
 			'page' => null,
 			'rule' => null,
@@ -62,7 +62,7 @@ class Admin extends Module
 		$this->page = new $className($this->model);
 		$pageOptions = $this->page->options();
 
-		$this->options = array_merge_recursive_distinct([
+		$this->pageOptions = array_merge_recursive_distinct([
 			'page' => $options['page'],
 			'element' => null,
 			'table' => null,
@@ -87,33 +87,33 @@ class Admin extends Module
 			'required' => [],
 		], $pageOptions);
 
-		if ($this->options['element'] and !$this->options['table'])
-			$this->options['table'] = $this->model->_ORM->getTableFor($this->options['element']);
+		if ($this->pageOptions['element'] and !$this->pageOptions['table'])
+			$this->pageOptions['table'] = $this->model->_ORM->getTableFor($this->pageOptions['element']);
 
-		if ($this->options['table']) {
-			if ($this->options['order_by'] === false) {
-				$tableModel = $this->model->_Db->getTable($this->options['table']);
-				$this->options['order_by'] = $tableModel->primary . ' DESC';
+		if ($this->pageOptions['table']) {
+			if ($this->pageOptions['order_by'] === false) {
+				$tableModel = $this->model->_Db->getTable($this->pageOptions['table']);
+				$this->pageOptions['order_by'] = $tableModel->primary . ' DESC';
 
-				if ($this->options['element']) {
-					$elementData = $this->model->_ORM->getElementData($this->options['element']);
+				if ($this->pageOptions['element']) {
+					$elementData = $this->model->_ORM->getElementData($this->pageOptions['element']);
 					if ($elementData and $elementData['order_by']) {
-						$this->options['order_by'] = [];
+						$this->pageOptions['order_by'] = [];
 						foreach ($elementData['order_by']['depending_on'] as $field)
-							$this->options['order_by'][] = $field . ' ASC';
-						$this->options['order_by'][] = $elementData['order_by']['field'] . ' ASC';
+							$this->pageOptions['order_by'][] = $field . ' ASC';
+						$this->pageOptions['order_by'][] = $elementData['order_by']['field'] . ' ASC';
 
-						$this->options['order_by'] = implode(',', $this->options['order_by']);
+						$this->pageOptions['order_by'] = implode(',', $this->pageOptions['order_by']);
 					}
 				}
 			}
 
 			$this->customFiltersForm = new Form([
-				'table' => $this->options['table'],
+				'table' => $this->pageOptions['table'],
 				'model' => $this->model,
 			]);
 
-			$element = $this->model->_ORM->loadMainElement($this->options['element'] ?: 'Element', $options['id'] ?: false, ['table' => $this->options['table']]);
+			$element = $this->model->_ORM->loadMainElement($this->pageOptions['element'] ?: 'Element', $options['id'] ?: false, ['table' => $this->pageOptions['table']]);
 			if (!$element)
 				die('Requested element does not exist');
 			$this->form = $element->getForm();
@@ -121,14 +121,13 @@ class Admin extends Module
 			$values = $this->form->getValues();
 		}
 
-		$this->page->customize();
-
 		if ($this->form) {
 			$replaceValues = $this->runFormThroughAdminCustomizations($this->form);
 			$values = array_merge($values, $replaceValues);
 			$this->form->setValues($values);
 		}
-	}*/
+		*/
+	}
 
 	/**
 	 * @param string $path
@@ -150,6 +149,9 @@ class Admin extends Module
 	 */
 	public function setPage(string $rule)
 	{
+		if ($this->page)
+			return;
+
 		$pages = $this->getPages($this->path);
 		$rule = $this->seekForRule($pages, $rule);
 		if (!$rule or !$rule['page'])
@@ -160,6 +162,7 @@ class Admin extends Module
 			$this->model->error('Admin Page class not found');
 
 		$this->page = new $className($this->model);
+		$this->page->customize();
 		$this->pageRule = $rule;
 	}
 
@@ -176,8 +179,8 @@ class Admin extends Module
 
 			$referencePage = new $className($this->model);
 		} else {
-			if ($this->options !== null)
-				return $this->options;
+			if ($this->pageOptions !== null)
+				return $this->pageOptions;
 
 			$referencePage = $this->page;
 		}
@@ -254,8 +257,8 @@ class Admin extends Module
 				break;
 		}
 
-		if ($this->options === null and $page === null)
-			$this->options = $options;
+		if ($this->pageOptions === null and $page === null)
+			$this->pageOptions = $options;
 
 		return $options;
 	}
@@ -1335,7 +1338,7 @@ class Admin extends Module
 			'version' => $this->model->_Db->getVersionLock($element->getTable(), $element[$element->settings['primary']]),
 			'fields' => [],
 			'data' => [],
-			'children' => [],
+			'sublists' => [],
 			'actions' => array_filter($pageOptions['actions'], function ($action) use ($id) {
 				if (!isset($action['specific']))
 					return true;
@@ -1360,44 +1363,49 @@ class Admin extends Module
 			$arr['data'][$k] = $d->getJsValue(false);
 		}
 
-		foreach ($this->sublists as $s) {
-			$options = $element->getChildrenOptions($s['options']['children']);
-			if (!$options)
-				$this->model->error($s['options']['children'] . ' is not a children list of the element!');
+		foreach ($this->sublists as $sublistName => $sublist) {
+			$options = $element->getChildrenOptions($sublist['children']);
+			if (!$options or $options['type'] !== 'multiple')
+				$this->model->error($sublist['children'] . ' is not a valid relationship of the element!');
 
-			$visualizer = null;
-			if (isset($s['options']['visualizer']) and $s['options']['visualizer']) {
-				$className = Autoloader::searchFile('DataVisualizer', $s['options']['visualizer']);
-				if ($className) {
-					$visualizer = new $className($this->model, [
-						'name' => $s['name'],
-						'table' => $options['table'],
-						'element' => $options['element'],
-					]);
-				}
-			}
-
-			$arr['children'][$s['name']] = [
-				'primary' => $options['primary'],
+			$sublistArr = [
+				'name' => $sublistName,
+				'visualizer' => $sublist['visualizer'],
+				'fields' => [],
 				'list' => [],
+				'privileges' => [
+					'C' => true,
+					'R' => true,
+					'U' => true,
+					'D' => true,
+				],
 			];
 
-			foreach ($element->{$s['options']['children']} as $chId => $ch) {
-				$chArr = [];
-				if ($visualizer) {
-					$form = $visualizer->getRowForm($ch, $s['options']);
-				} else {
-					$form = $this->getSublistRowForm($ch, $s['options']);
-				}
-				$keys = array_keys($form->getDataset());
+			$dummy = $this->model->_ORM->create($options['element'] ?: 'Element', ['table' => $options['table']]);
+			$dummyForm = $dummy->getForm();
+			$dummyForm->remove($options['field']);
 
-				$chArr[$options['primary']] = $ch[$options['primary']];
-				foreach ($keys as $k) {
-					$chArr[$k] = $form[$k]->getJsValue(false);
-				}
-
-				$arr['children'][$s['name']]['list'][] = $chArr;
+			$dummyDataset = $dummyForm->getDataset();
+			foreach ($dummyDataset as $k => $d) {
+				$sublistArr['fields'][$k] = $this->convertFieldToArrayDescription($d);
+				$sublistArr['fields'][$k]['default'] = $d->getJsValue(false);
 			}
+
+			foreach ($element->{$sublist['children']} as $item) {
+				$itemArr = [
+					'id' => $item[$options['primary']],
+					'data' => [],
+
+				];
+
+				$itemForm = $item->getForm();
+				foreach ($dummyDataset as $k => $d)
+					$itemArr['data'][$k] = $itemForm[$k]->getJsValue(false);
+
+				$sublistArr['list'][] = $itemArr;
+			}
+
+			$arr['sublists'][] = $sublistArr;
 		}
 
 		return $arr;
@@ -1644,51 +1652,10 @@ class Admin extends Module
 	 */
 	public function sublist(string $name, array $options = [])
 	{
-		$options = array_merge([
+		$this->sublists[$name] = array_merge([
 			'visualizer' => 'FormList',
-			'privileges' => false,
 			'children' => $name,
 		], $options);
-
-		$this->sublists[] = [
-			'name' => $name,
-			'options' => $options,
-		];
-	}
-
-	/**
-	 * Returns the custom form of a single sublist row
-	 *
-	 * @param Element $el
-	 * @param array $options
-	 * @return Form
-	 */
-	public function getSublistRowForm(Element $el, array $options): Form
-	{
-		$form = $el->getForm();
-		if (isset($options['fields']) and count($options['fields']) > 0) {
-			$newForm = clone $form;
-			if (!isset($options['clear-form']) or $options['clear-form'])
-				$newForm->clear();
-
-			foreach ($options['fields'] as $f => $fOpt) {
-				if (!is_string($fOpt) and is_callable($fOpt)) {
-					$fOpt = [
-						'type' => 'custom',
-						'custom' => $fOpt,
-					];
-				} elseif (is_numeric($f)) {
-					$f = $fOpt;
-					$fOpt = [];
-				}
-
-				$newForm->add($form[$f] ?? $f, $fOpt);
-			}
-
-			$form = $newForm;
-		}
-
-		return $form;
 	}
 
 	/**
