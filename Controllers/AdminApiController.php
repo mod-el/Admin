@@ -256,6 +256,18 @@ class AdminApiController extends Controller
 							else
 								$this->model->error('Error while saving');
 							break;
+						case 'save-many':
+							foreach (($input['create'] ?? []) as $item)
+								$this->model->_Admin->save(0, $item);
+
+							foreach (($input['update'] ?? []) as $id => $item)
+								$this->model->_Admin->save($id, $item);
+
+							foreach (($input['delete'] ?? []) as $id)
+								$this->model->_Admin->delete($id);
+
+							$this->respond(['success' => true]);
+							break;
 						case 'delete':
 							$ids = $input['ids'] ?? [];
 
