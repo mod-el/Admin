@@ -242,7 +242,7 @@ class AdminApiController extends Controller
 							$this->respond($response);
 							break;
 						case 'save':
-							$data = $input['save'] ?? null;
+							$data = $input['data'] ?? null;
 							if (empty($data))
 								$this->model->error('Wrong data');
 
