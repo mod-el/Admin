@@ -243,18 +243,18 @@ class AdminApiController extends Controller
 							break;
 						case 'save':
 							$data = $input['data'] ?? null;
-							if (empty($data))
-								$this->model->error('Wrong data');
+							$sublists = $input['sublists'] ?? [];
 
 							$versionLock = null;
 							if (isset($input['version']) and is_numeric($input['version']))
 								$versionLock = $input['version'];
 
-							$newId = $this->model->_Admin->save($id, $data, $versionLock);
-							if ($newId !== false)
-								$this->respond(['id' => $newId]);
-							else
-								$this->model->error('Error while saving');
+							if (empty($data) and empty($sublists))
+								$this->model->error('Nothing to save');
+
+							$newId = $this->model->_Admin->save($id, $data, $sublists, $versionLock);
+
+							$this->respond(['id' => $newId]);
 							break;
 						case 'save-many':
 							foreach (($input['create'] ?? []) as $item)

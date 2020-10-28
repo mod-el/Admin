@@ -1544,10 +1544,11 @@ class Admin extends Module
 	 *
 	 * @param int $id
 	 * @param array $data
+	 * @param array $sublists
 	 * @param int|null $versionLock
 	 * @return int
 	 */
-	public function save(int $id, array $data, int $versionLock = null): int
+	public function save(int $id, array $data, array $sublists = [], ?int $versionLock = null): int
 	{
 		$element = $this->getElement($id);
 
@@ -1563,6 +1564,48 @@ class Admin extends Module
 		$data = array_merge($pageOptions['where'], $data);
 
 		$form = $this->getForm();
+
+		$mainElementId = $this->subsave($element, $data, $form, $versionLock);
+
+		foreach ($sublists as $sublistName => $sublistData) {
+			if (!isset($this->sublists[$sublistName]))
+				continue;
+
+			$relationship = $this->sublists[$sublistName]['children'];
+
+			foreach (($sublistData['create'] ?? []) as $childData) {
+				$newChild = $element->create($relationship);
+				$this->subsave($newChild, $childData);
+			}
+
+			foreach (($sublistData['update'] ?? []) as $childId => $childData) {
+				$child = $element->{$relationship}[$childId] ?? null;
+				if ($child)
+					$this->subsave($child, $childData);
+			}
+
+			foreach (($sublistData['delete'] ?? []) as $childId) {
+				$child = $element->{$relationship}[$childId] ?? null;
+				if ($child)
+					$child->delete();
+			}
+		}
+
+		return $mainElementId;
+	}
+
+	/**
+	 * @param Element $element
+	 * @param array $data
+	 * @param Form|null $form
+	 * @param int|null $versionLock
+	 * @return int
+	 */
+	private function subsave(Element $element, array $data, ?Form $form = null, ?int $versionLock = null): int
+	{
+		if ($form === null)
+			$form = $element->getForm();
+
 		foreach ($form->getDataset() as $k => $d) {
 			if (isset($data[$k])) {
 				if ($d->options['nullable'] and $data[$k] === '')
@@ -1577,18 +1620,7 @@ class Admin extends Module
 			}
 		}
 
-		foreach ($this->getPageOptions()['required'] as $requiredField) {
-			if (!$this->checkRequiredField($requiredField, $data)) {
-				if (is_array($requiredField)) {
-					$this->model->error('Missing required field (on of the following: ' . implode(',', $requiredField));
-				} else {
-					$this->model->error('Missing required field "' . $requiredField . '"');
-				}
-			}
-		}
-
 		return $element->save($data, [
-			'children' => true,
 			'version' => $versionLock,
 		]);
 	}
