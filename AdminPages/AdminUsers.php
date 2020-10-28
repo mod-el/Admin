@@ -45,11 +45,4 @@ class AdminUsers extends AdminPage
 			],
 		];
 	}
-
-	public function customize()
-	{
-		$this->model->_Admin->clearForm();
-		$this->model->_Admin->field('username');
-		$this->model->_Admin->field('password', 'password');
-	}
 }
