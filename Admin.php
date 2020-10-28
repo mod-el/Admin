@@ -913,8 +913,6 @@ class Admin extends Module
 		$pageOptions = $this->getPageOptions();
 
 		foreach ($this->model->_ORM->all($elementName, $where, $queryOptions) as $el) {
-			$this->runFormThroughAdminCustomizations($el->getForm()); // TODO: serve ancora?
-
 			$background = $pageOptions['background'] ?? null;
 			if ($background and !is_string($background) and is_callable($background))
 				$background = $background($el);
