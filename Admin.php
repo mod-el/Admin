@@ -1352,6 +1352,7 @@ class Admin extends Module
 				'U' => $this->canUser('U', null, $element),
 				'D' => $this->canUser('D', null, $element),
 			],
+			'warnings' => $this->page->warnings($element),
 		];
 
 		$form = $this->getForm();
