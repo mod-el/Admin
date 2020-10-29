@@ -708,7 +708,7 @@ class Admin extends Module
 			'type' => $field->options['type'],
 			'label' => $field->getLabel(),
 			'required' => $field->options['mandatory'],
-			'multilang' => $field->options['multilang'],
+			'multilang' => false,
 		];
 
 		switch ($field->options['type']) {
@@ -728,6 +728,9 @@ class Admin extends Module
 
 		if ($field->options['default'])
 			$response['default'] = $field->options['default'];
+
+		if ($field->options['multilang'] and $this->model->isLoaded('Multilang'))
+			$response['multilang'] = $this->model->_Multilang->langs;
 
 		return $response;
 	}
@@ -1607,14 +1610,29 @@ class Admin extends Module
 
 		foreach ($form->getDataset() as $k => $d) {
 			if (isset($data[$k])) {
-				if ($d->options['nullable'] and $data[$k] === '')
-					$data[$k] = null;
+				if ($d->options['multilang']) {
+					if (!is_array($data[$k]))
+						throw new \Exception('I campi multilingua devono essere array/oggetti', 400);
 
-				if ($d->options['type'] === 'password') {
-					if ($data[$k])
-						$data[$k] = $this->model->_User_Admin->crypt($data[$k]);
-					else
+					foreach ($data[$k] as $lang => $v) {
+						$newV = $this->checkSingleDatum($d, $v);
+						if ($newV !== false)
+							$data[$k][$lang] = $newV;
+						else
+							unset($data[$k][$lang]);
+					}
+
+					if (count($data[$k]) === 0)
 						unset($data[$k]);
+				} else {
+					if (is_array($data[$k]))
+						throw new \Exception('I campi non multilingua non possono essere array/oggetti', 400);
+
+					$newV = $this->checkSingleDatum($d, $data[$k]);
+					if ($newV !== false)
+						$data[$k] = $newV;
+					else
+						unset($data[$k][$lang]);
 				}
 			}
 		}
@@ -1622,6 +1640,28 @@ class Admin extends Module
 		return $element->save($data, [
 			'version' => $versionLock,
 		]);
+	}
+
+	/**
+	 * @param Field $d
+	 * @param mixed $v
+	 * @return mixed
+	 */
+	private function checkSingleDatum(Field $d, $v)
+	{
+		if ($d->options['nullable'] and $v === '')
+			$v = null;
+		if (!$d->options['nullable'] and $v === null)
+			$v = '';
+
+		if ($d->options['type'] === 'password') {
+			if ($v)
+				$v = $this->model->_User_Admin->crypt($v);
+			else
+				return false;
+		}
+
+		return $v;
 	}
 
 	/**
