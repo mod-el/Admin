@@ -1527,7 +1527,7 @@ class Admin extends Module
 				return null;
 
 			$element = $this->model->_ORM->loadMainElement($pageOptions['element'] ?: 'Element', $id ?: false, ['table' => $pageOptions['table']]);
-			if (!$element->exists() and $id)
+			if ((!$element or !$element->exists()) and $id)
 				throw new \Exception('L\'elemento non esiste');
 		}
 
