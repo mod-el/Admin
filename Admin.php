@@ -592,6 +592,8 @@ class Admin extends Module
 			'text' => '',
 		];
 
+		$form = $el->getForm();
+
 		if (!is_string($column['display'])) {
 			if (is_callable($column['display'])) {
 				$c['text'] = call_user_func($column['display'], $el);
@@ -599,8 +601,6 @@ class Admin extends Module
 				$this->model->error('Unknown display format in a column - either string or callable is expected');
 			}
 		} else {
-			$form = $el->getForm();
-
 			if (isset($form[$column['display']])) {
 				$d = $form[$column['display']];
 				$c['text'] = $d->getText(['preview' => true]);
@@ -613,8 +613,13 @@ class Admin extends Module
 		}
 
 		$c['text'] = (string)$c['text'];
-		if ($column['field'])
-			$c['value'] = $el[$column['field']];
+		if ($column['field']) {
+			if (isset($form[$column['field']])) {
+				$c['value'] = $form[$column['field']]->getJsValue(false);
+			} else {
+				$c['value'] = $el[$column['field']];
+			}
+		}
 
 		$background = $column['background'] ?? null;
 		if ($background and !is_string($background) and is_callable($background))
