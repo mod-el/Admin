@@ -6,24 +6,24 @@ class AdminPrivileges extends AdminPage
 {
 	public function options(): array
 	{
-		$options = [
+		return [
 			'table' => 'admin_privileges',
 			'perPage' => 0,
 			'order_by' => 'id',
 		];
-		return $options;
 	}
 
 	public function visualizerOptions(): array
 	{
 		return [
 			'type' => 'inner-template',
-			'template' => INCLUDE_PATH . 'model' . DIRECTORY_SEPARATOR . 'Admin' . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'admin-privileges.php',
 		];
 	}
 
 	public function customize()
 	{
+		$this->model->viewOptions['template'] = INCLUDE_PATH . 'model' . DIRECTORY_SEPARATOR . 'Admin' . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'admin-privileges.php';
+
 		$config = $this->model->_Admin->retrieveConfig();
 		$usersTable = null;
 

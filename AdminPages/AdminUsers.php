@@ -24,6 +24,9 @@ class AdminUsers extends AdminPage
 		}
 
 		$options = [
+			'fields' => [
+				'username',
+			],
 			'privileges' => [
 				'D' => function ($el) {
 					return (bool)($el['id'] != $this->model->_User_Admin->logged());
@@ -35,14 +38,5 @@ class AdminUsers extends AdminPage
 		if ($usersTable)
 			$options['table'] = $usersTable;
 		return $options;
-	}
-
-	public function visualizerOptions(): array
-	{
-		return [
-			'columns' => [
-				'username',
-			],
-		];
 	}
 }

@@ -517,15 +517,15 @@ class Admin extends Module
 
 			if (!is_array($column)) {
 				if (is_string($column) or is_numeric($column)) {
-					$column = array(
+					$column = [
 						'field' => $column,
 						'display' => $column,
-					);
+					];
 				} elseif (is_callable($column)) {
-					$column = array(
+					$column = [
 						'field' => false,
 						'display' => $column,
-					);
+					];
 				} else {
 					$this->model->error('Unknown column format "' . entities($k) . '"');
 				}
@@ -563,10 +563,12 @@ class Admin extends Module
 					$column['editable'] = false;
 			}
 
-			$k = $this->fromLabelToColumnId($k);
-			if ($k == '') {
+			if ($k and $k !== $column['field'])
+				$k = $this->fromLabelToColumnId($k);
+			if (!$k) {
 				if ($column['field'])
 					$k = $column['field'];
+
 				if (!$k)
 					$this->model->error('Can\'t assign id to column with label "' . entities($column['label']) . '"');
 			}
@@ -714,6 +716,7 @@ class Admin extends Module
 			'label' => $field->getLabel(),
 			'required' => $field->options['mandatory'],
 			'multilang' => false,
+			'attributes' => $field->options['attributes'],
 		];
 
 		switch ($field->options['type']) {

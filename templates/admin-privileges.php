@@ -1,11 +1,17 @@
+<?php
+$form = $this->model->_Admin->getForm();
+?>
 <div class="flex-fields">
-	<div style="padding-top: 33px">
+	<div style="padding-top: 12px">
+		Utente<br/>
 		<?php $form['user']->render(); ?>
 	</div>
-	<div style="padding-top: 33px">
+	<div style="padding-top: 12px">
+		Pagina<br/>
 		<?php $form['page']->render(); ?>
 	</div>
-	<div style="padding-top: 33px">
+	<div style="padding-top: 12px">
+		Sottopagina<br/>
 		<?php $form['subpage']->render(); ?>
 	</div>
 	<div>
