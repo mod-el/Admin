@@ -93,7 +93,7 @@ class AdminApiController extends Controller
 							$this->respond($response);
 							break;
 						default:
-							$this->model->error('Unrecognized action', ['code' => 400]);
+							$this->customAction($action, $id);
 							break;
 					}
 					break;
@@ -113,10 +113,13 @@ class AdminApiController extends Controller
 	 */
 	public function post()
 	{
-		$input = $this->getInput();
-
-		$request = $this->request[0] ?? '';
 		try {
+			if (!$this->model->_CSRF->checkCsrf())
+				throw new \Exception('Unauthorized, try refreshing the page', 401);
+
+			$request = $this->request[0] ?? '';
+			$input = $this->getInput();
+
 			switch ($request) {
 				case 'user':
 					$subrequest = $this->request[1] ?? null;
@@ -303,7 +306,7 @@ class AdminApiController extends Controller
 								throw new \Exception('Error while changing order');
 							break;
 						default:
-							$this->model->error('Unrecognized action', ['code' => 400]);
+							$this->customAction($action, $id, $input);
 							break;
 					}
 					break;
@@ -353,6 +356,29 @@ class AdminApiController extends Controller
 
 		echo json_encode($response);
 		die();
+	}
+
+	/**
+	 * @param string|null $action
+	 * @param int|null $id
+	 * @param array $input
+	 */
+	private function customAction(?string $action = null, ?int $id = null, array $input = [])
+	{
+		if ($action === null)
+			$this->model->error('No action provided', ['code' => 400]);
+
+		if (!$this->model->_Admin->page)
+			$this->model->error('No admin page loaded', ['code' => 500]);
+
+		$action = str_replace(' ', '', lcfirst(ucwords(str_replace('-', ' ', $action))));
+
+		if (method_exists($this->model->_Admin->page, $action)) {
+			$response = $this->model->_Admin->page->{$action}($input, $id);
+			$this->respond($response);
+		} else {
+			$this->model->error('Unrecognized action', ['code' => 400]);
+		}
 	}
 
 	/**
