@@ -149,15 +149,17 @@ class Admin extends Module
 		// Backward compatibility
 		$visualizerOptions = $referencePage->visualizerOptions();
 
-		switch ($this->pageRule['visualizer']) {
-			case 'Table':
-				if (isset($visualizerOptions['columns']))
-					$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['columns']);
-				break;
-			case 'FormList':
-				if (isset($visualizerOptions['fields']))
-					$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['fields']);
-				break;
+		if ($this->pageRule) {
+			switch ($this->pageRule['visualizer']) {
+				case 'Table':
+					if (isset($visualizerOptions['columns']))
+						$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['columns']);
+					break;
+				case 'FormList':
+					if (isset($visualizerOptions['fields']))
+						$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['fields']);
+					break;
+			}
 		}
 
 		if ($this->pageOptions === null and $page === null)
