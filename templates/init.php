@@ -85,14 +85,10 @@
 	<select id="visualizer-prototype">
 		<option value=""></option>
 		<?php
-		$visualizers = [];
-
-		$visualizersGroups = \Model\Core\Autoloader::getFilesByType('DataVisualizer');
-		foreach ($visualizersGroups as $module => $moduleVisualizers) {
-			foreach ($moduleVisualizers as $visualizer => $visualizerFullName)
-				$visualizers[] = $visualizer;
-		}
-		sort($visualizers);
+		$visualizers = [
+			'Table',
+			'FormList',
+		];
 
 		foreach ($visualizers as $visualizer) {
 			?>

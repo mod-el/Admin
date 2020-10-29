@@ -30,105 +30,6 @@ class Admin extends Module
 	/** @var array */
 	public $fieldsCustomizations = [];
 
-	public function init(array $options)
-	{
-		/*$options = array_merge([
-			'path' => null,
-			'page' => null,
-			'rule' => null,
-			'id' => null,
-		], $options);
-
-		if ($options['path'] !== null)
-			$this->path = $options['path'];
-
-		if (!$options['page']) {
-			if ($options['rule']) {
-				$pages = $this->getPages($options['path']);
-				$rule = $this->seekForRule($pages, $options['rule']);
-				if (!$rule or !$rule['page'])
-					return;
-				$options['page'] = $rule['page'];
-			}
-
-			if (!$options['page'])
-				return;
-		}
-
-		$className = Autoloader::searchFile('AdminPage', $options['page']);
-		if (!$className)
-			$this->model->error('Admin Page class not found');
-
-		$this->page = new $className($this->model);
-		$pageOptions = $this->page->options();
-
-		$this->pageOptions = array_merge_recursive_distinct([
-			'page' => $options['page'],
-			'element' => null,
-			'table' => null,
-			'where' => [],
-			'order_by' => false,
-			'group_by' => false,
-			'having' => [],
-			'min' => [],
-			'max' => [],
-			'sum' => [],
-			'avg' => [],
-			'count' => [],
-			'perPage' => 20,
-			'privileges' => [
-				'C' => true,
-				'R' => true,
-				'U' => true,
-				'D' => true,
-				'L' => true,
-			],
-			'joins' => [],
-			'required' => [],
-		], $pageOptions);
-
-		if ($this->pageOptions['element'] and !$this->pageOptions['table'])
-			$this->pageOptions['table'] = $this->model->_ORM->getTableFor($this->pageOptions['element']);
-
-		if ($this->pageOptions['table']) {
-			if ($this->pageOptions['order_by'] === false) {
-				$tableModel = $this->model->_Db->getTable($this->pageOptions['table']);
-				$this->pageOptions['order_by'] = $tableModel->primary . ' DESC';
-
-				if ($this->pageOptions['element']) {
-					$elementData = $this->model->_ORM->getElementData($this->pageOptions['element']);
-					if ($elementData and $elementData['order_by']) {
-						$this->pageOptions['order_by'] = [];
-						foreach ($elementData['order_by']['depending_on'] as $field)
-							$this->pageOptions['order_by'][] = $field . ' ASC';
-						$this->pageOptions['order_by'][] = $elementData['order_by']['field'] . ' ASC';
-
-						$this->pageOptions['order_by'] = implode(',', $this->pageOptions['order_by']);
-					}
-				}
-			}
-
-			$this->customFiltersForm = new Form([
-				'table' => $this->pageOptions['table'],
-				'model' => $this->model,
-			]);
-
-			$element = $this->model->_ORM->loadMainElement($this->pageOptions['element'] ?: 'Element', $options['id'] ?: false, ['table' => $this->pageOptions['table']]);
-			if (!$element)
-				die('Requested element does not exist');
-			$this->form = $element->getForm();
-
-			$values = $this->form->getValues();
-		}
-
-		if ($this->form) {
-			$replaceValues = $this->runFormThroughAdminCustomizations($this->form);
-			$values = array_merge($values, $replaceValues);
-			$this->form->setValues($values);
-		}
-		*/
-	}
-
 	/**
 	 * @param string $path
 	 */
@@ -963,61 +864,6 @@ class Admin extends Module
 	}
 
 	/**
-	 * Returns an array with the possible actions that the user can take
-	 *
-	 * @param string $type
-	 * @return array
-	 */
-	public function getActions(string $type): array
-	{
-		$actions = [];
-
-		$pageOptions = $this->getPageOptions();
-		if (!(isset($pageOptions['table']) and $pageOptions['table']) and !(isset($pageOptions['element']) and $pageOptions['element']))
-			return [];
-
-		if ($this->canUser('C')) {
-			$actions['new'] = [
-				'text' => 'Nuovo',
-				'action' => 'new',
-			];
-		}
-		if ($this->canUser('D')) {
-			$actions['delete'] = [
-				'text' => 'Elimina',
-				'action' => 'delete',
-			];
-		}
-
-		switch ($type) {
-			case 'edit':
-				if ($this->canUser('U')) {
-					$actions['save'] = [
-						'text' => 'Salva',
-						'action' => 'save',
-					];
-				}
-				if ($this->canUser('C')) {
-					$actions['duplicate'] = [
-						'text' => 'Duplica',
-						'action' => 'duplicate',
-					];
-				}
-				break;
-			case 'new':
-				if ($this->canUser('C')) {
-					$actions['save'] = [
-						'text' => 'Salva',
-						'action' => 'save',
-					];
-				}
-				break;
-		}
-
-		return $actions;
-	}
-
-	/**
 	 * Can the current user do something? (Privilege check, basically)
 	 *
 	 * @param string $what
@@ -1670,34 +1516,6 @@ class Admin extends Module
 		}
 
 		return $v;
-	}
-
-	/**
-	 * Checks (recurively in case of multiple fields) if a required field was compiled
-	 *
-	 * @param string|array $field
-	 * @param array $data
-	 * @return bool
-	 */
-	private function checkRequiredField($field, array $data): bool
-	{
-		if (is_array($field)) {
-			$atLeastOne = false;
-			foreach ($field as $subfield) {
-				if ($this->checkRequiredField($subfield, $data)) {
-					$atLeastOne = true;
-					break;
-				}
-			}
-			return $atLeastOne;
-		} elseif (isset($data[$field]) or !$this->model->element->exists()) { // For new elements, all fields must be present. For a subsequent edit, they can be missing
-			if ($data[$field] ?? null)
-				return true;
-			else
-				return false;
-		} else {
-			return true;
-		}
 	}
 
 	/**

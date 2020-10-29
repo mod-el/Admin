@@ -23,11 +23,6 @@ class AdminPage
 
 	}
 
-	public function viewOptions(): array
-	{
-		return [];
-	}
-
 	public function visualizerOptions(): array
 	{
 		return [];
