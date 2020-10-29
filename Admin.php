@@ -115,6 +115,8 @@ class Admin extends Module
 			'fields' => [],
 			'onclick' => null,
 			'actions' => [],
+			'export' => false,
+			'print' => false,
 		], $basicPageOptions);
 
 		if ($options['element'] and !$options['table'])
@@ -199,7 +201,14 @@ class Admin extends Module
 			'actions' => array_filter($options['actions'], function ($action) {
 				return (!isset($action['specific']) or $action['specific'] === 'list' or $action['specific'] === 'table'); // Retrocompatibilità per "table"
 			}),
+			'export' => $options['export'],
 		];
+
+		if ($options['csv'] ?? false) // Backward compatibility
+			$pageDetails['export'] = true;
+
+		if ($pageDetails['export'] and !$this->model->moduleExists('Csv'))
+			$pageDetails['export'] = false;
 
 		if ($pageDetails['type'] === 'FormList' and !isset($pageDetails['visualizer-options']['type']))
 			$pageDetails['visualizer-options']['type'] = 'inner-template';
