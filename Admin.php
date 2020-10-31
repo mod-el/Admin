@@ -1490,7 +1490,7 @@ class Admin extends Module
 					if (count($data[$k]) === 0)
 						unset($data[$k]);
 				} else {
-					if (is_array($data[$k]))
+					if (is_array($data[$k]) and $d->options['type'] !== 'file')
 						throw new \Exception('I campi non multilingua non possono essere array/oggetti', 400);
 
 					$newV = $this->checkSingleDatum($d, $data[$k]);
