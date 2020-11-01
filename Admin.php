@@ -226,6 +226,7 @@ class Admin extends Module
 					'sortable' => $column['sortable'],
 					'print' => $column['print'],
 					'price' => $column['price'],
+					'raw' => $column['raw'],
 				];
 			}
 
@@ -456,8 +457,11 @@ class Admin extends Module
 				'print' => true,
 				'total' => false,
 				'price' => false,
+				'raw' => false,
 			], $column);
 
+			if (!is_string($column['display']) and is_callable($column['display']))
+				$column['raw'] = true;
 			if (is_string($column['display']) and !$column['field'] and $column['display'])
 				$column['field'] = $column['display'];
 			if ($column['field'] === false and $tableModel and array_key_exists($k, $tableModel->columns))
