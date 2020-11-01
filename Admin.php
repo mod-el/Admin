@@ -1227,6 +1227,18 @@ class Admin extends Module
 			'warnings' => $this->page->warnings($element),
 		];
 
+		if ($id > 0) {
+			$url = $element->getUrl();
+			if ($url) {
+				$arr['actions'][] = [
+					'id' => 'public-url',
+					'text' => 'URL Pubblico',
+					'fa-icon' => 'fas fa-external-link-alt',
+					'url' => $url,
+				];
+			}
+		}
+
 		$form = $this->getForm();
 		$dataset = $form->getDataset();
 		foreach ($dataset as $k => $d) {
@@ -1252,7 +1264,7 @@ class Admin extends Module
 				],
 			];
 
-			$dummy = $this->model->_ORM->create($options['element'] ?: 'Element', ['table' => $options['table']]);
+			$dummy = $element->create($sublist['children']);
 			$dummyForm = $dummy->getForm();
 			$dummyForm->remove($options['field']);
 
