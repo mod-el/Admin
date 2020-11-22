@@ -377,6 +377,9 @@ class AdminApiController extends Controller
 			$response = $this->model->_Admin->page->{$action}($input, $id);
 			$this->respond($response);
 		} else {
+			if ($this->model->_Db->inTransaction())
+				$this->model->_Db->rollBack();
+
 			$this->model->error('Unrecognized action', ['code' => 400]);
 		}
 	}
