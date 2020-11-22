@@ -257,7 +257,7 @@ class Admin extends Module
 			];
 			foreach ($filtersForm->getDataset() as $filter) {
 				$filter = $this->convertFieldToFilter($filter);
-				$pageDetails['filters'][$filter->options['name']] = $this->convertFieldToArrayDescription($filter);
+				$pageDetails['filters'][$filter->options['name']] = $filter->getJavascriptDescription();
 			}
 
 			$pageDetails['default-filters'] = [
@@ -474,7 +474,7 @@ class Admin extends Module
 					$adminForm = $this->getForm();
 
 				if ($adminForm[$column['field']])
-					$column['editable'] = $this->convertFieldToArrayDescription($adminForm[$column['field']]);
+					$column['editable'] = $adminForm[$column['field']]->getJavascriptDescription();
 				else
 					$column['editable'] = false;
 			}
@@ -619,44 +619,6 @@ class Admin extends Module
 		}
 
 		return $field;
-	}
-
-	/**
-	 * @param Field $field
-	 * @return array
-	 */
-	private function convertFieldToArrayDescription(Field $field): array
-	{
-		$response = [
-			'type' => $field->options['type'],
-			'label' => $field->getLabel(),
-			'required' => $field->options['mandatory'],
-			'multilang' => false,
-			'attributes' => $field->options['attributes'],
-		];
-
-		switch ($field->options['type']) {
-			case 'select':
-				$field->loadSelectOptions();
-				$response['options'] = [];
-				foreach ($field->options['options'] as $k => $v) {
-					if ($k === '')
-						continue;
-					$response['options'][] = [
-						'id' => $k,
-						'text' => $v,
-					];
-				}
-				break;
-		}
-
-		if ($field->options['default'])
-			$response['default'] = $field->options['default'];
-
-		if ($field->options['multilang'] and $this->model->isLoaded('Multilang'))
-			$response['multilang'] = $this->model->_Multilang->langs;
-
-		return $response;
 	}
 
 	/**
@@ -1242,7 +1204,7 @@ class Admin extends Module
 		$form = $this->getForm();
 		$dataset = $form->getDataset();
 		foreach ($dataset as $k => $d) {
-			$arr['fields'][$k] = $this->convertFieldToArrayDescription($d);
+			$arr['fields'][$k] = $d->getJavascriptDescription();
 			$arr['data'][$k] = $d->getJsValue(false);
 		}
 
@@ -1270,7 +1232,7 @@ class Admin extends Module
 
 			$dummyDataset = $dummyForm->getDataset();
 			foreach ($dummyDataset as $k => $d) {
-				$sublistArr['fields'][$k] = $this->convertFieldToArrayDescription($d);
+				$sublistArr['fields'][$k] = $d->getJavascriptDescription();
 				$sublistArr['fields'][$k]['default'] = $d->getJsValue(false);
 			}
 
@@ -1278,7 +1240,6 @@ class Admin extends Module
 				$itemArr = [
 					'id' => $item[$options['primary']],
 					'data' => [],
-
 				];
 
 				$itemForm = $item->getForm();
