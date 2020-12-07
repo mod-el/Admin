@@ -322,11 +322,11 @@ class Admin extends Module
 		$options = $this->getPageOptions();
 		$fields = $this->getAllFieldsList();
 
-		$defaultColumns = array_keys($fields);
+		$defaultColumns = $fields;
 		if (count($options['fields'] ?? []) > 0) {
 			$allColumns = $options['fields'];
 
-			foreach ($fields as $field => $fieldOptions) {
+			foreach ($fields as $field) {
 				if (!isset($allColumns[$field]) and !in_array($field, $allColumns))
 					$allColumns[] = $field;
 			}
@@ -334,7 +334,7 @@ class Admin extends Module
 			if ($options['wipe-fields'] ?? true)
 				$defaultColumns = $options['fields'];
 		} else {
-			$allColumns = array_keys($fields);
+			$allColumns = $fields;
 		}
 
 		$columns = $this->elaborateColumns($allColumns, $options['table']);
@@ -374,7 +374,7 @@ class Admin extends Module
 			if (in_array($k, $excludeColumns))
 				continue;
 
-			$fields[$k] = $col;
+			$fields[] = $k;
 		}
 
 		if ($this->model->isLoaded('Multilang') and array_key_exists($options['table'], $this->model->_Multilang->tables)) {
@@ -382,12 +382,14 @@ class Admin extends Module
 			$mlTable = $options['table'] . $mlTableOptions['suffix'];
 			$mlTableModel = $this->model->_Db->getTable($mlTable);
 			foreach ($mlTableModel->columns as $k => $col) {
-				if ($k === $mlTableModel->primary or isset($fields[$k]) or $k === $mlTableOptions['keyfield'] or $k === $mlTableOptions['lang'] or in_array($k, $excludeColumns))
+				if ($k === $mlTableModel->primary or in_array($k, $fields) or $k === $mlTableOptions['keyfield'] or $k === $mlTableOptions['lang'] or in_array($k, $excludeColumns))
 					continue;
 
-				$fields[$k] = $col;
+				$fields[] = $k;
 			}
 		}
+
+		$fields = array_unique(array_merge($fields, array_keys($this->fieldsCustomizations)));
 
 		return $fields;
 	}
@@ -510,7 +512,7 @@ class Admin extends Module
 			'text' => '',
 		];
 
-		$form = $el->getForm();
+		$form = $this->getForm($el);
 
 		if (!is_string($column['display'])) {
 			if (is_callable($column['display'])) {
@@ -1372,11 +1374,14 @@ class Admin extends Module
 	}
 
 	/**
+	 * @param Element|null $element
 	 * @return Form|null
 	 */
-	public function getForm(): ?Form
+	public function getForm(?Element $element = null): ?Form
 	{
-		$element = $this->getElement();
+		if (!$element)
+			$element = $this->getElement();
+
 		if (!$element)
 			return null;
 
