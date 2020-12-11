@@ -93,6 +93,10 @@ class AdminApiController extends Controller
 							break;
 						case 'data':
 							$response = $this->model->_Admin->getElementData($id);
+
+							$response['prev-item'] = $this->model->_Admin->getAdjacentItem($id, 'prev');
+							$response['next-item'] = $this->model->_Admin->getAdjacentItem($id, 'next');
+
 							$this->respond($response);
 							break;
 						default:

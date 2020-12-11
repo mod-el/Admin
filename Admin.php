@@ -117,6 +117,7 @@ class Admin extends Module
 			'actions' => [],
 			'export' => false,
 			'print' => false,
+			'items-navigation' => false,
 		], $basicPageOptions);
 
 		if ($options['element'] and !$options['table'])
@@ -1255,6 +1256,50 @@ class Admin extends Module
 		}
 
 		return $arr;
+	}
+
+	/**
+	 * Ritorna l'item precedente o successivo a quello attuale
+	 *
+	 * @param int $id
+	 * @param string $type
+	 * @return array|null
+	 */
+	public function getAdjacentItem(int $id, string $type): ?array
+	{
+		if (!$id)
+			return null;
+
+		$pageOptions = $this->getPageOptions();
+		if (!$pageOptions['element'] and !$pageOptions['table'])
+			return null;
+		if (!$pageOptions['items-navigation'])
+			return null;
+
+		if (!is_array($pageOptions['items-navigation']))
+			$pageOptions['items-navigation'] = [];
+
+		$element = $this->model->one($pageOptions['element'] ?: 'Element', [
+			[
+				'id',
+				$type === 'prev' ? '<' : '>',
+				$id,
+			],
+		], [
+			'table' => $pageOptions['table'],
+			'order_by' => $type === 'prev' ? 'id DESC' : 'id ASC',
+		]);
+		if (!$element or !$element->exists())
+			return null;
+
+		$text = [];
+		foreach (($pageOptions['items-navigation']['fields'] ?? []) as $field)
+			$text[] = $element[$field];
+
+		return [
+			'id' => $element['id'],
+			'text' => implode(' ', $text),
+		];
 	}
 
 	/**
