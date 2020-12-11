@@ -40,6 +40,9 @@ class AdminApiController extends Controller
 		$request = $this->request[0] ?? '';
 		try {
 			switch ($request) {
+				case 'keep-alive':
+					$this->respond(['status' => true]);
+					break;
 				case 'user':
 					$subrequest = $this->request[1] ?? null;
 					switch ($subrequest) {
