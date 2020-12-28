@@ -1212,9 +1212,9 @@ class Admin extends Module
 		}
 
 		foreach ($this->sublists as $sublistName => $sublist) {
-			$options = $element->getChildrenOptions($sublist['children']);
+			$options = $element->getChildrenOptions($sublist['relationship']);
 			if (!$options or $options['type'] !== 'multiple')
-				$this->model->error($sublist['children'] . ' is not a valid relationship of the element!');
+				$this->model->error($sublist['relationship'] . ' is not a valid relationship of the element!');
 
 			$sublistArr = [
 				'name' => $sublistName,
@@ -1229,7 +1229,10 @@ class Admin extends Module
 				],
 			];
 
-			$dummy = $element->create($sublist['children']);
+			if ($sublist['privileges'])
+				$sublistArr['privileges'] = array_merge($sublistArr['privileges'], $sublist['privileges']);
+
+			$dummy = $element->create($sublist['relationship']);
 			$dummyForm = $dummy->getForm();
 			$dummyForm->remove($options['field']);
 
@@ -1239,17 +1242,38 @@ class Admin extends Module
 				$sublistArr['fields'][$k]['default'] = $d->getJsValue(false);
 			}
 
-			foreach ($element->{$sublist['children']} as $item) {
+			foreach ($element->{$sublist['relationship']} as $item) {
 				$itemArr = [
 					'id' => $item[$options['primary']],
+					'privileges' => [],
 					'data' => [],
 				];
+
+				foreach ($sublistArr['privileges'] as $privilege => $privilegeValue) {
+					if (!in_array($privilege, ['R', 'U', 'D']))
+						continue;
+
+					if (is_callable($privilegeValue))
+						$privilegeValue = call_user_func($privilegeValue, $item);
+
+					if ($privilege === 'R') {
+						if (!$privilegeValue)
+							continue 2;
+					} else {
+						$itemArr['privileges'][$privilege] = $privilegeValue;
+					}
+				}
 
 				$itemForm = $item->getForm();
 				foreach ($dummyDataset as $k => $d)
 					$itemArr['data'][$k] = $itemForm[$k]->getJsValue(false);
 
 				$sublistArr['list'][] = $itemArr;
+			}
+
+			foreach ($sublistArr['privileges'] as $privilege => $privilegeValue) {
+				if (is_callable($privilegeValue))
+					$sublistArr['privileges'][$privilege] = true;
 			}
 
 			$arr['sublists'][] = $sublistArr;
@@ -1465,7 +1489,7 @@ class Admin extends Module
 			if (!isset($this->sublists[$sublistName]))
 				continue;
 
-			$relationship = $this->sublists[$sublistName]['children'];
+			$relationship = $this->sublists[$sublistName]['relationship'];
 
 			foreach (($sublistData['create'] ?? []) as $childData) {
 				$newChild = $element->create($relationship);
@@ -1589,7 +1613,8 @@ class Admin extends Module
 	{
 		$this->sublists[$name] = array_merge([
 			'visualizer' => 'FormList',
-			'children' => $name,
+			'relationship' => $name,
+			'privileges' => [],
 		], $options);
 	}
 
