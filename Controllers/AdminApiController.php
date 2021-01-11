@@ -259,9 +259,6 @@ class AdminApiController extends Controller
 							if (isset($input['version']) and is_numeric($input['version']))
 								$versionLock = $input['version'];
 
-							if (empty($data) and empty($sublists))
-								$this->model->error('Nothing to save');
-
 							$newId = $this->model->_Admin->save($id, $data, $sublists, $versionLock);
 
 							$this->respond(['id' => $newId]);
