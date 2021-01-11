@@ -1429,7 +1429,7 @@ class Admin extends Module
 	public function getElement(?int $id = null): ?Element
 	{
 		$element = $this->model->element;
-		if (!$element) {
+		if (!$element or $id !== null) {
 			$pageOptions = $this->getPageOptions();
 			if (!$pageOptions['element'] and !$pageOptions['table'])
 				return null;
