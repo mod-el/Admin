@@ -271,20 +271,4 @@
 		}
 		?>
 	</select>
-
-	<select id="visualizer-prototype">
-		<option value=""></option>
-		<?php
-		$visualizers = [
-			'Table',
-			'FormList',
-		];
-
-		foreach ($visualizers as $visualizer) {
-			?>
-			<option value="<?= entities($visualizer) ?>"><?= entities($visualizer) ?></option>
-			<?php
-		}
-		?>
-	</select>
 </div>
