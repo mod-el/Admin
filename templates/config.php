@@ -86,8 +86,6 @@
             <input type="text" name="name" data-parent="` + parent_idx + `" data-idx="` + idx + `" />
             Rule: <input type="text" name="rule" data-parent="` + parent_idx + `" data-idx="` + idx + `" />
             Page: <select name="page" data-parent="` + parent_idx + `" data-idx="` + idx + `"></select>
-            Visualizer: <select name="visualizer" data-parent="` + parent_idx + `" data-idx="` + idx + `"></select>
-            Mobile Visualizer: <select name="mobile-visualizer" data-parent="` + parent_idx + `" data-idx="` + idx + `"></select>
             Direct element: <input type="number" name="direct" data-parent="` + parent_idx + `" data-idx="` + idx + `" style="width: 50px" />
             <input type="checkbox" name="hidden" id="hidden-` + parent_idx + `-` + idx + `" data-parent="` + parent_idx + `" data-idx="` + idx + `" />
             <label for="hidden-` + parent_idx + `-` + idx + `">Hidden</label>
@@ -97,12 +95,6 @@
 
 		let pageSelect = div.querySelector('select[name="page"]');
 		pageSelect.innerHTML = document.getElementById('page-prototype').innerHTML;
-
-		let visualizerSelect = div.querySelector('select[name="visualizer"]');
-		visualizerSelect.innerHTML = document.getElementById('visualizer-prototype').innerHTML;
-
-		let mobileVisualizerSelect = div.querySelector('select[name="mobile-visualizer"]');
-		mobileVisualizerSelect.innerHTML = document.getElementById('visualizer-prototype').innerHTML;
 
 		if (typeof p['name'] !== 'undefined')
 			div.querySelector('input[name="name"]').value = p['name'];
@@ -121,26 +113,6 @@
 			div.querySelector('input[name="hidden"]').checked = true;
 		if (typeof p['direct'] !== 'undefined')
 			div.querySelector('input[name="direct"]').value = p['direct'];
-
-		if (typeof p['visualizer'] === 'undefined' || !p['visualizer'])
-			p['visualizer'] = 'Table';
-		if (typeof p['mobile-visualizer'] === 'undefined' || !p['mobile-visualizer'])
-			p['mobile-visualizer'] = 'Table';
-
-		Array.from(visualizerSelect.options).some((option, idx) => {
-			if (option.value == p['visualizer']) {
-				visualizerSelect.selectedIndex = idx;
-				return true;
-			}
-			return false;
-		});
-		Array.from(mobileVisualizerSelect.options).some((option, idx) => {
-			if (option.value == p['mobile-visualizer']) {
-				mobileVisualizerSelect.selectedIndex = idx;
-				return true;
-			}
-			return false;
-		});
 
 		return idx;
 	}
@@ -169,14 +141,6 @@
 			let pageField = document.querySelector('select[data-idx="' + field.getAttribute('data-idx') + '"][name="page"]');
 			if (pageField.selectedIndex)
 				page['page'] = pageField.options[pageField.selectedIndex].value;
-
-			let visualizerField = document.querySelector('select[data-idx="' + field.getAttribute('data-idx') + '"][name="visualizer"]');
-			if (visualizerField.selectedIndex)
-				page['visualizer'] = visualizerField.options[visualizerField.selectedIndex].value;
-
-			let mobileVisualizerField = document.querySelector('select[data-idx="' + field.getAttribute('data-idx') + '"][name="mobile-visualizer"]');
-			if (mobileVisualizerField.selectedIndex)
-				page['mobile-visualizer'] = mobileVisualizerField.options[mobileVisualizerField.selectedIndex].value;
 
 			let directField = document.querySelector('input[data-idx="' + field.getAttribute('data-idx') + '"][name="direct"]');
 			if (directField.value)

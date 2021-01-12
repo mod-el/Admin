@@ -8,6 +8,7 @@ class AdminPrivileges extends AdminPage
 	{
 		return [
 			'table' => 'admin_privileges',
+			'visualizer' => 'FormList',
 			'perPage' => 0,
 			'order_by' => 'id',
 		];

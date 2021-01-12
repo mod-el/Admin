@@ -118,6 +118,7 @@ class Admin extends Module
 			'export' => false,
 			'print' => false,
 			'items-navigation' => false,
+			'visualizer' => 'Table',
 		], $basicPageOptions);
 
 		if ($options['element'] and !$options['table'])
@@ -142,25 +143,24 @@ class Admin extends Module
 			}
 		}
 
-		if (!$options['table']) {
-			$this->pageRule['visualizer'] = 'Custom';
-			$this->pageRule['mobile-visualizer'] = 'Custom';
-		}
+		if ($this->pageRule['visualizer'] ?? null) // Backward compatibility
+			$options['visualizer'] = $this->pageRule['visualizer'];
+
+		if (!$options['table'])
+			$options['visualizer'] = 'Custom';
 
 		// Backward compatibility
 		$visualizerOptions = $referencePage->visualizerOptions();
 
-		if ($this->pageRule) {
-			switch ($this->pageRule['visualizer']) {
-				case 'Table':
-					if (isset($visualizerOptions['columns']))
-						$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['columns']);
-					break;
-				case 'FormList':
-					if (isset($visualizerOptions['fields']))
-						$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['fields']);
-					break;
-			}
+		switch ($options['visualizer']) {
+			case 'Table':
+				if (isset($visualizerOptions['columns']))
+					$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['columns']);
+				break;
+			case 'FormList':
+				if (isset($visualizerOptions['fields']))
+					$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['fields']);
+				break;
 		}
 
 		if ($this->pageOptions === null and $page === null)
@@ -183,7 +183,7 @@ class Admin extends Module
 		$visualizerOptions = $this->page->visualizerOptions();
 
 		// Backward compatibility
-		switch ($this->pageRule['visualizer']) {
+		switch ($options['visualizer']) {
 			case 'Table':
 				if (isset($visualizerOptions['columns']))
 					unset($visualizerOptions['columns']);
@@ -195,7 +195,7 @@ class Admin extends Module
 		}
 
 		$pageDetails = [
-			'type' => $this->pageRule['visualizer'],
+			'type' => $options['visualizer'],
 			'visualizer-options' => $visualizerOptions,
 			'privileges' => [
 				'C' => $this->canUser('C'),
@@ -1749,8 +1749,6 @@ class Admin extends Module
 					'name' => '',
 					'rule' => '',
 					'page' => null,
-					'visualizer' => 'Table',
-					'mobile-visualizer' => 'Table',
 					'direct' => null,
 					'hidden' => false,
 					'sub' => [],
@@ -1772,8 +1770,6 @@ class Admin extends Module
 			'name' => 'Users',
 			'page' => $usersAdminPage,
 			'rule' => 'admin-users',
-			'visualizer' => 'Table',
-			'mobile-visualizer' => 'Table',
 			'direct' => null,
 			'hidden' => false,
 			'sub' => [
@@ -1781,8 +1777,6 @@ class Admin extends Module
 					'name' => 'Privileges',
 					'page' => 'AdminPrivileges',
 					'rule' => 'admin-privileges',
-					'visualizer' => 'FormList',
-					'mobile-visualizer' => 'FormList',
 					'direct' => null,
 					'hidden' => false,
 					'sub' => [],
