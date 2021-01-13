@@ -941,7 +941,7 @@ class Admin extends Module
 	 */
 	private function getWhereFromFilter(array $filter): ?array
 	{
-		if (!is_array($filter) or count($filter) !== 3 or !isset($filter['filter'], $filter['type'], $filter['value']))
+		if (!is_array($filter) or count($filter) !== 3 or !array_key_exists('filter', $filter) or !array_key_exists('type', $filter) or !array_key_exists('value', $filter))
 			return null;
 
 		$k = $filter['filter'];
