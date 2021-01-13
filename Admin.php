@@ -199,6 +199,7 @@ class Admin extends Module
 			'visualizer-options' => $visualizerOptions,
 			'privileges' => [
 				'C' => $this->canUser('C'),
+				'U' => $this->canUser('U'),
 				'D' => $this->canUser('D'),
 			],
 			'actions' => array_filter($options['actions'], function ($action) {
