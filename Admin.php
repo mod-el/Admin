@@ -1556,6 +1556,7 @@ class Admin extends Module
 
 		return $element->save($data, [
 			'version' => $versionLock,
+			'form' => $form,
 		]);
 	}
 
