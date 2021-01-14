@@ -119,6 +119,7 @@ class Admin extends Module
 			'print' => false,
 			'items-navigation' => false,
 			'visualizer' => 'Table',
+			'local-cache-data' => true,
 		], $basicPageOptions);
 
 		if ($options['element'] and !$options['table'])
@@ -206,6 +207,7 @@ class Admin extends Module
 				return (!isset($action['specific']) or $action['specific'] === 'list' or $action['specific'] === 'table'); // Retrocompatibilità per "table"
 			}),
 			'export' => $options['export'],
+			'local-cache-data' => $options['local-cache-data'],
 		];
 
 		if ($options['csv'] ?? false) // Backward compatibility
