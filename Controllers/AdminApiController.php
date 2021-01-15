@@ -378,7 +378,11 @@ class AdminApiController extends Controller
 		$action = str_replace(' ', '', lcfirst(ucwords(str_replace('-', ' ', $action))));
 
 		if (method_exists($this->model->_Admin->page, $action)) {
-			$response = $this->model->_Admin->page->{$action}($input, $id);
+			$element = $id !== null ? $this->model->_Admin->getElement($id) : null;
+			if (!$element)
+				$this->model->error('Element does not exist.');
+
+			$response = $this->model->_Admin->page->{$action}($input, $element);
 			$this->respond($response);
 		} else {
 			if ($this->model->_Db->inTransaction())
