@@ -379,7 +379,7 @@ class AdminApiController extends Controller
 
 		if (method_exists($this->model->_Admin->page, $action)) {
 			$element = $id !== null ? $this->model->_Admin->getElement($id) : null;
-			if (!$element)
+			if ($id !== null and !$element)
 				$this->model->error('Element does not exist.');
 
 			$response = $this->model->_Admin->page->{$action}($input, $element);
