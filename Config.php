@@ -62,45 +62,50 @@ class Config extends Module_Config
 	 */
 	public function saveConfig(string $type, array $data): bool
 	{
-		$config = $this->retrieveConfig();
-		if (isset($config['url'])) {
-			foreach ($config['url'] as $idx => $url) {
-				if (isset($data[$idx . '-path']))
-					$url['path'] = $data[$idx . '-path'];
-				if (isset($data[$idx . '-users-tables-prefix']))
-					$url['users-tables-prefix'] = $data[$idx . '-users-tables-prefix'];
-				if (isset($data[$idx . '-element']))
-					$url['element'] = $data[$idx . '-element'];
-				if (isset($data[$idx . '-admin-page']))
-					$url['admin-page'] = $data[$idx . '-admin-page'];
-
-				$url['model-managed'] = isset($data[$idx . '-model-managed']);
-				if (isset($data[$idx . '-pages']))
-					$url['pages'] = $this->parsePages(json_decode($data[$idx . '-pages'], true));
-				$config['url'][$idx] = $url;
-			}
-
-			foreach ($config['url'] as $idx => $url) {
-				if (isset($data['delete-' . $idx]))
-					unset($config['url'][$idx]);
-			}
+		if ($type === 'direct') {
+			$config = $data;
 		} else {
-			$config['url'] = [];
-		}
+			$config = $this->retrieveConfig();
 
-		if (isset($data['users-tables-prefix']) and $data['users-tables-prefix'] and empty($config['url'])) {
-			$config['url'][] = [
-				'path' => $data['path'],
-				'users-tables-prefix' => $data['users-tables-prefix'],
-				'element' => '',
-				'admin-page' => '',
-				'model-managed' => isset($data['model-managed-table']),
-				'pages' => [],
-			];
-		}
+			if (isset($config['url'])) {
+				foreach ($config['url'] as $idx => $url) {
+					if (isset($data[$idx . '-path']))
+						$url['path'] = $data[$idx . '-path'];
+					if (isset($data[$idx . '-users-tables-prefix']))
+						$url['users-tables-prefix'] = $data[$idx . '-users-tables-prefix'];
+					if (isset($data[$idx . '-element']))
+						$url['element'] = $data[$idx . '-element'];
+					if (isset($data[$idx . '-admin-page']))
+						$url['admin-page'] = $data[$idx . '-admin-page'];
 
-		if (isset($data['api-path']))
-			$config['api-path'] = $data['api-path'];
+					$url['model-managed'] = (bool)($data[$idx . '-model-managed'] ?? false);
+					if (isset($data[$idx . '-pages']))
+						$url['pages'] = $this->parsePages(json_decode($data[$idx . '-pages'], true));
+					$config['url'][$idx] = $url;
+				}
+
+				foreach ($config['url'] as $idx => $url) {
+					if (isset($data['delete-' . $idx]))
+						unset($config['url'][$idx]);
+				}
+			} else {
+				$config['url'] = [];
+			}
+
+			if (isset($data['users-tables-prefix']) and $data['users-tables-prefix'] and empty($config['url'])) {
+				$config['url'][] = [
+					'path' => $data['path'],
+					'users-tables-prefix' => $data['users-tables-prefix'],
+					'element' => '',
+					'admin-page' => '',
+					'model-managed' => isset($data['model-managed-table']),
+					'pages' => [],
+				];
+			}
+
+			if (isset($data['api-path']))
+				$config['api-path'] = $data['api-path'];
+		}
 
 		$configFile = INCLUDE_PATH . 'app' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'Admin' . DIRECTORY_SEPARATOR . 'config.php';
 
@@ -261,7 +266,7 @@ $config = ' . var_export($config, true) . ';
 		if (!isset($config['api-path']) or $config['api-path'] === 'api')
 			$config['api-path'] = 'admin-api';
 
-		return $this->saveConfig('init', $config);
+		return $this->saveConfig('direct', $config);
 	}
 
 	/**
@@ -277,6 +282,6 @@ $config = ' . var_export($config, true) . ';
 			unset($config['url'][$idx]['table']);
 		}
 
-		return $this->saveConfig('init', $config);
+		return $this->saveConfig('direct', $config);
 	}
 }
