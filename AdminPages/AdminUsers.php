@@ -24,6 +24,7 @@ class AdminUsers extends AdminPage
 		$options = [
 			'fields' => [
 				'username',
+				'profile',
 			],
 			'privileges' => [
 				'D' => function ($el) {
