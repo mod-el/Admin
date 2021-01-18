@@ -67,8 +67,8 @@ class Config extends Module_Config
 			foreach ($config['url'] as $idx => $url) {
 				if (isset($data[$idx . '-path']))
 					$url['path'] = $data[$idx . '-path'];
-				if (isset($data[$idx . '-table']))
-					$url['table'] = $data[$idx . '-table'];
+				if (isset($data[$idx . '-users-tables-prefix']))
+					$url['users-tables-prefix'] = $data[$idx . '-users-tables-prefix'];
 				if (isset($data[$idx . '-element']))
 					$url['element'] = $data[$idx . '-element'];
 				if (isset($data[$idx . '-admin-page']))
@@ -88,10 +88,10 @@ class Config extends Module_Config
 			$config['url'] = [];
 		}
 
-		if (isset($data['table']) and $data['table'] and empty($config['url'])) {
+		if (isset($data['users-tables-prefix']) and $data['users-tables-prefix'] and empty($config['url'])) {
 			$config['url'][] = [
 				'path' => $data['path'],
-				'table' => $data['table'],
+				'users-tables-prefix' => $data['users-tables-prefix'],
 				'element' => '',
 				'admin-page' => '',
 				'model-managed' => isset($data['model-managed-table']),
@@ -260,6 +260,22 @@ $config = ' . var_export($config, true) . ';
 		$config = $this->retrieveConfig();
 		if (!isset($config['api-path']) or $config['api-path'] === 'api')
 			$config['api-path'] = 'admin-api';
+
+		return $this->saveConfig('init', $config);
+	}
+
+	/**
+	 * @return bool
+	 */
+	public function postUpdate_2_1_0(): bool
+	{
+		$config = $this->retrieveConfig();
+		foreach ($config['url'] as $idx => $url) {
+			if (!$url['model-managed'])
+				continue;
+			$config['url'][$idx]['users-tables-prefix'] = preg_replace('/(.+)_users/', '$1_', $url['table']);
+			unset($config['url'][$idx]['table']);
+		}
 
 		return $this->saveConfig('init', $config);
 	}

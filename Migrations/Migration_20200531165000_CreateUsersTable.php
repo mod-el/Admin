@@ -8,17 +8,17 @@ class Migration_20200531165000_CreateUsersTable extends Migration
 	{
 		$adminConfig = $this->model->_Admin->retrieveConfig();
 
-		$alreadySeenTables = [];
+		$alreadySeenPrefixes = [];
 
 		foreach ($adminConfig['url'] as $url) {
-			if (($url['model-managed'] ?? true) and $url['table'] and !in_array($url['table'], $alreadySeenTables)) {
-				$this->createTable($url['table']);
-				$this->addColumn($url['table'], 'username');
-				$this->addColumn($url['table'], 'password');
+			if (($url['model-managed'] ?? true) and !in_array($url['users-tables-prefix'], $alreadySeenPrefixes)) {
+				$this->createTable($url['users-tables-prefix']);
+				$this->addColumn($url['users-tables-prefix'], 'username');
+				$this->addColumn($url['users-tables-prefix'], 'password');
 
-				$this->query('INSERT INTO `' . $this->model->_Db->makeSafe($url['table']) . '`(`username`,`password`) VALUES(\'admin\',' . $this->db->quote(password_hash('admin', PASSWORD_DEFAULT)) . ')');
+				$this->query('INSERT INTO `' . $this->model->_Db->makeSafe($url['users-tables-prefix']) . 'users`(`username`,`password`) VALUES(\'admin\',' . $this->db->quote(password_hash('admin', PASSWORD_DEFAULT)) . ')');
 
-				$alreadySeenTables[] = $url['table'];
+				$alreadySeenPrefixes[] = $url['users-tables-prefix'];
 			}
 		}
 	}
@@ -28,7 +28,7 @@ class Migration_20200531165000_CreateUsersTable extends Migration
 		$adminConfig = $this->model->_Admin->retrieveConfig();
 
 		foreach ($adminConfig['url'] as $url)
-			if (($url['model-managed'] ?? true) and $url['table'])
-				return $this->tableExists($url['table']);
+			if (($url['model-managed'] ?? true))
+				return $this->tableExists($url['users-tables-prefix'] . 'users');
 	}
 }

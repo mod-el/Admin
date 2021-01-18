@@ -39,10 +39,12 @@
 		<table>
 			<tr>
 				<td>
-					Path<br/> <input type="text" name="path" value="admin"/>
+					Path<br/>
+					<input type="text" name="path" value="admin"/>
 				</td>
 				<td>
-					Users Table<br/> <input type="text" name="table" value="admin_users"/>
+					Users Table<br/>
+					<input type="text" name="users-tables-prefix" value="admin_users"/>
 				</td>
 			</tr>
 			<tr>

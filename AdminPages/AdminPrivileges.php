@@ -31,9 +31,7 @@ class AdminPrivileges extends AdminPage
 		if (isset($config['url']) and is_array($config['url'])) {
 			foreach ($config['url'] as $u) {
 				if (is_array($u) and $u['path'] == $this->model->_Admin->getPath()) {
-					if (!($u['table'] ?? ''))
-						$this->model->error('No users table defined');
-					$usersTable = $u['table'];
+					$usersTable = $u['users-tables-prefix'] . 'users';
 					break;
 				}
 			}

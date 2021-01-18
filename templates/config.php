@@ -183,7 +183,7 @@
 				Path
 			</td>
 			<td>
-				Users Table
+				Users Tables Prefix
 			</td>
 			<td>
 				Users Element
@@ -208,7 +208,7 @@
 					<input type="text" name="<?= $idx ?>-path" value="<?= entities($url['path']) ?>"/>
 				</td>
 				<td>
-					<input type="text" name="<?= $idx ?>-table" value="<?= entities($url['table']) ?>"/>
+					<input type="text" name="<?= $idx ?>-users-tables-prefix" value="<?= entities($url['users-tables-prefix']) ?>"/>
 				</td>
 				<td>
 					<input type="text" name="<?= $idx ?>-element" value="<?= entities($url['element'] ?? '') ?>"/>
@@ -235,7 +235,7 @@
 				<input type="text" name="path"/>
 			</td>
 			<td>
-				<input type="text" name="table"/>
+				<input type="text" name="users-tables-prefix"/>
 			</td>
 			<td>
 				<input type="text" name="element"/>

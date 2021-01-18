@@ -1,6 +1,3 @@
-<?php
-$form = $this->model->_Admin->getForm();
-?>
 <div class="flex-fields">
 	<div style="padding-top: 12px">
 		Utente<br/>

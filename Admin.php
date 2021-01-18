@@ -1704,7 +1704,7 @@ class Admin extends Module
 			if (isset($config['url']) and is_array($config['url'])) {
 				foreach ($config['url'] as $u) {
 					if (is_array($u) and $u['path'] == $path) {
-						$user_table = $u['table'];
+						$user_table = $u['users-tables-prefix'] . 'users';
 						break;
 					}
 				}
