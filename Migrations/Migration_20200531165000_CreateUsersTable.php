@@ -12,9 +12,9 @@ class Migration_20200531165000_CreateUsersTable extends Migration
 
 		foreach ($adminConfig['url'] as $url) {
 			if (($url['model-managed'] ?? true) and !in_array($url['users-tables-prefix'], $alreadySeenPrefixes)) {
-				$this->createTable($url['users-tables-prefix']);
-				$this->addColumn($url['users-tables-prefix'], 'username');
-				$this->addColumn($url['users-tables-prefix'], 'password');
+				$this->createTable($url['users-tables-prefix'] . 'users');
+				$this->addColumn($url['users-tables-prefix'] . 'users', 'username');
+				$this->addColumn($url['users-tables-prefix'] . 'users', 'password');
 
 				$this->query('INSERT INTO `' . $this->model->_Db->makeSafe($url['users-tables-prefix']) . 'users`(`username`,`password`) VALUES(\'admin\',' . $this->db->quote(password_hash('admin', PASSWORD_DEFAULT)) . ')');
 
@@ -30,5 +30,7 @@ class Migration_20200531165000_CreateUsersTable extends Migration
 		foreach ($adminConfig['url'] as $url)
 			if (($url['model-managed'] ?? true))
 				return $this->tableExists($url['users-tables-prefix'] . 'users');
+
+		return false;
 	}
 }

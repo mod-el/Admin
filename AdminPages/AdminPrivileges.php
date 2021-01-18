@@ -25,32 +25,16 @@ class AdminPrivileges extends AdminPage
 	{
 		$this->model->viewOptions['template'] = INCLUDE_PATH . 'model' . DIRECTORY_SEPARATOR . 'Admin' . DIRECTORY_SEPARATOR . 'templates' . DIRECTORY_SEPARATOR . 'admin-privileges.php';
 
-		$config = $this->model->_Admin->retrieveConfig();
-		$usersTable = null;
-
-		if (isset($config['url']) and is_array($config['url'])) {
-			foreach ($config['url'] as $u) {
-				if (is_array($u) and $u['path'] == $this->model->_Admin->getPath()) {
-					$usersTable = $u['users-tables-prefix'] . 'users';
-					break;
-				}
-			}
-		}
-
-		if (!$usersTable)
-			$this->model->error('No users table defined');
-
-		$this->model->_Admin->field('user', [
-			'type' => 'select',
-			'table' => $usersTable,
-			'text-field' => 'username',
-		]);
-
 		$options = [
 			'' => [''],
 		];
 		$adminPages = $this->model->_Admin->getPages();
 		$this->lookForAdminPages($options, $adminPages);
+
+		$this->model->_Admin->field('user', [
+			'type' => 'select',
+			'depending-on' => false,
+		]);
 
 		$this->model->_Admin->field('page', [
 			'type' => 'select',

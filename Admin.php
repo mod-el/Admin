@@ -865,7 +865,21 @@ class Admin extends Module
 		$pageOptions = $this->getPageOptions($page);
 
 		if ($this->privilegesCache === false) {
-			$this->privilegesCache = $this->model->_Db->select_all('admin_privileges', [
+			$config = $this->retrieveConfig();
+
+			$privileges_table = null;
+			if (isset($config['url']) and is_array($config['url'])) {
+				foreach ($config['url'] as $u) {
+					if (is_array($u) and $u['path'] == $this->path) {
+						$privileges_table = $u['users-tables-prefix'] . 'privileges';
+						break;
+					}
+				}
+			}
+			if (!$privileges_table)
+				$this->model->error('Wrong admin path');
+
+			$this->privilegesCache = $this->model->_Db->select_all($privileges_table, [
 				'or' => [
 //					['profile', TODO],
 					['user', $this->model->_User_Admin->logged()],

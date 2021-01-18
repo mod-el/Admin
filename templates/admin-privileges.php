@@ -1,5 +1,9 @@
 <div class="flex-fields">
 	<div style="padding-top: 12px">
+		Profilo<br/>
+		<?php $form['profile']->render(); ?>
+	</div>
+	<div style="padding-top: 12px">
 		Utente<br/>
 		<?php $form['user']->render(); ?>
 	</div>
