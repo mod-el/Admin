@@ -881,7 +881,7 @@ class Admin extends Module
 
 			$this->privilegesCache = $this->model->_Db->select_all($privileges_table, [
 				'or' => [
-//					['profile', TODO],
+					['profile', $this->model->_User_Admin->profile],
 					['user', $this->model->_User_Admin->logged()],
 					'and' => [
 						['profile', null],
@@ -1795,6 +1795,14 @@ class Admin extends Module
 					'name' => 'Privileges',
 					'page' => 'AdminPrivileges',
 					'rule' => 'admin-privileges',
+					'direct' => null,
+					'hidden' => false,
+					'sub' => [],
+				],
+				[
+					'name' => 'Profiles',
+					'page' => 'AdminProfiles',
+					'rule' => 'admin-profiles',
 					'direct' => null,
 					'hidden' => false,
 					'sub' => [],
