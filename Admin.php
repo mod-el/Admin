@@ -1500,7 +1500,11 @@ class Admin extends Module
 
 		$form = $this->getForm();
 
-		$mainElementId = $this->subsave($element, $data, $form, $versionLock);
+		$mainElementId = $this->subsave($element, $data, [
+			'form' => $form,
+			'versionLock' => $versionLock,
+			'afterSave' => false,
+		]);
 
 		foreach ($sublists as $sublistName => $sublistData) {
 			if (!isset($this->sublists[$sublistName]))
@@ -1526,22 +1530,31 @@ class Admin extends Module
 			}
 		}
 
+		if ($element->lastAfterSaveData) {
+			$this->_flagSaving = true;
+			$element->afterSave($element->lastAfterSaveData['previous_data'], $element->lastAfterSaveData['saving']);
+			$this->_flagSaving = false;
+		}
+
 		return $mainElementId;
 	}
 
 	/**
 	 * @param Element $element
 	 * @param array $data
-	 * @param Form|null $form
-	 * @param int|null $versionLock
+	 * @param array $options
 	 * @return int
+	 * @throws \Model\Core\Exception
 	 */
-	private function subsave(Element $element, array $data, ?Form $form = null, ?int $versionLock = null): int
+	private function subsave(Element $element, array $data, array $options = []): int
 	{
-		if ($form === null)
-			$form = $element->getForm();
+		$options = array_merge([
+			'form' => $element->getForm(),
+			'versionLock' => null,
+			'afterSave' => true,
+		], $options);
 
-		foreach ($form->getDataset() as $k => $d) {
+		foreach ($options['form']->getDataset() as $k => $d) {
 			if (isset($data[$k])) {
 				if ($d->options['multilang']) {
 					if (!is_array($data[$k]))
@@ -1570,10 +1583,7 @@ class Admin extends Module
 			}
 		}
 
-		return $element->save($data, [
-			'version' => $versionLock,
-			'form' => $form,
-		]);
+		return $element->save($data, $options);
 	}
 
 	/**
