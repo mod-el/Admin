@@ -1191,7 +1191,10 @@ class Admin extends Module
 			'fields' => [],
 			'data' => [],
 			'sublists' => [],
-			'actions' => array_filter($pageOptions['actions'], function ($action) use ($id) {
+			'actions' => array_filter($pageOptions['actions'], function ($action) use ($id, $element) {
+				if (isset($action['if']) and !$action['if']($element))
+					return false;
+
 				if (!isset($action['specific']))
 					return true;
 				if ($action['specific'] === 'element')
