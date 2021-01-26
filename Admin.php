@@ -1224,6 +1224,16 @@ class Admin extends Module
 			}
 		}
 
+		foreach ($arr['actions'] as &$action) {
+			if (isset($action['text']) and !is_string($action['text']) and is_callable($action['text']))
+				$action['text'] = $action['text']($element);
+			if (isset($action['action']) and !is_string($action['action']) and is_callable($action['action']))
+				$action['action'] = $action['action']($element);
+			if (isset($action['url']) and !is_string($action['url']) and is_callable($action['url']))
+				$action['url'] = $action['url']($element);
+		}
+		unset($action);
+
 		$form = $this->getForm();
 		$dataset = $form->getDataset();
 		foreach ($dataset as $k => $d) {
