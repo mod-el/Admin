@@ -1444,7 +1444,7 @@ class Admin extends Module
 			if (isset($form[$name]))
 				$options = array_merge($form[$name]->options, $options);
 			if (in_array($name, $pageOptions['required'] ?? []))
-				$options['mandatory'] = true;
+				$options['required'] = true;
 			$form->add($name, $options);
 		}
 		return $form;
