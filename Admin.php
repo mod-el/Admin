@@ -619,6 +619,8 @@ class Admin extends Module
 				break;
 		}
 
+		$field->options['attributes'] = [];
+
 		return $field;
 	}
 
@@ -835,7 +837,7 @@ class Admin extends Module
 	{
 		$pageOptions = $this->getPageOptions();
 
-		return $this->model->_Db->select($pageOptions['table'], $where, [
+		return (float)$this->model->_Db->select($pageOptions['table'], $where, [
 			'joins' => $pageOptions['joins'],
 			'sum' => $column['field'],
 		]);
