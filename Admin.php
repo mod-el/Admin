@@ -19,8 +19,6 @@ class Admin extends Module
 	private $path = null;
 	/** @var array */
 	private $pageOptions = null;
-	/** @var Form */
-	public $customFiltersForm;
 	/** @var array|bool */
 	protected $privilegesCache = false;
 	/** @var array */
