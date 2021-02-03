@@ -21,8 +21,6 @@ class Admin extends Module
 	private $pageOptions = null;
 	/** @var Form */
 	public $customFiltersForm;
-	/** @var array */
-	private $customFiltersCallbacks = [];
 	/** @var array|bool */
 	protected $privilegesCache = false;
 	/** @var array */
@@ -237,8 +235,7 @@ class Admin extends Module
 
 			/* FILTERS */
 
-			$dummy = $this->getElement();
-			$filtersForm = clone $dummy->getForm();
+			$filtersForm = $this->getForm();
 			$defaultFilters = $options['filters'] ?? [];
 
 			foreach ($defaultFilters as $filter) {
@@ -1355,7 +1352,7 @@ class Admin extends Module
 	}
 
 	/**
-	 * Registers a custom filter
+	 * Deprecated
 	 *
 	 * @param string $name
 	 * @param array $options
@@ -1363,54 +1360,7 @@ class Admin extends Module
 	 */
 	public function filter(string $name, array $options = []): Field
 	{
-		if (isset($this->customFiltersCallbacks[$name]))
-			$this->model->error('Duplicate custom filter ' . $name);
-
-		$options['nullable'] = true;
-		if (!isset($options['default']))
-			$options['default'] = null;
-
-		switch ($options['admin-type'] ?? null) {
-			case 'empty':
-				$options['type'] = 'select';
-				$options['depending-on'] = false;
-				$options['options'] = [
-					'' => '',
-					0 => 'No',
-					1 => 'Sì',
-				];
-				break;
-			default:
-				$adminForm = $this->getForm();
-				if (isset($adminForm[$name])) {
-					switch ($adminForm[$name]->options['type'] ?? 'text') {
-						case 'checkbox':
-							$options['type'] = 'select';
-							$options['depending-on'] = false;
-							$options['options'] = [
-								'' => '',
-								0 => 'No',
-								1 => 'Sì',
-							];
-							break;
-					}
-				}
-				break;
-		}
-
-		$d = $this->customFiltersForm->add($name, $options);
-
-		if (isset($options['callback'])) {
-			$this->customFiltersCallbacks[$name] = $options['callback'];
-		} elseif (!isset($options['admin-type'])) {
-			$this->customFiltersCallbacks[$name] = function ($v) use ($d) {
-				return [
-					[$d->options['field'], '=', $v],
-				];
-			};
-		}
-
-		return $d;
+		throw new \Exception('admin->filter() method is deprecated');
 	}
 
 	/**
