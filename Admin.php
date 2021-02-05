@@ -724,6 +724,7 @@ class Admin extends Module
 		// Count how many total elements there are
 		$count = $this->model->_Db->count($pageOptions['table'], $where, [
 			'joins' => $pageOptions['joins'],
+			'group_by' => $pageOptions['group_by'],
 		]);
 
 		// Get the rules to apply to the query, in order to sort as requested (what joins do I need to make and what order by clause I need to use)
