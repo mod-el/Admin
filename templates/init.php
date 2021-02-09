@@ -43,8 +43,8 @@
 					<input type="text" name="path" value="admin"/>
 				</td>
 				<td>
-					Users Table<br/>
-					<input type="text" name="users-tables-prefix" value="admin_users"/>
+					Users Tables Prefix<br/>
+					<input type="text" name="users-tables-prefix" value="admin_"/>
 				</td>
 			</tr>
 			<tr>
