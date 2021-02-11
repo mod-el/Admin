@@ -67,7 +67,7 @@ class Admin extends Module
 	 * @param string|null $page
 	 * @return array
 	 */
-	private function getPageOptions(?string $page = null): array
+	public function getPageOptions(?string $page = null): array
 	{
 		if ($page !== null) {
 			$className = Autoloader::searchFile('AdminPage', $page);
