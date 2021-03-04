@@ -386,7 +386,8 @@ class Admin extends Module
 			}
 		}
 
-		$fields = array_unique(array_merge($fields, array_keys($this->fieldsCustomizations)));
+		$form = $this->getForm();
+		$fields = array_unique(array_merge($fields, array_keys($form->getDataset())));
 
 		return $fields;
 	}

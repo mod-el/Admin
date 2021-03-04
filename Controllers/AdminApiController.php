@@ -204,11 +204,10 @@ class AdminApiController extends Controller
 
 							$fields = $this->model->_Admin->getColumnsList();
 
-							if (count($input['fields'] ?? []) > 0) {
+							if (count($input['fields'] ?? []) > 0)
 								$fieldsList = $input['fields'];
-							} else {
+							else
 								$fieldsList = $fields['default'];
-							}
 
 							foreach ($fieldsList as $idx) {
 								if (!isset($fields['fields'][$idx]))
