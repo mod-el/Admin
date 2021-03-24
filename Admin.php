@@ -1245,6 +1245,7 @@ class Admin extends Module
 
 			$sublistArr = [
 				'name' => $sublistName,
+				'label' => $sublist['label'],
 				'visualizer' => $sublist['visualizer'],
 				'fields' => [],
 				'list' => [],
@@ -1604,6 +1605,7 @@ class Admin extends Module
 	{
 		$this->sublists[$name] = array_merge([
 			'visualizer' => 'FormList',
+			'label' => $this->makeLabel($name),
 			'relationship' => $name,
 			'privileges' => [],
 		], $options);
