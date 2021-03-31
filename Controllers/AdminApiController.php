@@ -401,13 +401,26 @@ class AdminApiController extends Controller
 		foreach ($pages as $p) {
 			if ($p['hidden'] ?? false)
 				continue;
-			if (($p['page'] ?? null) and !$this->model->_Admin->canUser('L', $p['page']))
-				continue;
+
+			$rule = $p['rule'] ?? null;
+			$sub = $this->cleanPages($p['sub'] ?? []);
+
+			if ($p['page'] ?? null) {
+				if (!$this->model->_Admin->canUser('L', $p['page'])) {
+					$rule = null;
+					if (count($sub) === 0)
+						continue;
+				}
+			} else {
+				if (count($p['sub'] ?? []) > 0 and count($sub) === 0)
+					continue;
+			}
+
 			$cleanPages[] = [
 				'name' => $p['name'] ?? '',
-				'path' => $p['rule'] ?? null,
+				'path' => $rule,
 				'direct' => $p['direct'] ?? null,
-				'sub' => $this->cleanPages($p['sub'] ?? []),
+				'sub' => $sub,
 			];
 		}
 		return $cleanPages;
