@@ -616,6 +616,9 @@ class Admin extends Module
 					1 => 'Sì',
 				];
 				break;
+			case 'select':
+				$field->options['if-null'] = $field->getLabel();
+				break;
 		}
 
 		$field->options['attributes'] = [];
