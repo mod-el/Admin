@@ -191,6 +191,7 @@ class Admin extends Module
 		}
 
 		$pageDetails = [
+			'endpoint' => $this->pageRule['rule'],
 			'type' => $options['visualizer'],
 			'visualizer-options' => $visualizerOptions,
 			'privileges' => [
