@@ -611,6 +611,7 @@ class Admin extends Module
 				break;
 			case 'checkbox':
 				$field->options['type'] = 'select';
+				$field->options['if-null'] = $field->getLabel();
 				$field->options['options'] = [
 					'' => '',
 					0 => 'No',
