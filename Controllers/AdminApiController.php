@@ -125,7 +125,7 @@ class AdminApiController extends Controller
 				throw new \Exception('Unauthorized, try refreshing the page', 401);
 
 			$request = $this->request[0] ?? '';
-			$input = $this->getInput();
+			$input = $this->model->getInputPayload();
 
 			switch ($request) {
 				case 'user':
@@ -326,24 +326,6 @@ class AdminApiController extends Controller
 				$this->model->_Db->rollBack();
 			$this->respond(['error' => $e->getMessage() . ' in file ' . $e->getFile() . ' at line ' . $e->getLine()], 500);
 		}
-	}
-
-	/**
-	 * Returns API request
-	 *
-	 * @return array|null
-	 */
-	private function getInput(): ?array
-	{
-		$body = file_get_contents('php://input');
-		if (empty($body))
-			return null;
-
-		$body = json_decode($body, true);
-		if ($body === null)
-			$this->respond(['error' => 'Invalid request syntax'], 400);
-
-		return $body;
 	}
 
 	/**
