@@ -1547,7 +1547,7 @@ class Admin extends Module
 					if ($newV !== false)
 						$data[$k] = $newV;
 					else
-						unset($data[$k][$lang]);
+						unset($data[$k]);
 				}
 			}
 		}
