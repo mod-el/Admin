@@ -262,6 +262,8 @@ class AdminApiController extends Controller
 
 							$newId = $this->model->_Admin->save($id, $data, $sublists, $versionLock);
 
+							$this->model->_Db->commit();
+
 							$this->respond(['id' => $newId]);
 							break;
 						case 'save-many':
@@ -275,6 +277,8 @@ class AdminApiController extends Controller
 
 							foreach (($input['delete'] ?? []) as $id)
 								$this->model->_Admin->delete($id);
+
+							$this->model->_Db->commit();
 
 							$this->respond(['success' => true]);
 							break;
