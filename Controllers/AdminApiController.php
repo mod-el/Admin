@@ -251,6 +251,8 @@ class AdminApiController extends Controller
 							$this->respond($response);
 							break;
 						case 'save':
+							$this->model->_Db->beginTransaction();
+
 							$data = $input['data'] ?? null;
 							$sublists = $input['sublists'] ?? [];
 
@@ -263,6 +265,8 @@ class AdminApiController extends Controller
 							$this->respond(['id' => $newId]);
 							break;
 						case 'save-many':
+							$this->model->_Db->beginTransaction();
+
 							foreach (($input['create'] ?? []) as $item)
 								$this->model->_Admin->save(0, $item);
 
