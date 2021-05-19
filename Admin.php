@@ -609,6 +609,10 @@ class Admin extends Module
 			case 'ckeditor':
 				$field->options['type'] = 'text';
 				break;
+			case 'radio':
+				$field->options['type'] = 'select';
+				$field->options['if-null'] = $field->getLabel();
+				break;
 			case 'checkbox':
 				$field->options['type'] = 'select';
 				$field->options['if-null'] = $field->getLabel();
@@ -623,6 +627,7 @@ class Admin extends Module
 				break;
 		}
 
+		$field->options['default'] = null;
 		$field->options['attributes'] = [];
 
 		return $field;
