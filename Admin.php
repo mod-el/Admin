@@ -203,6 +203,7 @@ class Admin extends Module
 				return (!isset($action['specific']) or $action['specific'] === 'list' or $action['specific'] === 'table'); // Retrocompatibilità per "table"
 			}),
 			'export' => $options['export'],
+			'default_per_page' => $options['perPage'],
 		];
 
 		if ($options['csv'] ?? false) // Backward compatibility
