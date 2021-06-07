@@ -24,8 +24,8 @@ class Migration_20210118144416_UsersProfile extends Migration
 				$this->addForeignKey($url['users-tables-prefix'] . 'privileges', $url['users-tables-prefix'] . 'privileges_profile', 'profile', $url['users-tables-prefix'] . 'profiles');
 				$this->addForeignKey($url['users-tables-prefix'] . 'privileges', $url['users-tables-prefix'] . 'privileges_user', 'user', $url['users-tables-prefix'] . 'users');
 
-				$this->query('INSERT INTO `' . $this->model->_Db->makeSafe($url['users-tables-prefix']) . 'profiles`(`name`) VALUES(\'admin\')');
-				$this->query('UPDATE `' . $this->model->_Db->makeSafe($url['users-tables-prefix']) . 'users` SET `profile` = 1');
+				$this->query('INSERT INTO ' . $this->model->_Db->parseField($url['users-tables-prefix'] . 'profiles') . '(`name`) VALUES(\'admin\')');
+				$this->query('UPDATE ' . $this->model->_Db->parseField($url['users-tables-prefix'] . 'users') . ' SET `profile` = 1');
 
 				$alreadySeenPrefixes[] = $url['users-tables-prefix'];
 			}

@@ -16,7 +16,7 @@ class Migration_20200531165000_CreateUsersTable extends Migration
 				$this->addColumn($url['users-tables-prefix'] . 'users', 'username');
 				$this->addColumn($url['users-tables-prefix'] . 'users', 'password');
 
-				$this->query('INSERT INTO `' . $this->model->_Db->makeSafe($url['users-tables-prefix']) . 'users`(`username`,`password`) VALUES(\'admin\',' . $this->db->quote(password_hash('admin', PASSWORD_DEFAULT)) . ')');
+				$this->query('INSERT INTO ' . $this->model->_Db->parseField($url['users-tables-prefix'] . 'users') . '(`username`,`password`) VALUES(\'admin\',' . $this->db->quote(password_hash('admin', PASSWORD_DEFAULT)) . ')');
 
 				$alreadySeenPrefixes[] = $url['users-tables-prefix'];
 			}
