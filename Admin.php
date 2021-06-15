@@ -1272,7 +1272,7 @@ class Admin extends Module
 				$sublistArr['privileges'] = array_merge($sublistArr['privileges'], $sublist['privileges']);
 
 			$dummy = $element->create($sublist['relationship']);
-			$dummyForm = $dummy->getForm();
+			$dummyForm = $dummy->getForm(true);
 			$dummyForm->remove($options['field']);
 
 			$dummyDataset = $dummyForm->getDataset();
@@ -1283,7 +1283,7 @@ class Admin extends Module
 
 			foreach ($element->{$sublist['relationship']} as $item) {
 				$itemArr = [
-					'id' => $item[$options['primary']],
+					'id' => !empty($item->options['assoc']) ? $item->options['assoc'][$options['primary']] : $item[$options['primary']],
 					'privileges' => [],
 					'data' => [],
 				];
@@ -1303,7 +1303,7 @@ class Admin extends Module
 					}
 				}
 
-				$itemForm = $item->getForm();
+				$itemForm = $item->getForm(true);
 				foreach ($dummyDataset as $k => $d)
 					$itemArr['data'][$k] = $itemForm[$k]->getJsValue(false);
 
@@ -1489,19 +1489,23 @@ class Admin extends Module
 
 			foreach (($sublistData['create'] ?? []) as $childData) {
 				$newChild = $element->create($relationship);
-				$this->subsave($newChild, $childData);
+				$this->subsave($newChild, $childData, ['isChild' => true]);
 			}
 
 			foreach (($sublistData['update'] ?? []) as $childId => $childData) {
 				$child = $element->{$relationship}[$childId] ?? null;
 				if ($child)
-					$this->subsave($child, $childData);
+					$this->subsave($child, $childData, ['isChild' => true]);
 			}
 
 			foreach (($sublistData['delete'] ?? []) as $childId) {
 				$child = $element->{$relationship}[$childId] ?? null;
-				if ($child)
-					$child->delete();
+				if ($child) {
+					if (!empty($child->options['assoc']))
+						$this->model->_Db->delete($child->settings['assoc']['table'], $child->options['assoc'][$child->settings['assoc']['primary'] ?? 'id']);
+					else
+						$child->delete();
+				}
 			}
 		}
 
@@ -1524,10 +1528,14 @@ class Admin extends Module
 	private function subsave(Element $element, array $data, array $options = []): int
 	{
 		$options = array_merge([
-			'form' => $element->getForm(),
+			'form' => null,
 			'versionLock' => null,
 			'afterSave' => true,
+			'isChild' => false,
 		], $options);
+
+		if ($options['form'] === null)
+			$options['form'] = $element->getForm($options['isChild']);
 
 		foreach ($options['form']->getDataset() as $k => $d) {
 			if (isset($data[$k])) {
@@ -1558,7 +1566,19 @@ class Admin extends Module
 			}
 		}
 
-		return $element->save($data, $options);
+		if ($options['isChild'] and !empty($element->options['assoc'])) {
+			if ($element->exists()) {
+				$this->model->_Db->update($element->settings['assoc']['table'], $element->options['assoc'][$element->settings['assoc']['primary'] ?? 'id'], $data);
+				return $element->options['assoc']['id'];
+			} else {
+				$data = array_merge($element->options['assoc'], $data);
+				if (isset($data[$element->settings['assoc']['primary'] ?? 'id']))
+					unset($data[$element->settings['assoc']['primary'] ?? 'id']);
+				return $this->model->_Db->insert($element->settings['assoc']['table'], $data);
+			}
+		} else {
+			return $element->save($data, $options);
+		}
 	}
 
 	/**
