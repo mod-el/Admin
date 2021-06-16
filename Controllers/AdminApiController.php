@@ -174,14 +174,15 @@ class AdminApiController extends Controller
 
 					switch ($action) {
 						case 'search':
-							$where = $this->model->_Admin->makeSearchQuery(
+							$searchQuery = $this->model->_Admin->makeSearchQuery(
 								$input['search'] ?? '',
 								$input['filters'] ?? [],
 								$input['search-fields'] ?? []
 							);
 
 							$options = [
-								'where' => $where,
+								'where' => $searchQuery['where'],
+								'joins' => $searchQuery['joins'],
 							];
 							if (isset($input['page']))
 								$options['p'] = $input['page'];

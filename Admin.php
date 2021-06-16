@@ -647,6 +647,7 @@ class Admin extends Module
 		$options = $this->getPageOptions();
 
 		$where = $options['where'];
+		$joins = [];
 
 		$search = trim($search);
 		if ($search) {
@@ -705,12 +706,32 @@ class Admin extends Module
 		}
 
 		foreach ($filters as $filter) {
-			$f_where = $this->getWhereFromFilter($filter);
-			if ($f_where !== null)
+			$customFilterExists = null;
+			foreach (($options['filters'] ?? []) as $customFilter) {
+				if ($customFilter['field'] === $filter['filter']) {
+					$customFilterExists = $customFilter;
+					break;
+				}
+			}
+
+			$f_where = $this->getWhereFromFilter($filter, $customFilterExists);
+			if ($f_where) {
 				$where = array_merge($where, $f_where);
+
+				if ($customFilterExists and !empty($customFilterExists['filter-joins'])) {
+					$filter_joins = $customFilterExists['filter-joins'];
+					if (is_callable($filter_joins))
+						$filter_joins = call_user_func($filter_joins, $filter['value']);
+
+					$joins = array_merge($joins, $filter_joins);
+				}
+			}
 		}
 
-		return $where;
+		return [
+			'where' => $where,
+			'joins' => $joins,
+		];
 	}
 
 	/**
@@ -721,26 +742,28 @@ class Admin extends Module
 	 */
 	public function getList(array $options = []): array
 	{
+		$pageOptions = $this->getPageOptions();
+
 		$options = array_merge([
 			'where' => [],
 			'p' => 1,
 			'goTo' => null,
-			'perPage' => $this->getPageOptions()['perPage'],
+			'perPage' => $pageOptions['perPage'],
 			'sortBy' => [],
+			'joins' => [],
 		], $options);
 
-		$pageOptions = $this->getPageOptions();
-
 		$where = $options['where'];
+		$joins = array_merge($pageOptions['joins'], $options['joins']);
 
 		// Count how many total elements there are
 		$count = $this->model->_Db->count($pageOptions['table'], $where, [
-			'joins' => $pageOptions['joins'],
+			'joins' => $joins,
 			'group_by' => $pageOptions['group_by'],
 		]);
 
 		// Get the rules to apply to the query, in order to sort as requested (what joins do I need to make and what order by clause I need to use)
-		$sortingRules = $this->getSortingRules($options['sortBy'], $pageOptions['joins']);
+		$sortingRules = $this->getSortingRules($options['sortBy'], $joins);
 
 		// If I am asked to go to a specific element, I calculate its position in the list to pick the right page
 		if ($options['goTo'] and $options['perPage'] and $count > 0) {
@@ -962,12 +985,16 @@ class Admin extends Module
 	 * Given a input filter, returns a "where" array usable for Db module
 	 *
 	 * @param array $filter
+	 * @param array|null $customFilterExists
 	 * @return array|null
 	 */
-	private function getWhereFromFilter(array $filter): ?array
+	private function getWhereFromFilter(array $filter, ?array $customFilterExists = null): ?array
 	{
 		if (!is_array($filter) or count($filter) !== 3 or !array_key_exists('filter', $filter) or !array_key_exists('type', $filter) or !array_key_exists('value', $filter))
 			return null;
+
+		if ($customFilterExists and !empty($customFilterExists['custom']) and is_callable($customFilterExists['custom']))
+			return call_user_func($customFilterExists['custom'], $filter['value']);
 
 		$k = $filter['filter'];
 
@@ -984,7 +1011,7 @@ class Admin extends Module
 						$filter['value'],
 					],
 				];
-				break;
+
 			case '<>':
 			case '!=':
 				return [
@@ -996,17 +1023,17 @@ class Admin extends Module
 						'operator' => 'OR',
 					],
 				];
-				break;
+
 			case 'contains':
 				return [
 					[$k, 'LIKE', '%' . $filter['value'] . '%'],
 				];
-				break;
+
 			case 'begins':
 				return [
 					[$k, 'LIKE', $filter['value'] . '%'],
 				];
-				break;
+
 			case 'empty':
 				switch ($filter['value']) {
 					case 0:
@@ -1014,7 +1041,7 @@ class Admin extends Module
 							[$k, '!=', null],
 							[$k, '!=', ''],
 						];
-						break;
+
 					case 1:
 						return [
 							[
@@ -1025,12 +1052,11 @@ class Admin extends Module
 								'operator' => 'OR',
 							],
 						];
-						break;
 				}
 				break;
+
 			default:
 				$this->model->error('Unrecognized filter type');
-				break;
 		}
 
 		return [];
@@ -1371,6 +1397,7 @@ class Admin extends Module
 	 * @param string $name
 	 * @param array $options
 	 * @return Field
+	 * @deprecated use "filters" option instead
 	 */
 	public function filter(string $name, array $options = []): Field
 	{
