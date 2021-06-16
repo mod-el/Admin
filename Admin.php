@@ -864,15 +864,15 @@ class Admin extends Module
 	 * Given a column and a where array, returns the total sum for that column
 	 *
 	 * @param array $column
-	 * @param array $where
+	 * @param array $searchQuery
 	 * @return float
 	 */
-	public function getColumnTotal(array $column, array $where): float
+	public function getColumnTotal(array $column, array $searchQuery): float
 	{
 		$pageOptions = $this->getPageOptions();
 
-		return (float)$this->model->_Db->select($pageOptions['table'], $where, [
-			'joins' => $pageOptions['joins'],
+		return (float)$this->model->_Db->select($pageOptions['table'], $searchQuery['where'], [
+			'joins' => array_merge($pageOptions['joins'], $searchQuery['joins']),
 			'sum' => $column['field'],
 		]);
 	}

@@ -246,7 +246,7 @@ class AdminApiController extends Controller
 
 							foreach ($fieldsList as $idx) {
 								if ($fields['fields'][$idx]['total'])
-									$response['totals'][$idx] = $this->model->_Admin->getColumnTotal($fields['fields'][$idx], $where);
+									$response['totals'][$idx] = $this->model->_Admin->getColumnTotal($fields['fields'][$idx], $searchQuery);
 							}
 
 							$this->respond($response);
