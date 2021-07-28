@@ -1275,7 +1275,7 @@ class Admin extends Module
 			$arr['data'][$k] = $d->getJsValue(false);
 		}
 
-		foreach ($this->sublists as $sublistName => $sublist) {
+		foreach ($this->getSublists($pageOptions) as $sublistName => $sublist) {
 			$options = $element->getChildrenOptions($sublist['relationship']);
 			if (!$options or $options['type'] !== 'multiple')
 				$this->model->error($sublist['relationship'] . ' is not a valid relationship of the element!');
@@ -1508,11 +1508,12 @@ class Admin extends Module
 			'afterSave' => false,
 		]);
 
+		$pageSublists = $this->getSublists($pageOptions);
 		foreach ($sublists as $sublistName => $sublistData) {
-			if (!isset($this->sublists[$sublistName]))
+			if (!isset($pageSublists[$sublistName]))
 				continue;
 
-			$relationship = $this->sublists[$sublistName]['relationship'];
+			$relationship = $pageSublists[$sublistName]['relationship'];
 
 			foreach (($sublistData['create'] ?? []) as $childData) {
 				$newChild = $element->create($relationship);
@@ -1654,10 +1655,11 @@ class Admin extends Module
 	}
 
 	/**
-	 * Adds a sublist in the array, so that it will be rendered
+	 * Deprecated
 	 *
 	 * @param string $name
 	 * @param array $options
+	 * @deprecated use "sublists" option instead
 	 */
 	public function sublist(string $name, array $options = [])
 	{
@@ -1667,6 +1669,36 @@ class Admin extends Module
 			'relationship' => $name,
 			'privileges' => [],
 		], $options);
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getSublists(?array $pageOptions = null): array
+	{
+		if ($pageOptions === null)
+			$pageOptions = $this->getPageOptions();
+
+		$sublists = $this->sublists; // Retrocompatibilità
+
+		foreach (($pageOptions['sublists'] ?? []) as $name => $options) {
+			if (is_numeric($name) and is_string($options)) {
+				$name = $options;
+				$options = [];
+			}
+
+			if (isset($sublists[$name]))
+				throw new \Exception('Sublist "' . $name . '" declared twice');
+
+			$sublists[$name] = array_merge([
+				'visualizer' => 'FormList',
+				'label' => $this->makeLabel($name),
+				'relationship' => $name,
+				'privileges' => [],
+			], $options);
+		}
+
+		return $sublists;
 	}
 
 	/**
