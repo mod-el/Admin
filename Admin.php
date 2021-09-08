@@ -1284,6 +1284,7 @@ class Admin extends Module
 				'name' => $sublistName,
 				'label' => $sublist['label'],
 				'visualizer' => $sublist['visualizer'],
+				'visualizer-options' => $sublist['visualizer-options'],
 				'fields' => [],
 				'list' => [],
 				'privileges' => [
