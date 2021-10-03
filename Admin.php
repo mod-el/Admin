@@ -1276,10 +1276,6 @@ class Admin extends Module
 		}
 
 		foreach ($this->getSublists($pageOptions) as $sublistName => $sublist) {
-			$options = $element->getChildrenOptions($sublist['relationship']);
-			if (!$options or $options['type'] !== 'multiple')
-				$this->model->error($sublist['relationship'] . ' is not a valid relationship of the element!');
-
 			$sublistArr = [
 				'name' => $sublistName,
 				'label' => $sublist['label'],
@@ -1295,51 +1291,79 @@ class Admin extends Module
 				],
 			];
 
-			if ($sublist['privileges'])
-				$sublistArr['privileges'] = array_merge($sublistArr['privileges'], $sublist['privileges']);
-
-			$dummy = $element->create($sublist['relationship']);
-			$dummyForm = $dummy->getForm(true);
-			$dummyForm->remove($options['field']);
-
-			$dummyDataset = $dummyForm->getDataset();
-			foreach ($dummyDataset as $k => $d) {
-				$sublistArr['fields'][$k] = $d->getJavascriptDescription();
-				$sublistArr['fields'][$k]['default'] = $d->getJsValue(false);
-			}
-
-			foreach ($element->{$sublist['relationship']} as $item) {
-				$itemArr = [
-					'id' => !empty($item->options['assoc']) ? $item->options['assoc'][$options['primary']] : $item[$options['primary']],
-					'privileges' => [],
-					'data' => [],
+			if ($sublist['custom']) {
+				$sublistArr['privileges'] = [
+					'C' => false,
+					'R' => true,
+					'U' => false,
+					'D' => false,
 				];
 
-				foreach ($sublistArr['privileges'] as $privilege => $privilegeValue) {
-					if (!in_array($privilege, ['R', 'U', 'D']))
-						continue;
+				$sublistArr['fields'] = [];
+				$dummyForm = is_callable($sublist['custom']['form']) ? $sublist['custom']['form']() : $sublist['custom']['form'];
+				$dummyDataset = $dummyForm->getDataset();
+				foreach ($dummyDataset as $k => $d)
+					$sublistArr['fields'][$k] = $d->getJavascriptDescription();
 
-					if (is_callable($privilegeValue))
-						$privilegeValue = call_user_func($privilegeValue, $item);
+				$list = is_callable($sublist['custom']['list']) ? $sublist['custom']['list']($element) : $sublist['custom']['list'];
+				foreach ($list as $item) {
+					$sublistArr['list'][] = [
+						'id' => null,
+						'privileges' => [],
+						'data' => $item,
+					];
+				}
+			} else {
+				$options = $element->getChildrenOptions($sublist['relationship']);
+				if (!$options or $options['type'] !== 'multiple')
+					$this->model->error($sublist['relationship'] . ' is not a valid relationship of the element!');
 
-					if ($privilege === 'R') {
-						if (!$privilegeValue)
-							continue 2;
-					} else {
-						$itemArr['privileges'][$privilege] = $privilegeValue;
-					}
+				if ($sublist['privileges'])
+					$sublistArr['privileges'] = array_merge($sublistArr['privileges'], $sublist['privileges']);
+
+				$dummy = $element->create($sublist['relationship']);
+				$dummyForm = $dummy->getForm(true);
+				$dummyForm->remove($options['field']);
+
+				$dummyDataset = $dummyForm->getDataset();
+				foreach ($dummyDataset as $k => $d) {
+					$sublistArr['fields'][$k] = $d->getJavascriptDescription();
+					$sublistArr['fields'][$k]['default'] = $d->getJsValue(false);
 				}
 
-				$itemForm = $item->getForm(true);
-				foreach ($dummyDataset as $k => $d)
-					$itemArr['data'][$k] = $itemForm[$k]->getJsValue(false);
+				foreach ($element->{$sublist['relationship']} as $item) {
+					$itemArr = [
+						'id' => !empty($item->options['assoc']) ? $item->options['assoc'][$options['primary']] : $item[$options['primary']],
+						'privileges' => [],
+						'data' => [],
+					];
 
-				$sublistArr['list'][] = $itemArr;
-			}
+					foreach ($sublistArr['privileges'] as $privilege => $privilegeValue) {
+						if (!in_array($privilege, ['R', 'U', 'D']))
+							continue;
 
-			foreach ($sublistArr['privileges'] as $privilege => $privilegeValue) {
-				if (is_callable($privilegeValue))
-					$sublistArr['privileges'][$privilege] = true;
+						if (is_callable($privilegeValue))
+							$privilegeValue = call_user_func($privilegeValue, $item);
+
+						if ($privilege === 'R') {
+							if (!$privilegeValue)
+								continue 2;
+						} else {
+							$itemArr['privileges'][$privilege] = $privilegeValue;
+						}
+					}
+
+					$itemForm = $item->getForm(true);
+					foreach ($dummyDataset as $k => $d)
+						$itemArr['data'][$k] = $itemForm[$k]->getJsValue(false);
+
+					$sublistArr['list'][] = $itemArr;
+				}
+
+				foreach ($sublistArr['privileges'] as $privilege => $privilegeValue) {
+					if (is_callable($privilegeValue))
+						$sublistArr['privileges'][$privilege] = true;
+				}
 			}
 
 			$arr['sublists'][] = $sublistArr;
@@ -1511,7 +1535,7 @@ class Admin extends Module
 
 		$pageSublists = $this->getSublists($pageOptions);
 		foreach ($sublists as $sublistName => $sublistData) {
-			if (!isset($pageSublists[$sublistName]))
+			if (!isset($pageSublists[$sublistName]) or $pageSublists[$sublistName]['custom'])
 				continue;
 
 			$relationship = $pageSublists[$sublistName]['relationship'];
@@ -1696,6 +1720,7 @@ class Admin extends Module
 				'label' => $this->makeLabel($name),
 				'relationship' => $name,
 				'privileges' => [],
+				'custom' => null,
 			], $options);
 		}
 
