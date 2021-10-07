@@ -35,6 +35,24 @@ class AdminPage
 
 	/**
 	 * @param Element $element
+	 * @param array $data
+	 * @param array $sublists
+	 */
+	public function beforeSave(Element $element, array &$data, array &$sublists)
+	{
+	}
+
+	/**
+	 * @param Element $element
+	 * @param array $saving
+	 * @param array $sublists
+	 */
+	public function afterSave(Element $element, array $saving, array $sublists)
+	{
+	}
+
+	/**
+	 * @param Element $element
 	 * @return bool
 	 */
 	public function beforeDelete(Element $element): bool

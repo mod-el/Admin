@@ -1522,6 +1522,8 @@ class Admin extends Module
 		if (!$this->canUser($privilege, null, $element))
 			$this->model->error('Can\'t save, permission denied.');
 
+		$this->page->beforeSave($element, $data, $sublists);
+
 		$pageOptions = $this->getPageOptions();
 		$data = array_merge($pageOptions['where'], $data);
 
@@ -1567,6 +1569,8 @@ class Admin extends Module
 			$element->afterSave($element->lastAfterSaveData['previous_data'], $element->lastAfterSaveData['saving']);
 			$this->_flagSaving = false;
 		}
+
+		$this->page->afterSave($element, $data, $sublists);
 
 		return $mainElementId;
 	}
