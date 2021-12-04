@@ -1634,6 +1634,7 @@ class Admin extends Module
 				return $this->model->_Db->insert($element->settings['assoc']['table'], $data);
 			}
 		} else {
+			$options['saveForm'] = true;
 			return $element->save($data, $options);
 		}
 	}
