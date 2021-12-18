@@ -397,9 +397,10 @@ class Admin extends Module
 	/**
 	 * @param array $columns
 	 * @param string|null $table
+	 * @param bool $getSortingRules
 	 * @return array
 	 */
-	private function elaborateColumns(array $columns, ?string $table): array
+	public function elaborateColumns(array $columns, ?string $table = null, bool $getSortingRules = true): array
 	{
 		$tableModel = $table ? $this->model->_Db->getTable($table) : false;
 
@@ -462,7 +463,7 @@ class Admin extends Module
 				'raw' => false,
 			], $column);
 
-			if (!is_string($column['display']) and is_callable($column['display']))
+			if ((!is_string($column['display']) and is_callable($column['display'])) or $column['price'])
 				$column['raw'] = true;
 			if (is_string($column['display']) and !$column['field'] and $column['display'])
 				$column['field'] = $column['display'];
@@ -483,6 +484,7 @@ class Admin extends Module
 
 			if ($k and $k !== $column['field'])
 				$k = $this->fromLabelToColumnId($k);
+
 			if (!$k) {
 				if ($column['field'])
 					$k = $column['field'];
@@ -491,7 +493,7 @@ class Admin extends Module
 					$this->model->error('Can\'t assign id to column with label "' . entities($column['label']) . '"');
 			}
 
-			$column['sortable'] = $this->getSortingRulesFor($column, 'ASC', 0) ? true : false;
+			$column['sortable'] = $getSortingRules and (bool)$this->getSortingRulesFor($column, 'ASC', 0);
 			$new_columns[$k] = $column;
 		}
 
@@ -507,59 +509,60 @@ class Admin extends Module
 	 */
 	public function getElementColumn(Element $el, array $column): array
 	{
-		$c = [
+		$elaborated = [
 			'value' => null,
 			'text' => '',
 		];
 
 		$form = $this->getForm($el);
 
-		if (!is_string($column['display'])) {
-			if (is_callable($column['display'])) {
-				$c['text'] = call_user_func($column['display'], $el);
-			} else {
-				$this->model->error('Unknown display format in a column - either string or callable is expected');
-			}
-		} else {
-			if (isset($form[$column['display']])) {
-				$d = $form[$column['display']];
-				$c['text'] = $d->getText(['preview' => true]);
-			} else {
-				$c['text'] = $el[$column['display']];
-			}
-
-			if (strlen($c['text']) > 150)
-				$c['text'] = textCutOff($c['text'], 150);
-		}
-
-		$c['text'] = (string)$c['text'];
 		if ($column['field']) {
-			if (isset($form[$column['field']])) {
-				$c['value'] = $form[$column['field']]->getJsValue(false);
-			} else {
-				$c['value'] = $el[$column['field']];
-			}
+			if (isset($form[$column['field']]))
+				$elaborated['value'] = $form[$column['field']]->getJsValue(false);
+			else
+				$elaborated['value'] = $el[$column['field']];
 		}
+
+		if (!is_string($column['display'])) {
+			if (is_callable($column['display']))
+				$elaborated['text'] = call_user_func($column['display'], $el);
+			else
+				$this->model->error('Unknown display format in a column - either string or callable is expected');
+		} else {
+			if ($column['price']) {
+				$elaborated['text'] = makePrice($elaborated['value'] ?: 0);
+			} elseif (isset($form[$column['display']])) {
+				$d = $form[$column['display']];
+				$elaborated['text'] = $d->getText(['preview' => true]);
+			} else {
+				$elaborated['text'] = $el[$column['display']];
+			}
+
+			if (strlen($elaborated['text']) > 150)
+				$elaborated['text'] = textCutOff($elaborated['text'], 150);
+		}
+
+		$elaborated['text'] = (string)$elaborated['text'];
 
 		$background = $column['background'] ?? null;
 		if ($background and !is_string($background) and is_callable($background))
 			$background = $background($el);
 		if ($background)
-			$c['background'] = $background;
+			$elaborated['background'] = $background;
 
 		$color = $column['color'] ?? null;
 		if ($color and !is_string($color) and is_callable($color))
 			$color = $color($el);
 		if ($color)
-			$c['color'] = $color;
+			$elaborated['color'] = $color;
 
 		$clickable = $column['clickable'];
 		if ($clickable and !is_string($clickable) and is_callable($clickable))
 			$clickable = (bool)$clickable($el);
 		if (!$clickable)
-			$c['clickable'] = false;
+			$elaborated['clickable'] = false;
 
-		return $c;
+		return $elaborated;
 	}
 
 	/**
@@ -590,13 +593,12 @@ class Admin extends Module
 	 */
 	private function getFieldNameFromColumn(array $column)
 	{
-		if ($column['display'] and is_string($column['display'])) {
+		if ($column['display'] and is_string($column['display']))
 			return $column['display'];
-		} elseif ($column['field'] and is_string($column['field'])) {
+		elseif ($column['field'] and is_string($column['field']))
 			return $column['field'];
-		} else {
+		else
 			return null;
-		}
 	}
 
 	/**
@@ -1454,15 +1456,18 @@ class Admin extends Module
 		$form = clone $form;
 		$form->options['render-only-placeholders'] = true;
 
-		$pageOptions = $this->getPageOptions();
+		if ($this->page) {
+			$pageOptions = $this->getPageOptions();
 
-		foreach ($this->fieldsCustomizations as $name => $options) {
-			if (isset($form[$name]))
-				$options = array_merge($form[$name]->options, $options);
-			if (in_array($name, $pageOptions['required'] ?? []))
-				$options['required'] = true;
-			$form->add($name, $options);
+			foreach ($this->fieldsCustomizations as $name => $options) {
+				if (isset($form[$name]))
+					$options = array_merge($form[$name]->options, $options);
+				if (in_array($name, $pageOptions['required'] ?? []))
+					$options['required'] = true;
+				$form->add($name, $options);
+			}
 		}
+
 		return $form;
 	}
 
