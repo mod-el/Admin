@@ -2,6 +2,7 @@
 
 use Model\Core\Autoloader;
 use Model\Core\Module;
+use Model\Db\Table;
 use Model\Form\Form;
 use Model\Form\Field;
 use Model\ORM\Element;
@@ -651,9 +652,10 @@ class Admin extends Module
 		$where = $options['where'];
 		$joins = [];
 
+		$tableModel = $this->model->_Db->getTable($options['table']);
+
 		$search = trim($search);
 		if ($search) {
-			$tableModel = $this->model->_Db->getTable($options['table']);
 			$columns = $tableModel->columns;
 
 			if ($this->model->isLoaded('Multilang') and array_key_exists($options['table'], $this->model->_Multilang->tables)) {
@@ -716,7 +718,7 @@ class Admin extends Module
 				}
 			}
 
-			$f_where = $this->getWhereFromFilter($filter, $customFilterExists);
+			$f_where = $this->getWhereFromFilter($filter, $tableModel, $customFilterExists);
 			if ($f_where) {
 				$where = array_merge($where, $f_where);
 
@@ -987,10 +989,11 @@ class Admin extends Module
 	 * Given a input filter, returns a "where" array usable for Db module
 	 *
 	 * @param array $filter
+	 * @param Table $tableModel
 	 * @param array|null $customFilterExists
 	 * @return array|null
 	 */
-	private function getWhereFromFilter(array $filter, ?array $customFilterExists = null): ?array
+	private function getWhereFromFilter(array $filter, Table $tableModel, ?array $customFilterExists = null): ?array
 	{
 		if (!is_array($filter) or count($filter) !== 3 or !array_key_exists('filter', $filter) or !array_key_exists('type', $filter) or !array_key_exists('value', $filter))
 			return null;
@@ -1037,18 +1040,33 @@ class Admin extends Module
 				];
 
 			case 'empty':
+				$empty_value = '';
+				if (isset($tableModel->columns[$k])) {
+					switch ($tableModel->columns[$k]['type']) {
+						case 'date':
+							$empty_value = '0000-00-00';
+							break;
+						case 'time':
+							$empty_value = '00:00:00';
+							break;
+						case 'datetime':
+							$empty_value = '0000-00-00 00:00:00';
+							break;
+					}
+				}
+
 				switch ($filter['value']) {
 					case 0:
 						return [
 							[$k, '!=', null],
-							[$k, '!=', ''],
+							[$k, '!=', $empty_value],
 						];
 
 					case 1:
 						return [
 							[
 								'sub' => [
-									[$k, '=', ''],
+									[$k, '=', $empty_value],
 									[$k, '=', null],
 								],
 								'operator' => 'OR',
