@@ -472,17 +472,17 @@ class Admin extends Module
 				$column['display'] = $column['field'];
 
 			if (($column['editable'] or $column['label'] === null) and $adminForm === null)
-				$adminForm = $this->getForm();
+				$adminForm = $this->page ? $this->getForm() : null;
 
 			if ($column['editable']) {
-				if (isset($adminForm[$column['field']]))
+				if ($adminForm and isset($adminForm[$column['field']]))
 					$column['editable'] = $adminForm[$column['field']]->getJavascriptDescription();
 				else
 					$column['editable'] = false;
 			}
 
 			if ($column['label'] === null) {
-				if (isset($adminForm[$column['field']]))
+				if ($adminForm and isset($adminForm[$column['field']]))
 					$column['label'] = $adminForm[$column['field']]->getLabel();
 				else
 					$column['label'] = $this->makeLabel($k);
