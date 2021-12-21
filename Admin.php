@@ -390,9 +390,7 @@ class Admin extends Module
 		}
 
 		$form = $this->getForm();
-		$fields = array_unique(array_merge($fields, array_keys($form->getDataset())));
-
-		return $fields;
+		return array_unique(array_merge($fields, array_keys($form->getDataset())));
 	}
 
 	/**
@@ -452,7 +450,7 @@ class Admin extends Module
 				$column['field'] = $k;
 
 			$column = array_merge([
-				'label' => str_replace('"', '', $this->makeLabel($k)),
+				'label' => null,
 				'field' => false,
 				'display' => false,
 				'empty' => '',
@@ -473,15 +471,23 @@ class Admin extends Module
 			if (is_string($column['field']) and $column['field'] and !$column['display'])
 				$column['display'] = $column['field'];
 
-			if ($column['editable']) {
-				if ($adminForm === null)
-					$adminForm = $this->getForm();
+			if (($column['editable'] or $column['label'] === null) and $adminForm === null)
+				$adminForm = $this->getForm();
 
-				if ($adminForm[$column['field']])
+			if ($column['editable']) {
+				if (isset($adminForm[$column['field']]))
 					$column['editable'] = $adminForm[$column['field']]->getJavascriptDescription();
 				else
 					$column['editable'] = false;
 			}
+
+			if ($column['label'] === null) {
+				if (isset($adminForm[$column['field']]))
+					$column['label'] = $adminForm[$column['field']]->getLabel();
+				else
+					$column['label'] = $this->makeLabel($k);
+			}
+			$column['label'] = str_replace('"', '', $column['label']);
 
 			if ($k and $k !== $column['field'])
 				$k = $this->fromLabelToColumnId($k);
