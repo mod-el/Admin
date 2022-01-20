@@ -12,20 +12,13 @@ use Model\Core\Globals;
 
 class Admin extends Module
 {
-	/** @var AdminPage */
-	public $page = null;
-	/** @var array */
-	public $pageRule = null;
-	/** @var string */
-	private $path = null;
-	/** @var array */
-	private $pageOptions = null;
-	/** @var array|bool */
-	protected $privilegesCache = false;
-	/** @var array */
-	public $sublists = [];
-	/** @var array */
-	public $fieldsCustomizations = [];
+	public ?AdminPage $page = null;
+	public ?array $pageRule = null;
+	private ?string $path = null;
+	private ?array $pageOptions = null;
+	protected array $privilegesCache;
+	public array $sublists = [];
+	public array $fieldsCustomizations = [];
 
 	/**
 	 * @param string $path
@@ -891,12 +884,12 @@ class Admin extends Module
 	 * Can the current user do something? (Privilege check, basically)
 	 *
 	 * @param string $what
-	 * @param string $page
-	 * @param Element $el
-	 * @param string $subpage
+	 * @param string|null $page
+	 * @param Element|null $el
+	 * @param string|null $subpage
 	 * @return bool
 	 */
-	public function canUser(string $what, string $page = null, Element $el = null, string $subpage = null): bool
+	public function canUser(string $what, ?string $page = null, ?Element $el = null, ?string $subpage = null): bool
 	{
 		if ($page === null)
 			$page = $this->pageRule['page'];
@@ -905,7 +898,7 @@ class Admin extends Module
 
 		$pageOptions = $this->getPageOptions($page);
 
-		if ($this->privilegesCache === false) {
+		if (!isset($this->privilegesCache)) {
 			$config = $this->retrieveConfig();
 
 			$privileges_table = null;
