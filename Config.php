@@ -12,15 +12,16 @@ class Config extends Module_Config
 	 */
 	public function init(?array $data = null): bool
 	{
+		if ($this->model->isCLI())
+			return true;
 		if ($data === null or !$this->model->moduleExists('Db'))
 			return false;
 
 		if (isset($data['api-path'])) {
-			if ($this->saveConfig('init', $data)) {
+			if ($this->saveConfig('init', $data))
 				return true;
-			} else {
+			else
 				$this->model->error('Error while saving config data');
-			}
 		}
 
 		return false;
@@ -50,6 +51,11 @@ class Config extends Module_Config
 			return null;
 
 		return $type;
+	}
+
+	public function getConfigData(): ?array
+	{
+		return [];
 	}
 
 	/**
