@@ -530,7 +530,7 @@ class Admin extends Module
 				$this->model->error('Unknown display format in a column - either string or callable is expected');
 		} else {
 			if ($column['price']) {
-				$elaborated['text'] = makePrice($elaborated['value'] ?: 0);
+				$elaborated['text'] = $elaborated['value'] !== null ? makePrice($elaborated['value']) : '';
 			} elseif (isset($form[$column['display']])) {
 				$d = $form[$column['display']];
 				$elaborated['text'] = $d->getText(['preview' => true]);
