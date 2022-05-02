@@ -2,13 +2,12 @@
 
 use Model\Admin\Auth;
 use Model\Core\Controller;
+use Model\JWT\JWT;
 
 class AdminApiController extends Controller
 {
-	/** @var array */
-	private $token = null;
-	/** @var array */
-	private $request = [];
+	private ?array $token = null;
+	private array $request = [];
 
 	/**
 	 *
@@ -136,7 +135,7 @@ class AdminApiController extends Controller
 							$user = $this->model->_Admin->loadUserModule($path);
 
 							if ($id = $user->login($input['username'], $input['password'], false)) {
-								$token = $this->model->_JWT->build([
+								$token = JWT::build([
 									'path' => $path,
 									'id' => $id,
 								]);

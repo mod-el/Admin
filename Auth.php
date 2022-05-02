@@ -1,6 +1,7 @@
 <?php namespace Model\Admin;
 
 use Model\Core\Core;
+use Model\JWT\JWT;
 
 class Auth
 {
@@ -27,7 +28,7 @@ class Auth
 			return null;
 
 		try {
-			$token = $this->model->_JWT->verify($token);
+			$token = JWT::verify($token);
 			if (!isset($token['id'], $token['path']))
 				$token = null;
 		} catch (\Exception $e) {
