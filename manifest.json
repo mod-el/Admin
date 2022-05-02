@@ -1,6 +1,6 @@
 {
 	"name": "Admin",
-	"description": "A higly configurable Content Management System",
+	"description": "A highly configurable Content Management System",
 	"version": "2.2.0",
 	"dependencies": {
 		"Core": ">=2.10.0",
