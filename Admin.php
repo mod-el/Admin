@@ -117,7 +117,7 @@ class Admin extends Module
 		if ($options['table']) {
 			if ($options['order_by'] === false) {
 				$tableModel = $this->model->_Db->getTable($options['table']);
-				$options['order_by'] = $tableModel->primary . ' DESC';
+				$options['order_by'] = $tableModel->primary[0] . ' DESC';
 
 				if ($options['element']) {
 					$elementData = $this->model->_ORM->getElementData($options['element']);
@@ -375,7 +375,7 @@ class Admin extends Module
 			$mlTable = $options['table'] . $mlTableOptions['suffix'];
 			$mlTableModel = $this->model->_Db->getTable($mlTable);
 			foreach ($mlTableModel->columns as $k => $col) {
-				if ($k === $mlTableModel->primary or in_array($k, $fields) or $k === $mlTableOptions['keyfield'] or $k === $mlTableOptions['lang'] or in_array($k, $excludeColumns))
+				if ($k === $mlTableModel->primary[0] or in_array($k, $fields) or $k === $mlTableOptions['keyfield'] or $k === $mlTableOptions['lang'] or in_array($k, $excludeColumns))
 					continue;
 
 				$fields[] = $k;
@@ -670,7 +670,7 @@ class Admin extends Module
 
 			$arr = [];
 			foreach ($columns as $k => $col) {
-				if ($tableModel->primary === $k or $col['foreign_key'] or ($searchFields and !in_array($k, $searchFields)))
+				if ($tableModel->primary[0] === $k or count($col['foreign_keys']) > 0 or ($searchFields and !in_array($k, $searchFields)))
 					continue;
 
 				switch ($col['type']) {
@@ -778,7 +778,7 @@ class Admin extends Module
 			$element_found = false;
 			$tableModel = $this->model->_Db->getTable($pageOptions['table']);
 			foreach ($customList as $row) {
-				if ($row[$tableModel->primary] == $options['goTo']) {
+				if ($row[$tableModel->primary[0]] == $options['goTo']) {
 					$element_found = $c_element;
 					break;
 				}
