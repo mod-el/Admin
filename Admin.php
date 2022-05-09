@@ -2,7 +2,7 @@
 
 use Model\Core\Autoloader;
 use Model\Core\Module;
-use Model\Db\Table;
+use Model\DbParser\Table;
 use Model\Form\Form;
 use Model\Form\Field;
 use Model\ORM\Element;
@@ -994,7 +994,7 @@ class Admin extends Module
 	 */
 	private function getWhereFromFilter(array $filter, Table $tableModel, ?array $customFilterExists = null): ?array
 	{
-		if (!is_array($filter) or count($filter) !== 3 or !array_key_exists('filter', $filter) or !array_key_exists('type', $filter) or !array_key_exists('value', $filter))
+		if (count($filter) !== 3 or !array_key_exists('filter', $filter) or !array_key_exists('type', $filter) or !array_key_exists('value', $filter))
 			return null;
 
 		if ($customFilterExists and !empty($customFilterExists['custom']) and is_callable($customFilterExists['custom']))
