@@ -1,6 +1,6 @@
 {
 	"name": "Admin",
-	"description": "A highly configurable Content Management System",
+	"description": "A highly configurable CMS (requires model/csrf)",
 	"version": "2.3.0",
 	"dependencies": {
 		"Core": ">=2.10.0",
