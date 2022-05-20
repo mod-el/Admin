@@ -1,6 +1,6 @@
 {
 	"name": "Admin",
-	"description": "A highly configurable CMS (requires model/csrf)",
+	"description": "A highly configurable CMS",
 	"version": "2.3.0",
 	"dependencies": {
 		"Core": ">=2.10.0",
@@ -9,6 +9,10 @@
 		"Form": ">=1.5.0",
 		"Paginator": ">=1.2.1"
 	},
+	"requires": [
+		"model/jwt",
+		"model/csrf"
+	],
 	"file-types": {
 		"AdminPage": {
 			"folder": "AdminPages",
