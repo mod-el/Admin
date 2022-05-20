@@ -1,29 +1,15 @@
 <?php namespace Model\Admin;
 
-use Model\Core\Core;
 use Model\JWT\JWT;
 
 class Auth
 {
-	/** @var Core */
-	private $model;
-
-	/**
-	 * Auth constructor.
-	 *
-	 * @param Core $model
-	 */
-	public function __construct(Core $model)
-	{
-		$this->model = $model;
-	}
-
 	/**
 	 * @return array|null
 	 */
-	public function getToken(): ?array
+	public static function getToken(): ?array
 	{
-		$token = $this->getAccessToken();
+		$token = self::getAccessToken();
 		if (!$token)
 			return null;
 
@@ -41,7 +27,7 @@ class Auth
 	/**
 	 * @return string|null
 	 */
-	private function getAccessToken(): ?string
+	private static function getAccessToken(): ?string
 	{
 		$header = null;
 		if (function_exists('apache_request_headers')) {

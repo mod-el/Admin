@@ -19,8 +19,7 @@ class AdminApiController extends Controller
 		$this->loadRequest($config['api-path'] ?? 'admin-api');
 
 		if ($this->request[0] !== 'user' or $this->request[1] !== 'login') {
-			$auth = new Auth($this->model);
-			$this->token = $auth->getToken();
+			$this->token = Auth::getToken();
 			if (!$this->token)
 				$this->model->error('Invalid auth token', ['code' => 401]);
 
