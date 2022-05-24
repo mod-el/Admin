@@ -93,7 +93,6 @@ class AdminApiController extends Controller
 						case 'data':
 							$response = $this->model->_Admin->getElementData($id);
 
-							$response['cp_token'] = CSRF::getToken('admin.' . $adminPage . '.save');
 							$response['prev-item'] = $this->model->_Admin->getAdjacentItem($id, 'prev');
 							$response['next-item'] = $this->model->_Admin->getAdjacentItem($id, 'next');
 
@@ -251,7 +250,7 @@ class AdminApiController extends Controller
 							$this->respond($response);
 							break;
 						case 'save':
-							CSRF::checkPayload('admin.' . $adminPage . '.save', $input);
+							CSRF::checkPayload('admin.api', $input);
 
 							$this->model->_Db->beginTransaction();
 
