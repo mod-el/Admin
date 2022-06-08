@@ -271,10 +271,14 @@ class Admin extends Module
 					$position = $defaultFilterOptions['position'] ?? 'secondary';
 					$filterType = $defaultFilterOptions['filter-type'] ?? '=';
 
-					$pageDetails['default-filters'][$position][] = [
+					$parsedFilter = [
 						'filter' => $defaultFilterOptions['field'],
 						'type' => $filterType,
 					];
+					if (isset($defaultFilterOptions['default']))
+						$parsedFilter['default'] = $defaultFilterOptions['default'];
+
+					$pageDetails['default-filters'][$position][] = $parsedFilter;
 				}
 			}
 
