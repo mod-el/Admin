@@ -52,7 +52,11 @@ class ExportProvider implements DataProvider
 
 			foreach ($columns as $columnId => $column) {
 				$itemColumn = $this->adminModule->getElementColumn($item['element'], $column);
-				$row[$columnId] = $itemColumn ? $itemColumn[$this->exportPayload['data_key'] ?? 'text'] : '';
+
+				$itemKey = $this->exportPayload['data_key'] ?? 'text';
+				$row[$columnId] = $itemColumn ? $itemColumn[$itemKey] : '';
+				if ($itemKey === 'text')
+					$row[$columnId] = html_entity_decode($row[$columnId], ENT_QUOTES, 'UTF-8');
 			}
 
 			$exported[] = array_values($row);
