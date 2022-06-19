@@ -38,7 +38,7 @@ class ExportProvider implements DataProvider
 		return $list['pages'];
 	}
 
-	public function getNext(int $paginate, int $current): iterable
+	public function getNext(int $paginate, int $current): \Generator
 	{
 		$tmpOptions = $this->searchOptions;
 		$tmpOptions['perPage'] = $paginate;
@@ -47,23 +47,40 @@ class ExportProvider implements DataProvider
 
 		$columns = $this->getColumns();
 
-		$exported = [];
 		foreach ($list['list'] as $item) {
-			$row = [];
+			$cells = [];
 
-			foreach ($columns as $columnId => $column) {
+			foreach ($columns as $column) {
 				$itemColumn = $this->adminModule->getElementColumn($item['element'], $column);
 
 				$itemKey = $this->exportPayload['data_key'] ?? 'text';
-				$row[$columnId] = $itemColumn ? $itemColumn[$itemKey] : '';
+				$cellValue = $itemColumn ? $itemColumn[$itemKey] : '';
 				if ($itemKey === 'text')
-					$row[$columnId] = html_entity_decode($row[$columnId], ENT_QUOTES, 'UTF-8');
+					$cellValue = html_entity_decode($cellValue, ENT_QUOTES, 'UTF-8');
+
+				$cell = [
+					'value' => $cellValue,
+				];
+
+				if (!empty($itemColumn['background']))
+					$cell['background'] = $itemColumn['background'];
+				if (!empty($itemColumn['color']))
+					$cell['color'] = $itemColumn['color'];
+
+				$cells[] = $cell;
 			}
 
-			$exported[] = array_values($row);
-		}
+			$row = [
+				'cells' => $cells,
+			];
 
-		return $exported;
+			if (!empty($item['background']))
+				$row['background'] = $item['background'];
+			if (!empty($item['color']))
+				$row['color'] = $item['color'];
+
+			yield $row;
+		}
 	}
 
 	private function getColumns(): array
