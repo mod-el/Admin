@@ -42,6 +42,7 @@ class ExportProvider implements DataProvider
 	{
 		$tmpOptions = $this->searchOptions;
 		$tmpOptions['perPage'] = $paginate;
+		$tmpOptions['p'] = $current;
 		$list = $this->adminModule->getList($tmpOptions);
 
 		$columns = $this->getColumns();
