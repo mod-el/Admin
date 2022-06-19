@@ -106,7 +106,6 @@ class Admin extends Module
 			'onclick' => null,
 			'actions' => [],
 			'export' => false,
-			'print' => false,
 			'items-navigation' => false,
 			'visualizer' => 'Table',
 		], $basicPageOptions);
@@ -199,12 +198,6 @@ class Admin extends Module
 			'export' => $options['export'],
 			'default_per_page' => $options['perPage'],
 		];
-
-		if ($options['csv'] ?? false) // Backward compatibility
-			$pageDetails['export'] = true;
-
-		if ($pageDetails['export'] and !$this->model->moduleExists('Csv'))
-			$pageDetails['export'] = false;
 
 		if ($pageDetails['type'] === 'FormList' and !isset($pageDetails['visualizer-options']['type']))
 			$pageDetails['visualizer-options']['type'] = 'inner-template';
