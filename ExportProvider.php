@@ -6,18 +6,18 @@ class ExportProvider implements DataProvider
 {
 	private array $searchOptions;
 
-	public function __construct(private readonly Admin $adminModule, private readonly array $payload)
+	public function __construct(private readonly Admin $adminModule, private readonly array $exportPayload, private readonly array $searchPayload)
 	{
 		$searchQuery = $this->adminModule->makeSearchQuery(
-			$this->payload['search'] ?? '',
-			$this->payload['filters'] ?? [],
-			$this->payload['search-fields'] ?? []
+			$this->searchPayload['search'] ?? '',
+			$this->searchPayload['filters'] ?? [],
+			$this->searchPayload['search-fields'] ?? []
 		);
 
 		$this->searchOptions = [
 			'where' => $searchQuery['where'],
 			'joins' => $searchQuery['joins'],
-			'sortBy' => $this->payload['sort-by'] ?? [],
+			'sortBy' => $this->searchPayload['sort-by'] ?? [],
 		];
 	}
 
@@ -52,7 +52,7 @@ class ExportProvider implements DataProvider
 
 			foreach ($columns as $columnId => $column) {
 				$itemColumn = $this->adminModule->getElementColumn($item['element'], $column);
-				$row[$columnId] = $itemColumn ? $itemColumn['text'] : '';
+				$row[$columnId] = $itemColumn ? $itemColumn[$this->exportPayload['data_key'] ?? 'text'] : '';
 			}
 
 			$exported[] = array_values($row);
@@ -64,7 +64,7 @@ class ExportProvider implements DataProvider
 	private function getColumns(): array
 	{
 		$totalFields = $this->adminModule->getColumnsList();
-		$columnNames = (count($this->payload['fields'] ?? []) > 0) ? $this->payload['fields'] : $totalFields['default'];
+		$columnNames = (count($this->searchPayload['fields'] ?? []) > 0) ? $this->searchPayload['fields'] : $totalFields['default'];
 
 		$columns = [];
 		foreach ($columnNames as $columnName) {
