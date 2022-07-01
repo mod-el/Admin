@@ -2,6 +2,7 @@
 
 use Model\Admin\Auth;
 use Model\Core\Controller;
+use Model\Core\Model;
 use Model\CSRF\CSRF;
 use Model\JWT\JWT;
 
@@ -121,7 +122,7 @@ class AdminApiController extends Controller
 	{
 		try {
 			$request = $this->request[0] ?? '';
-			$input = $this->model->getInputPayload();
+			$input = Model::getInput();
 
 			switch ($request) {
 				case 'user':
