@@ -1285,11 +1285,7 @@ class Admin extends Module
 		unset($action);
 
 		$form = $this->getForm();
-		$dataset = $form->getDataset();
-		foreach ($dataset as $k => $d) {
-			$arr['fields'][$k] = $d->getJavascriptDescription();
-			$arr['data'][$k] = $d->getJsValue(false);
-		}
+		$arr = array_merge($arr, $form->jsExport());
 
 		foreach ($this->getSublists($pageOptions) as $sublistName => $sublist) {
 			$sublistArr = [
