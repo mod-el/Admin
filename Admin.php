@@ -1828,8 +1828,11 @@ class Admin extends Module
 			$user_table = null;
 			if (isset($config['url']) and is_array($config['url'])) {
 				foreach ($config['url'] as $u) {
-					if (is_array($u) and $u['path'] == $path) {
-						$user_table = $u['users-tables-prefix'] . 'users';
+					if (is_array($u) and $u['path'] === $path) {
+						if ($u['element'])
+							$user_table = $this->model->_ORM->getTableFor($u['element']);
+						else
+							$user_table = $u['users-tables-prefix'] . 'users';
 						break;
 					}
 				}
