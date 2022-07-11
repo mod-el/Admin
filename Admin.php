@@ -354,6 +354,9 @@ class Admin extends Module
 			'zk_deleted',
 		], ($options['exclude'] ?? []));
 
+		if ($this->model->_Db->options['tenant-filter'])
+			$excludeColumns[] = $this->model->_Db->options['tenant-filter']['column'];
+
 		if ($options['element']) {
 			$elementData = $this->model->_ORM->getElementData($options['element']);
 			if ($elementData and $elementData['order_by'])
