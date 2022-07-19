@@ -153,6 +153,8 @@ class Admin extends Module
 			case 'FormList':
 				if (isset($visualizerOptions['fields']))
 					$options['fields'] = array_merge_recursive_distinct($options['fields'] ?? [], $visualizerOptions['fields']);
+
+				$options['perPage'] = 0; // save-many endpoint cannot work with pagination (it would delete any non-visible item)
 				break;
 		}
 
@@ -759,6 +761,10 @@ class Admin extends Module
 			'sortBy' => [],
 			'joins' => [],
 		], $options);
+
+		// save-many endpoint cannot work with pagination (it would delete any non-visible item)
+		if ($pageOptions['visualizer'] === 'FormList')
+			$options['perPage'] = 0;
 
 		$where = $options['where'];
 		$joins = array_merge($pageOptions['joins'], $options['joins']);
