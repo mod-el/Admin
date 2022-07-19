@@ -1,7 +1,7 @@
 {
 	"name": "Admin",
 	"description": "A highly configurable CMS",
-	"version": "2.3.0",
+	"version": "3.0.0",
 	"dependencies": {
 		"Core": ">=2.10.0",
 		"Db": ">=3.0.0",

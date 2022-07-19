@@ -256,13 +256,12 @@ class AdminApiController extends Controller
 							$this->model->_Db->beginTransaction();
 
 							$data = $input['data'] ?? null;
-							$sublists = $input['sublists'] ?? [];
 
 							$versionLock = null;
 							if (isset($input['version']) and is_numeric($input['version']))
 								$versionLock = $input['version'];
 
-							$newId = $this->model->_Admin->save($id, $data, $sublists, $versionLock);
+							$newId = $this->model->_Admin->save($id, $data, $versionLock);
 
 							$this->model->_Db->commit();
 

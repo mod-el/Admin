@@ -58,17 +58,21 @@ class Admin extends Module
 	}
 
 	/**
-	 * @param string|null $page
+	 * @param string|AdminPage|null $page
 	 * @return array
 	 */
-	public function getPageOptions(?string $page = null): array
+	public function getPageOptions(string|AdminPage|null $page = null): array
 	{
 		if ($page !== null) {
-			$className = Autoloader::searchFile('AdminPage', $page);
-			if (!$className)
-				$this->model->error('Admin Page class not found');
+			if (is_string($page)) {
+				$className = Autoloader::searchFile('AdminPage', $page);
+				if (!$className)
+					throw new \Exception('Admin Page class not found');
 
-			$referencePage = new $className($this->model);
+				$referencePage = new $className($this->model);
+			} else {
+				$referencePage = $page;
+			}
 		} else {
 			if ($this->pageOptions !== null)
 				return $this->pageOptions;
@@ -1290,13 +1294,39 @@ class Admin extends Module
 		$form = $this->getForm();
 		$arr = array_merge($arr, $form->jsExport());
 
+		$arr['sublists'] = $this->getParsedSublists($element, $pageOptions);
+
+		return $arr;
+	}
+
+	public function getParsedSublists(Element $element, array $pageOptions)
+	{
+		$sublists = [];
 		foreach ($this->getSublists($pageOptions) as $sublistName => $sublist) {
+			$defaultVisualizer = 'FormList';
+			$defaultVisualizerOptions = [];
+
+			if (!empty($sublist['admin-page'])) {
+				$sublistAdminPageClassName = Autoloader::searchFile('AdminPage', $sublist['admin-page']);
+				if (!$sublistAdminPageClassName)
+					$this->model->error('AdminPage ' . $sublist['admin-page'] . ' not found');
+
+				/** @var AdminPage $sublistAdminPage */
+				$sublistAdminPage = new $sublistAdminPageClassName($this->model);
+				$sublistAdminPageOptions = $sublistAdminPage->options();
+
+				if (!empty($sublistAdminPageOptions['visualizer']))
+					$defaultVisualizer = $sublistAdminPageOptions['visualizer'];
+				$defaultVisualizerOptions = $sublistAdminPage->visualizerOptions();
+			}
+
 			$sublistArr = [
 				'name' => $sublistName,
 				'label' => $sublist['label'],
-				'visualizer' => $sublist['visualizer'],
-				'visualizer-options' => $sublist['visualizer-options'] ?? [],
+				'visualizer' => $sublist['visualizer'] ?? $defaultVisualizer,
+				'visualizer-options' => $sublist['visualizer-options'] ?? $defaultVisualizerOptions,
 				'fields' => [],
+				'sublists' => [],
 				'list' => [],
 				'privileges' => [
 					'C' => true,
@@ -1346,11 +1376,15 @@ class Admin extends Module
 					$sublistArr['fields'][$k]['default'] = $d->getJsValue(false);
 				}
 
+				if (!empty($sublist['admin-page']))
+					$sublistArr['sublists'] = $this->getParsedSublists($dummy, $sublistAdminPageOptions);
+
 				foreach ($element->{$sublist['relationship']} as $item) {
 					$itemArr = [
 						'id' => !empty($item->options['assoc']) ? $item->options['assoc'][$options['primary']] : $item[$options['primary']],
 						'privileges' => [],
 						'data' => [],
+						'sublists' => [],
 					];
 
 					foreach ($sublistArr['privileges'] as $privilege => $privilegeValue) {
@@ -1372,6 +1406,11 @@ class Admin extends Module
 					foreach ($dummyDataset as $k => $d)
 						$itemArr['data'][$k] = $itemForm[$k]->getJsValue(false);
 
+					if (!empty($sublist['admin-page'])) {
+						$itemSublists = $this->getParsedSublists($item, $sublistAdminPageOptions);
+						foreach ($itemSublists as $itemSublist)
+							$itemArr['sublists'][$itemSublist['name']] = $itemSublist['list'];
+					}
 					$sublistArr['list'][] = $itemArr;
 				}
 
@@ -1381,10 +1420,10 @@ class Admin extends Module
 				}
 			}
 
-			$arr['sublists'][] = $sublistArr;
+			$sublists[] = $sublistArr;
 		}
 
-		return $arr;
+		return $sublists;
 	}
 
 	/**
@@ -1524,11 +1563,10 @@ class Admin extends Module
 	 *
 	 * @param int $id
 	 * @param array $data
-	 * @param array $sublists
 	 * @param int|null $versionLock
 	 * @return int
 	 */
-	public function save(int $id, array $data, array $sublists = [], ?int $versionLock = null): int
+	public function save(int $id, array $data, ?int $versionLock = null): int
 	{
 		$element = $this->getElement($id);
 
@@ -1540,7 +1578,7 @@ class Admin extends Module
 		if (!$this->canUser($privilege, null, $element))
 			$this->model->error('Can\'t save, permission denied.');
 
-		$this->page->beforeSave($element, $data, $sublists);
+		$this->page->beforeSave($element, $data);
 
 		$pageOptions = $this->getPageOptions();
 		$data = array_merge($pageOptions['where'], $data);
@@ -1553,42 +1591,13 @@ class Admin extends Module
 			'afterSave' => false,
 		]);
 
-		$pageSublists = $this->getSublists($pageOptions);
-		foreach ($sublists as $sublistName => $sublistData) {
-			if (!isset($pageSublists[$sublistName]) or $pageSublists[$sublistName]['custom'])
-				continue;
-
-			$relationship = $pageSublists[$sublistName]['relationship'];
-
-			foreach (($sublistData['create'] ?? []) as $childData) {
-				$newChild = $element->create($relationship);
-				$this->subsave($newChild, $childData, ['isChild' => true]);
-			}
-
-			foreach (($sublistData['update'] ?? []) as $childId => $childData) {
-				$child = $element->{$relationship}[$childId] ?? null;
-				if ($child)
-					$this->subsave($child, $childData, ['isChild' => true]);
-			}
-
-			foreach (($sublistData['delete'] ?? []) as $childId) {
-				$child = $element->{$relationship}[$childId] ?? null;
-				if ($child) {
-					if (!empty($child->options['assoc']))
-						$this->model->_Db->delete($child->settings['assoc']['table'], $child->options['assoc'][$child->settings['assoc']['primary'] ?? 'id']);
-					else
-						$child->delete();
-				}
-			}
-		}
-
 		if ($element->lastAfterSaveData) {
 			$this->_flagSaving = true;
 			$element->afterSave($element->lastAfterSaveData['previous_data'], $element->lastAfterSaveData['saving']);
 			$this->_flagSaving = false;
 		}
 
-		$this->page->afterSave($element, $data, $sublists);
+		$this->page->afterSave($element, $data);
 
 		return $mainElementId;
 	}
@@ -1606,11 +1615,11 @@ class Admin extends Module
 			'form' => null,
 			'versionLock' => null,
 			'afterSave' => true,
-			'isChild' => false,
+			'isChild' => null,
 		], $options);
 
 		if ($options['form'] === null)
-			$options['form'] = $element->getForm($options['isChild']);
+			$options['form'] = $element->getForm((bool)$options['isChild']);
 
 		foreach ($options['form']->getDataset() as $k => $d) {
 			if (isset($data[$k])) {
@@ -1644,17 +1653,54 @@ class Admin extends Module
 		if ($options['isChild'] and !empty($element->options['assoc'])) {
 			if ($element->exists()) {
 				$this->model->_Db->update($element->settings['assoc']['table'], $element->options['assoc'][$element->settings['assoc']['primary'] ?? 'id'], $data);
-				return $element->options['assoc']['id'];
+				$id = $element->options['assoc']['id'];
 			} else {
 				$data = array_merge($element->options['assoc'], $data);
 				if (isset($data[$element->settings['assoc']['primary'] ?? 'id']))
 					unset($data[$element->settings['assoc']['primary'] ?? 'id']);
-				return $this->model->_Db->insert($element->settings['assoc']['table'], $data);
+				$id = $this->model->_Db->insert($element->settings['assoc']['table'], $data);
 			}
 		} else {
 			$options['saveForm'] = true;
-			return $element->save($data, $options);
+			$id = $element->save($data, $options);
 		}
+
+		if (!$options['isChild'] or !empty($options['isChild']['admin-page'])) {
+			// Ha senso salvare le sublist se: o sono nell'elemento principale, o (se sono quindi in una sublist) vedo se è legata a un admin page (e quindi può averne a sua volta annidate)
+			$pageSublists = $this->getSublists($options['isChild'] ? $this->getPageOptions($options['isChild']['admin-page']) : null);
+			foreach ($pageSublists as $sublistName => $sublist) {
+				if (!isset($data[$sublistName]))
+					continue;
+
+				$relationship = $sublist['relationship'];
+
+				$ids = [];
+				foreach ($data[$sublistName] as $item) {
+					if (empty($item['id'])) {
+						$newChild = $element->create($relationship);
+						$ids[] = $this->subsave($newChild, $item, ['isChild' => $sublist]);
+					} else {
+						$child = $element->{$relationship}[$item['id']] ?? null;
+						if ($child)
+							$this->subsave($child, $item, ['isChild' => $sublist]);
+						$ids[] = $item['id'];
+					}
+				}
+
+				$element->reloadChildren($relationship);
+
+				foreach ($element->{$relationship} as $item) {
+					if (!in_array($item['id'], $ids)) {
+						if (!empty($item->options['assoc']))
+							$this->model->_Db->delete($item->settings['assoc']['table'], $item->options['assoc'][$item->settings['assoc']['primary'] ?? 'id']);
+						else
+							$item->delete();
+					}
+				}
+			}
+		}
+
+		return $id;
 	}
 
 	/**
@@ -1739,7 +1785,6 @@ class Admin extends Module
 				throw new \Exception('Sublist "' . $name . '" declared twice');
 
 			$sublists[$name] = array_merge([
-				'visualizer' => 'FormList',
 				'label' => $this->makeLabel($name),
 				'relationship' => $name,
 				'privileges' => [],

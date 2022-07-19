@@ -5,12 +5,8 @@ use Model\ORM\Element;
 
 class AdminPage
 {
-	/** @var Core */
-	protected $model;
-
-	public function __construct(Core $model)
+	public function __construct(protected Core $model)
 	{
-		$this->model = $model;
 	}
 
 	public function options(): array
@@ -20,7 +16,6 @@ class AdminPage
 
 	public function customize()
 	{
-
 	}
 
 	public function visualizerOptions(): array
@@ -36,18 +31,16 @@ class AdminPage
 	/**
 	 * @param Element $element
 	 * @param array $data
-	 * @param array $sublists
 	 */
-	public function beforeSave(Element $element, array &$data, array &$sublists)
+	public function beforeSave(Element $element, array &$data)
 	{
 	}
 
 	/**
 	 * @param Element $element
 	 * @param array $saving
-	 * @param array $sublists
 	 */
-	public function afterSave(Element $element, array $saving, array $sublists)
+	public function afterSave(Element $element, array $saving)
 	{
 	}
 
