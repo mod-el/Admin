@@ -414,7 +414,11 @@ class AdminApiController extends Controller
 					continue;
 			}
 
+			$iconIdentifier = rewriteUrlWords([$p['name'] ?? $rule]);
+			$iconPath = 'app/assets/img/' . ($this->token['path'] ? $this->token['path'] . '/' : '') . 'menu/' . $iconIdentifier . '.png';
+
 			$cleanPages[] = [
+				'icon' => file_exists(INCLUDE_PATH . $iconPath) ? PATH . $iconPath : null,
 				'name' => $p['name'] ?? '',
 				'path' => $rule,
 				'direct' => $p['direct'] ?? null,
