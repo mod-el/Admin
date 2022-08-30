@@ -531,7 +531,7 @@ class Admin extends Module
 
 		if (!is_string($column['display'])) {
 			if (is_callable($column['display']))
-				$elaborated['text'] = call_user_func($column['display'], $el);
+				$elaborated['text'] = call_user_func($column['display'], $el) ?: '';
 			else
 				$this->model->error('Unknown display format in a column - either string or callable is expected');
 		} else {
@@ -539,9 +539,9 @@ class Admin extends Module
 				$elaborated['text'] = $elaborated['value'] !== null ? makePrice($elaborated['value']) : '';
 			} elseif (isset($form[$column['display']])) {
 				$d = $form[$column['display']];
-				$elaborated['text'] = $d->getText(['preview' => true]);
+				$elaborated['text'] = $d->getText(['preview' => true]) ?: '';
 			} else {
-				$elaborated['text'] = $el[$column['display']];
+				$elaborated['text'] = $el[$column['display']] ?: '';
 			}
 
 			if (strlen($elaborated['text']) > 150)
