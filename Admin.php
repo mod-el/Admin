@@ -1696,10 +1696,11 @@ class Admin extends Module
 				$element->reloadChildren($relationship);
 
 				foreach ($element->{$relationship} as $item) {
-					if (!in_array($item['id'], $ids)) {
-						if (!empty($item->options['assoc']))
+					if (!empty($item->options['assoc'])) {
+						if (!in_array($item->options['assoc']['id'], $ids))
 							$this->model->_Db->delete($item->settings['assoc']['table'], $item->options['assoc'][$item->settings['assoc']['primary'] ?? 'id']);
-						else
+					} else {
+						if (!in_array($item['id'], $ids))
 							$item->delete();
 					}
 				}
