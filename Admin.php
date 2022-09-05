@@ -1334,6 +1334,7 @@ class Admin extends Module
 				'fields' => [],
 				'sublists' => [],
 				'list' => [],
+				'custom' => !empty($sublist['custom']),
 				'privileges' => [
 					'C' => true,
 					'R' => true,
