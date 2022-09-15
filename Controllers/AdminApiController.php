@@ -270,15 +270,11 @@ class AdminApiController extends Controller
 						case 'save-many':
 							$this->model->_Db->beginTransaction();
 
-							$ids = [];
 							foreach ($input['list'] as $item)
-								$ids[] = $this->model->_Admin->save(empty($item['id']) ? 0 : $item['id'], $item);
+								$this->model->_Admin->save(empty($item['id']) ? 0 : $item['id'], $item);
 
-							$existingList = $this->model->_Admin->getList(['perPage' => 0]);
-							foreach ($existingList['list'] as $item) {
-								if (!in_array($item['element']['id'], $ids))
-									$this->model->_Admin->delete($item['element']['id']);
-							}
+							foreach (($input['deleted'] ?? []) as $id)
+								$this->model->_Admin->delete($id);
 
 							$this->model->_Db->commit();
 
