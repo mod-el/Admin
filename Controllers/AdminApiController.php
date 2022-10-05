@@ -1,6 +1,7 @@
 <?php namespace Model\Admin\Controllers;
 
 use Model\Admin\Auth;
+use Model\Cache\Cache;
 use Model\Core\Controller;
 use Model\Core\Model;
 use Model\CSRF\CSRF;
@@ -146,9 +147,8 @@ class AdminApiController extends Controller
 							break;
 						default:
 							$this->model->error('Unknown action', ['code' => 400]);
-							break;
 					}
-					break;
+
 				case 'page':
 					$adminPage = $this->request[1] ?? null;
 					$action = $this->request[2] ?? null;
@@ -250,8 +250,52 @@ class AdminApiController extends Controller
 
 							$this->respond($response);
 							break;
+						case 'chunk-save-begin':
+							$id = uniqid();
+
+							$cache = Cache::getCacheAdapter();
+							$cacheItem = $cache->getItem('model-admin-chunksave-' . $id);
+							$cacheItem->set([
+								'payload' => '',
+							]);
+							$cacheItem->expiresAfter(3600 * 24);
+							$cache->save($cacheItem);
+
+							$this->respond(['id' => $id]);
+							break;
+						case 'chunk-save-process':
+							if (empty($input['id']) or !isset($input['chunk']))
+								throw new \Exception('Missing data', 400);
+
+							$cache = Cache::getCacheAdapter();
+							$cacheItem = $cache->getItem('model-admin-chunksave-' . $input['id']);
+							if (!$cacheItem->isHit())
+								throw new \Exception('Chunking id not found', 404);
+
+							$payload = $cacheItem->get()['payload'];
+
+							$cacheItem->set([
+								'payload' => $payload . $input['chunk'],
+							]);
+							$cache->save($cacheItem);
+
+							$this->respond(['success' => true]);
+							break;
 						case 'save':
 							CSRF::checkPayload('admin.api', $input);
+
+							if (!empty($input['chunking_id'])) {
+								$cacheKey = 'model-admin-chunksave-' . $input['chunking_id'];
+
+								$cache = Cache::getCacheAdapter();
+								$cacheItem = $cache->getItem($cacheKey);
+								if (!$cacheItem->isHit())
+									throw new \Exception('Chunking id not found', 404);
+
+								$input = json_decode($cacheItem->get()['payload'], true, 512, JSON_THROW_ON_ERROR);
+
+								$cache->deleteItem($cacheKey);
+							}
 
 							$this->model->_Db->beginTransaction();
 

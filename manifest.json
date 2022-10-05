@@ -10,6 +10,7 @@
 		"Paginator": ">=1.2.1"
 	},
 	"requires": [
+		"model/cache",
 		"model/jwt",
 		"model/csrf"
 	],
