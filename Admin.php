@@ -376,12 +376,11 @@ class Admin extends Module
 			$fields[] = $k;
 		}
 
-		if ($this->model->isLoaded('Multilang') and array_key_exists($options['table'], $this->model->_Multilang->tables)) {
-			$mlTableOptions = $this->model->_Multilang->tables[$options['table']];
-			$mlTable = $options['table'] . $mlTableOptions['suffix'];
+		if (class_exists('\\Model\\Multilang\\Ml') and ($mlTableOptions = \Model\Multilang\Ml::getTableOptionsFor($this->model->_Db->getConnection(), $options['table']))) {
+			$mlTable = $options['table'] . $mlTableOptions['table_suffix'];
 			$mlTableModel = $this->model->_Db->getTable($mlTable);
 			foreach ($mlTableModel->columns as $k => $col) {
-				if ($k === $mlTableModel->primary[0] or in_array($k, $fields) or $k === $mlTableOptions['keyfield'] or $k === $mlTableOptions['lang'] or in_array($k, $excludeColumns))
+				if ($k === $mlTableModel->primary[0] or in_array($k, $fields) or $k === $mlTableOptions['parent_field'] or $k === $mlTableOptions['lang_field'] or in_array($k, $excludeColumns))
 					continue;
 
 				$fields[] = $k;
@@ -663,12 +662,11 @@ class Admin extends Module
 		if ($search) {
 			$columns = $tableModel->columns;
 
-			if ($this->model->isLoaded('Multilang') and array_key_exists($options['table'], $this->model->_Multilang->tables)) {
-				$mlTableOptions = $this->model->_Multilang->tables[$options['table']];
-				$mlTable = $options['table'] . $mlTableOptions['suffix'];
+			if (class_exists('\\Model\\Multilang\\Ml') and ($mlTableOptions = \Model\Multilang\Ml::getTableOptionsFor($this->model->_Db->getConnection(), $options['table']))) {
+				$mlTable = $options['table'] . $mlTableOptions['table_suffix'];
 				$mlTableModel = $this->model->_Db->getTable($mlTable);
 				foreach ($mlTableModel->columns as $k => $col) {
-					if (isset($columns[$k]) or $k == $mlTableOptions['keyfield'] or $k == $mlTableOptions['lang'])
+					if (isset($columns[$k]) or $k == $mlTableOptions['parent_field'] or $k == $mlTableOptions['lang_field'])
 						continue;
 					$columns[$k] = $col;
 				}
