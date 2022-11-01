@@ -803,13 +803,13 @@ class Admin extends Module
 			'perPage' => $options['perPage'] ?: false,
 			'pag' => $options['p'],
 		]);
-		$limit = $options['perPage'] ? $paginator->getLimit() : false;
 
 		$queryOptions = [
 			'stream' => true,
 			'joins' => $sortingRules['joins'],
 			'order_by' => $sortingRules['order_by'],
-			'limit' => $limit,
+			'limit' => $paginator->getLimit(),
+			'offset' => $paginator->getOffset(),
 			'table' => $pageOptions['table'],
 			'group_by' => $pageOptions['group_by'],
 			'having' => $pageOptions['having'],
@@ -1198,10 +1198,9 @@ class Admin extends Module
 					}
 					unset($f);
 
-					$join_fields = array();
-					foreach ($d->options['text-field'] as $f) {
+					$join_fields = [];
+					foreach ($d->options['text-field'] as $f)
 						$join_fields[$f] = 'ord' . $idx . '_' . $f;
-					}
 
 					return [
 						'order_by' => implode(',', $order_by),
