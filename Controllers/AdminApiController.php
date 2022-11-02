@@ -1,7 +1,6 @@
 <?php namespace Model\Admin\Controllers;
 
 use Model\Admin\Auth;
-use Model\Cache\Cache;
 use Model\Core\Controller;
 use Model\Core\Model;
 use Model\CSRF\CSRF;
@@ -250,52 +249,33 @@ class AdminApiController extends Controller
 
 							$this->respond($response);
 							break;
-						case 'chunk-save-begin':
-							$id = uniqid();
+						case 'file-save-begin':
+							$tmp_files_path = INCLUDE_PATH . 'app-data' . DIRECTORY_SEPARATOR . 'temp-admin-files';
+							if (!is_dir($tmp_files_path))
+								mkdir($tmp_files_path, 0777, true);
 
-							$cache = Cache::getCacheAdapter();
-							$cacheItem = $cache->getItem('model-admin-chunksave-' . $id);
-							$cacheItem->set([
-								'payload' => '',
-							]);
-							$cacheItem->expiresAfter(3600 * 24);
-							$cache->save($cacheItem);
+							do {
+								$id = uniqid();
+								if (!empty($input['ext']))
+									$id .= '.' . $input['ext'];
+							} while (file_exists($tmp_files_path . DIRECTORY_SEPARATOR . $id));
 
 							$this->respond(['id' => $id]);
 							break;
-						case 'chunk-save-process':
+						case 'file-save-process':
 							if (empty($input['id']) or !isset($input['chunk']))
 								throw new \Exception('Missing data', 400);
 
-							$cache = Cache::getCacheAdapter();
-							$cacheItem = $cache->getItem('model-admin-chunksave-' . $input['id']);
-							if (!$cacheItem->isHit())
-								throw new \Exception('Chunking id not found', 404);
+							$tmp_files_path = INCLUDE_PATH . 'app-data' . DIRECTORY_SEPARATOR . 'temp-admin-files';
 
-							$payload = $cacheItem->get()['payload'];
-
-							$cacheItem->set([
-								'payload' => $payload . $input['chunk'],
-							]);
-							$cache->save($cacheItem);
+							$handle = fopen($tmp_files_path . DIRECTORY_SEPARATOR . $input['id'], 'a+');
+							fwrite($handle, base64_decode($input['chunk']));
+							fclose($handle);
 
 							$this->respond(['success' => true]);
 							break;
 						case 'save':
 							CSRF::checkPayload('admin.api', $input);
-
-							if (!empty($input['chunking_id'])) {
-								$cacheKey = 'model-admin-chunksave-' . $input['chunking_id'];
-
-								$cache = Cache::getCacheAdapter();
-								$cacheItem = $cache->getItem($cacheKey);
-								if (!$cacheItem->isHit())
-									throw new \Exception('Chunking id not found', 404);
-
-								$input = json_decode($cacheItem->get()['payload'], true, 512, JSON_THROW_ON_ERROR);
-
-								$cache->deleteItem($cacheKey);
-							}
 
 							$this->model->_Db->beginTransaction();
 
