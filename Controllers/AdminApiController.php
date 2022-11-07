@@ -4,7 +4,7 @@ use Model\Admin\Auth;
 use Model\Core\Controller;
 use Model\Core\Model;
 use Model\CSRF\CSRF;
-use Model\JWT\JWT;
+use Model\Jwt\JWT;
 
 class AdminApiController extends Controller
 {

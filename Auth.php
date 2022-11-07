@@ -1,6 +1,6 @@
 <?php namespace Model\Admin;
 
-use Model\JWT\JWT;
+use Model\Jwt\JWT;
 
 class Auth
 {
