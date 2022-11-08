@@ -109,7 +109,7 @@ class AdminApiController extends Controller
 					break;
 			}
 		} catch (\Exception $e) {
-			$this->respond(['error' => getErr($e)], (int)$e->getCode());
+			$this->respond(['error' => getErr($e), 'backtrace' => $e->getTrace()], (int)$e->getCode());
 		} catch (\Error $e) {
 			$this->respond(['error' => $e->getMessage() . ' in file ' . $e->getFile() . ' at line ' . $e->getLine()], 500);
 		}
@@ -356,7 +356,7 @@ class AdminApiController extends Controller
 		} catch (\Exception $e) {
 			if ($this->model->_Db->inTransaction())
 				$this->model->_Db->rollBack();
-			$this->respond(['error' => getErr($e)], (int)$e->getCode());
+			$this->respond(['error' => getErr($e), 'backtrace' => $e->getTrace()], (int)$e->getCode());
 		} catch (\Error $e) {
 			if ($this->model->_Db->inTransaction())
 				$this->model->_Db->rollBack();
