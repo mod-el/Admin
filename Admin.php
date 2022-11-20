@@ -884,8 +884,8 @@ class Admin extends Module
 
 		return (float)$this->model->_Db->select($pageOptions['table'], $searchQuery['where'], [
 			'joins' => array_merge($pageOptions['joins'], $searchQuery['joins']),
-			'sum' => $column['field'],
-		]);
+			'sum' => [$column['field']],
+		])[$column['field']];
 	}
 
 	/**
