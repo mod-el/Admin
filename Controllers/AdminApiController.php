@@ -3,7 +3,6 @@
 use Model\Admin\Auth;
 use Model\Core\Controller;
 use Model\Core\Model;
-use Model\CSRF\CSRF;
 use Model\Jwt\JWT;
 
 class AdminApiController extends Controller
@@ -131,8 +130,6 @@ class AdminApiController extends Controller
 						case 'login':
 							$path = $input['path'];
 							$user = $this->model->_Admin->loadUserModule($path);
-
-							CSRF::checkPayload('admin.login', $input);
 
 							if ($id = $user->login($input['username'], $input['password'], false)) {
 								$token = JWT::build([
@@ -275,8 +272,6 @@ class AdminApiController extends Controller
 							$this->respond(['success' => true]);
 							break;
 						case 'save':
-							CSRF::checkPayload('admin.api', $input);
-
 							$this->model->_Db->beginTransaction();
 
 							$data = $input['data'] ?? null;
@@ -305,8 +300,6 @@ class AdminApiController extends Controller
 							$this->respond(['success' => true]);
 							break;
 						case 'delete':
-							CSRF::checkPayload('admin.api', $input);
-
 							$ids = $input['ids'] ?? [];
 
 							$this->model->_Db->beginTransaction();
@@ -319,8 +312,6 @@ class AdminApiController extends Controller
 							$this->respond(['deleted' => $ids]);
 							break;
 						case 'duplicate':
-							CSRF::checkPayload('admin.api', $input);
-
 							$element = $this->model->_Admin->getElement($id);
 							if (!$element or !$element->exists())
 								$this->model->error('Error: attempting to duplicate a non existing element.');
@@ -343,8 +334,6 @@ class AdminApiController extends Controller
 								throw new \Exception('Error while changing order');
 							break;
 						default:
-							CSRF::checkPayload('admin.api', $input);
-
 							$this->customAction($action, $id, $input);
 							break;
 					}

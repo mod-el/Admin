@@ -11,8 +11,7 @@
 	},
 	"requires": [
 		"model/cache",
-		"model/jwt",
-		"model/csrf"
+		"model/jwt"
 	],
 	"file-types": {
 		"AdminPage": {
