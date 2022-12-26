@@ -360,8 +360,9 @@ class Admin extends Module
 			'zk_deleted',
 		], ($options['exclude'] ?? []));
 
-		if ($this->model->_Db->options['tenant-filter'])
-			$excludeColumns[] = $this->model->_Db->options['tenant-filter']['column'];
+		$tenantColumn = class_exists('\\Model\\Multitenancy\\MultiTenancy') ? \Model\Multitenancy\MultiTenancy::getTenantColumn('primary', $options['table']) : null;
+		if ($tenantColumn)
+			$excludeColumns[] = $tenantColumn;
 
 		if ($options['element']) {
 			$elementData = $this->model->_ORM->getElementData($options['element']);
