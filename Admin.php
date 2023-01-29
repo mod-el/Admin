@@ -377,7 +377,7 @@ class Admin extends Module
 			$fields[] = $k;
 		}
 
-		if (class_exists('\\Model\\Multilang\\Ml') and ($mlTableOptions = \Model\Multilang\Ml::getTableOptionsFor($this->model->_Db->getConnection(), $options['table']))) {
+		if (class_exists('\\Model\\Multilang\\Ml') and ($mlTableOptions = \Model\Multilang\Ml::getTableOptionsFor(\Model\Db\Db::getConnection(), $options['table']))) {
 			$mlTable = $options['table'] . $mlTableOptions['table_suffix'];
 			$mlTableModel = $this->model->_Db->getTable($mlTable);
 			foreach ($mlTableModel->columns as $k => $col) {
@@ -647,7 +647,7 @@ class Admin extends Module
 	 *
 	 * @param string $search
 	 * @param array $filters
-	 * @param array|null $searchFields
+	 * @param array $searchFields
 	 * @return array|null
 	 */
 	public function makeSearchQuery(string $search = '', array $filters = [], array $searchFields = []): ?array
@@ -663,7 +663,7 @@ class Admin extends Module
 		if ($search) {
 			$columns = $tableModel->columns;
 
-			if (class_exists('\\Model\\Multilang\\Ml') and ($mlTableOptions = \Model\Multilang\Ml::getTableOptionsFor($this->model->_Db->getConnection(), $options['table']))) {
+			if (class_exists('\\Model\\Multilang\\Ml') and ($mlTableOptions = \Model\Multilang\Ml::getTableOptionsFor(\Model\Db\Db::getConnection(), $options['table']))) {
 				$mlTable = $options['table'] . $mlTableOptions['table_suffix'];
 				$mlTableModel = $this->model->_Db->getTable($mlTable);
 				foreach ($mlTableModel->columns as $k => $col) {
