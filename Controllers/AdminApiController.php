@@ -3,6 +3,7 @@
 use Model\Admin\Auth;
 use Model\Core\Controller;
 use Model\Core\Model;
+use Model\Db\Db;
 use Model\Jwt\JWT;
 
 class AdminApiController extends Controller
@@ -119,6 +120,8 @@ class AdminApiController extends Controller
 	 */
 	public function post()
 	{
+		$db = Db::getConnection();
+
 		try {
 			$request = $this->request[0] ?? '';
 			$input = Model::getInput();
@@ -272,22 +275,17 @@ class AdminApiController extends Controller
 							$this->respond(['success' => true]);
 							break;
 						case 'save':
-							$this->model->_Db->beginTransaction();
+							$db->beginTransaction();
 
 							$data = $input['data'] ?? null;
+							$newId = $this->model->_Admin->save($id, $data);
 
-							$versionLock = null;
-							if (isset($input['version']) and is_numeric($input['version']))
-								$versionLock = $input['version'];
-
-							$newId = $this->model->_Admin->save($id, $data, $versionLock);
-
-							$this->model->_Db->commit();
+							$db->commit();
 
 							$this->respond(['id' => $newId]);
 							break;
 						case 'save-many':
-							$this->model->_Db->beginTransaction();
+							$db->beginTransaction();
 
 							foreach ($input['list'] as $item)
 								$this->model->_Admin->save(empty($item['id']) ? 0 : $item['id'], $item);
@@ -295,19 +293,19 @@ class AdminApiController extends Controller
 							foreach (($input['deleted'] ?? []) as $id)
 								$this->model->_Admin->delete($id);
 
-							$this->model->_Db->commit();
+							$db->commit();
 
 							$this->respond(['success' => true]);
 							break;
 						case 'delete':
 							$ids = $input['ids'] ?? [];
 
-							$this->model->_Db->beginTransaction();
+							$db->beginTransaction();
 
 							foreach ($ids as $id)
 								$this->model->_Admin->delete($id);
 
-							$this->model->_Db->commit();
+							$db->commit();
 
 							$this->respond(['deleted' => $ids]);
 							break;
@@ -343,12 +341,12 @@ class AdminApiController extends Controller
 					break;
 			}
 		} catch (\Exception $e) {
-			if ($this->model->_Db->inTransaction())
-				$this->model->_Db->rollBack();
+			if ($db->inTransaction())
+				$db->rollBack();
 			$this->respond(['error' => getErr($e), 'backtrace' => $e->getTrace()], (int)$e->getCode());
 		} catch (\Error $e) {
-			if ($this->model->_Db->inTransaction())
-				$this->model->_Db->rollBack();
+			if ($db->inTransaction())
+				$db->rollBack();
 			$this->respond(['error' => $e->getMessage() . ' in file ' . $e->getFile() . ' at line ' . $e->getLine()], 500);
 		}
 	}
@@ -391,8 +389,9 @@ class AdminApiController extends Controller
 			$response = $this->model->_Admin->page->{$action}($input, $element);
 			$this->respond($response);
 		} else {
-			if ($this->model->_Db->inTransaction())
-				$this->model->_Db->rollBack();
+			$db = Db::getConnection();
+			if ($db->inTransaction())
+				$db->rollBack();
 
 			$this->model->error('Unrecognized action', ['code' => 400]);
 		}

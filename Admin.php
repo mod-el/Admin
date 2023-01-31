@@ -2,6 +2,7 @@
 
 use Model\Core\Autoloader;
 use Model\Core\Module;
+use Model\Db\Db;
 use Model\DbParser\Table;
 use Model\Form\Form;
 use Model\Form\Field;
@@ -119,7 +120,7 @@ class Admin extends Module
 
 		if ($options['table']) {
 			if ($options['order_by'] === false) {
-				$tableModel = $this->model->_Db->getTable($options['table']);
+				$tableModel = Db::getConnection()->getTable($options['table']);
 				$options['order_by'] = $tableModel->primary[0] . ' DESC';
 
 				if ($options['element']) {
@@ -355,7 +356,7 @@ class Admin extends Module
 
 		$fields = [];
 
-		$tableModel = $this->model->_Db->getTable($options['table']);
+		$tableModel = Db::getConnection()->getTable($options['table']);
 		$excludeColumns = array_merge([
 			'zk_deleted',
 		], ($options['exclude'] ?? []));
@@ -379,7 +380,7 @@ class Admin extends Module
 
 		if (class_exists('\\Model\\Multilang\\Ml') and ($mlTableOptions = \Model\Multilang\Ml::getTableOptionsFor(\Model\Db\Db::getConnection(), $options['table']))) {
 			$mlTable = $options['table'] . $mlTableOptions['table_suffix'];
-			$mlTableModel = $this->model->_Db->getTable($mlTable);
+			$mlTableModel = Db::getConnection()->getTable($mlTable);
 			foreach ($mlTableModel->columns as $k => $col) {
 				if ($k === $mlTableModel->primary[0] or in_array($k, $fields) or $k === $mlTableOptions['parent_field'] or $k === $mlTableOptions['lang_field'] or in_array($k, $excludeColumns))
 					continue;
@@ -400,7 +401,7 @@ class Admin extends Module
 	 */
 	public function elaborateColumns(array $columns, ?string $table = null, bool $getSortingRules = true): array
 	{
-		$tableModel = $table ? $this->model->_Db->getTable($table) : false;
+		$tableModel = $table ? Db::getConnection()->getTable($table) : false;
 
 		$adminForm = null;
 
@@ -657,7 +658,7 @@ class Admin extends Module
 		$where = $options['where'];
 		$joins = [];
 
-		$tableModel = $this->model->_Db->getTable($options['table']);
+		$tableModel = Db::getConnection()->getTable($options['table']);
 
 		$search = trim($search);
 		if ($search) {
@@ -665,7 +666,7 @@ class Admin extends Module
 
 			if (class_exists('\\Model\\Multilang\\Ml') and ($mlTableOptions = \Model\Multilang\Ml::getTableOptionsFor(\Model\Db\Db::getConnection(), $options['table']))) {
 				$mlTable = $options['table'] . $mlTableOptions['table_suffix'];
-				$mlTableModel = $this->model->_Db->getTable($mlTable);
+				$mlTableModel = Db::getConnection()->getTable($mlTable);
 				foreach ($mlTableModel->columns as $k => $col) {
 					if (isset($columns[$k]) or $k == $mlTableOptions['parent_field'] or $k == $mlTableOptions['lang_field'])
 						continue;
@@ -769,7 +770,7 @@ class Admin extends Module
 		$joins = array_merge($pageOptions['joins'], $options['joins']);
 
 		// Count how many total elements there are
-		$count = $this->model->_Db->count($pageOptions['table'], $where, [
+		$count = Db::getConnection()->count($pageOptions['table'], $where, [
 			'joins' => $joins,
 			'group_by' => $pageOptions['group_by'],
 		]);
@@ -779,13 +780,13 @@ class Admin extends Module
 
 		// If I am asked to go to a specific element, I calculate its position in the list to pick the right page
 		if ($options['goTo'] and $options['perPage'] and $count > 0) {
-			$customList = $this->model->_Db->select_all($pageOptions['table'], $where, [
+			$customList = Db::getConnection()->select_all($pageOptions['table'], $where, [
 				'joins' => $sortingRules['joins'],
 				'order_by' => $sortingRules['order_by'],
 			]);
 			$c_element = 0;
 			$element_found = false;
-			$tableModel = $this->model->_Db->getTable($pageOptions['table']);
+			$tableModel = Db::getConnection()->getTable($pageOptions['table']);
 			foreach ($customList as $row) {
 				if ($row[$tableModel->primary[0]] == $options['goTo']) {
 					$element_found = $c_element;
@@ -883,7 +884,7 @@ class Admin extends Module
 	{
 		$pageOptions = $this->getPageOptions();
 
-		return (float)$this->model->_Db->select($pageOptions['table'], $searchQuery['where'], [
+		return (float)Db::getConnection()->select($pageOptions['table'], $searchQuery['where'], [
 			'joins' => array_merge($pageOptions['joins'], $searchQuery['joins']),
 			'sum' => [$column['field']],
 		])[$column['field']];
@@ -922,7 +923,7 @@ class Admin extends Module
 			if (!$privileges_table)
 				$this->model->error('Wrong admin path');
 
-			$this->privilegesCache = $this->model->_Db->select_all($privileges_table, [
+			$this->privilegesCache = Db::getConnection()->select_all($privileges_table, [
 				'or' => [
 					['profile', $this->model->_User_Admin->profile],
 					['user', $this->model->_User_Admin->logged()],
@@ -1149,7 +1150,7 @@ class Admin extends Module
 		if (isset($form[$field])) {
 			$d = $form[$field];
 			if (in_array($d->options['type'], ['select', 'radio', 'select-cascade'])) {
-				$tableModel = $this->model->_Db->getTable($this->getPageOptions()['table']);
+				$tableModel = Db::getConnection()->getTable($this->getPageOptions()['table']);
 				if ($tableModel and isset($tableModel->columns[$d->options['field']]) and $tableModel->columns[$d->options['field']]['type'] == 'enum') {
 					return [
 						'order_by' => $d->options['field'] . ' ' . $dir,
@@ -1248,7 +1249,6 @@ class Admin extends Module
 		$pageOptions = $this->getPageOptions();
 
 		$arr = [
-			'version' => $this->model->_Db->getVersionLock($element->getTable(), $element[$element->settings['primary']]),
 			'fields' => [],
 			'data' => [],
 			'sublists' => [],
@@ -1568,10 +1568,9 @@ class Admin extends Module
 	 *
 	 * @param int $id
 	 * @param array $data
-	 * @param int|null $versionLock
 	 * @return int
 	 */
-	public function save(int $id, array $data, ?int $versionLock = null): int
+	public function save(int $id, array $data): int
 	{
 		$element = $this->getElement($id);
 
@@ -1592,7 +1591,6 @@ class Admin extends Module
 
 		$mainElementId = $this->subsave($element, $data, [
 			'form' => $form,
-			'versionLock' => $versionLock,
 			'afterSave' => false,
 		]);
 
@@ -1618,7 +1616,6 @@ class Admin extends Module
 	{
 		$options = array_merge([
 			'form' => null,
-			'versionLock' => null,
 			'afterSave' => true,
 			'isChild' => null,
 		], $options);
@@ -1657,13 +1654,13 @@ class Admin extends Module
 
 		if ($options['isChild'] and !empty($element->options['assoc'])) {
 			if ($element->exists()) {
-				$this->model->_Db->update($element->settings['assoc']['table'], $element->options['assoc'][$element->settings['assoc']['primary'] ?? 'id'], $data);
+				Db::getConnection()->update($element->settings['assoc']['table'], $element->options['assoc'][$element->settings['assoc']['primary'] ?? 'id'], $data);
 				$id = $element->options['assoc']['id'];
 			} else {
 				$data = array_merge($element->options['assoc'], $data);
 				if (isset($data[$element->settings['assoc']['primary'] ?? 'id']))
 					unset($data[$element->settings['assoc']['primary'] ?? 'id']);
-				$id = $this->model->_Db->insert($element->settings['assoc']['table'], $data);
+				$id = Db::getConnection()->insert($element->settings['assoc']['table'], $data);
 			}
 		} else {
 			$options['saveForm'] = true;
@@ -1697,7 +1694,7 @@ class Admin extends Module
 				foreach ($element->{$relationship} as $item) {
 					if (!empty($item->options['assoc'])) {
 						if (!in_array($item->options['assoc']['id'], $ids))
-							$this->model->_Db->delete($item->settings['assoc']['table'], $item->options['assoc'][$item->settings['assoc']['primary'] ?? 'id']);
+							Db::getConnection()->delete($item->settings['assoc']['table'], $item->options['assoc'][$item->settings['assoc']['primary'] ?? 'id']);
 					} else {
 						if (!in_array($item['id'], $ids))
 							$item->delete();
