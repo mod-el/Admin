@@ -780,7 +780,7 @@ class Admin extends Module
 
 		// If I am asked to go to a specific element, I calculate its position in the list to pick the right page
 		if ($options['goTo'] and $options['perPage'] and $count > 0) {
-			$customList = Db::getConnection()->select_all($pageOptions['table'], $where, [
+			$customList = Db::getConnection()->selectAll($pageOptions['table'], $where, [
 				'joins' => $sortingRules['joins'],
 				'order_by' => $sortingRules['order_by'],
 			]);
@@ -923,7 +923,7 @@ class Admin extends Module
 			if (!$privileges_table)
 				$this->model->error('Wrong admin path');
 
-			$this->privilegesCache = Db::getConnection()->select_all($privileges_table, [
+			$this->privilegesCache = Db::getConnection()->selectAll($privileges_table, [
 				'or' => [
 					['profile', $this->model->_User_Admin->profile],
 					['user', $this->model->_User_Admin->logged()],
@@ -933,7 +933,7 @@ class Admin extends Module
 					],
 				],
 			], [
-				'order_by' => 'id DESC',
+				'order_by' => [['id', 'DESC']],
 				'stream' => false,
 			]);
 		}
@@ -1151,30 +1151,29 @@ class Admin extends Module
 			$d = $form[$field];
 			if (in_array($d->options['type'], ['select', 'radio', 'select-cascade'])) {
 				$tableModel = Db::getConnection()->getTable($this->getPageOptions()['table']);
-				if ($tableModel and isset($tableModel->columns[$d->options['field']]) and $tableModel->columns[$d->options['field']]['type'] == 'enum') {
+				if (isset($tableModel->columns[$d->options['field']]) and $tableModel->columns[$d->options['field']]['type'] == 'enum') {
 					return [
-						'order_by' => $d->options['field'] . ' ' . $dir,
+						'order_by' => [$d->options['field'], $dir],
 						'joins' => [],
 					];
 				}
 
 				if ($d->options['table'] and $d->options['text-field']) {
-					if (is_array($d->options['text-field'])) {
+					if (is_array($d->options['text-field']))
 						$text_fields = $d->options['text-field'];
-					} elseif (is_string($d->options['text-field'])) {
+					elseif (is_string($d->options['text-field']))
 						$text_fields = [$d->options['text-field']];
-					} else {
+					else
 						return null;
-					}
 
 					$order_by = [];
 					$join_fields = [];
 					foreach ($text_fields as $cf => $tf) {
-						$order_by[] = 'ord' . $idx . '_' . $cf . '_' . $tf . ' ' . $dir;
+						$order_by[] = ['ord' . $idx . '_' . $cf . '_' . $tf, $dir];
 						$join_fields[$tf] = 'ord' . $idx . '_' . $cf . '_' . $tf;
 					}
 					return [
-						'order_by' => implode(',', $order_by),
+						'order_by' => $order_by,
 						'joins' => [
 							[
 								'type' => 'LEFT',
@@ -1186,7 +1185,7 @@ class Admin extends Module
 				}
 
 				return [
-					'order_by' => $d->options['field'] . ' ' . $dir,
+					'order_by' => [[$d->options['field'], $dir]],
 					'joins' => [],
 				];
 			} elseif ($d->options['type'] === 'instant-search') {
@@ -1195,9 +1194,8 @@ class Admin extends Module
 						$d->options['text-field'] = [$d->options['text-field']];
 
 					$order_by = $d->options['text-field'];
-					foreach ($order_by as &$f) {
-						$f = 'ord' . $idx . '_' . $f . ' ' . $dir;
-					}
+					foreach ($order_by as &$f)
+						$f = ['ord' . $idx . '_' . $f, $dir];
 					unset($f);
 
 					$join_fields = [];
@@ -1205,7 +1203,7 @@ class Admin extends Module
 						$join_fields[$f] = 'ord' . $idx . '_' . $f;
 
 					return [
-						'order_by' => implode(',', $order_by),
+						'order_by' => $order_by,
 						'joins' => [
 							[
 								'type' => 'LEFT',
@@ -1218,7 +1216,7 @@ class Admin extends Module
 				}
 			} else {
 				return [
-					'order_by' => $d->options['field'] . ' ' . $dir,
+					'order_by' => [$d->options['field'], $dir],
 					'joins' => [],
 				];
 			}
@@ -1226,7 +1224,7 @@ class Admin extends Module
 			return null;
 		} else {
 			return [
-				'order_by' => $field . ' ' . $dir,
+				'order_by' => [$field, $dir],
 				'joins' => [],
 			];
 		}
