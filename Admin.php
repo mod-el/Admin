@@ -1114,13 +1114,11 @@ class Admin extends Module
 				if (!$rules)
 					$this->model->error('Column ' . $sort['field'] . ' is not sortable!');
 
-				$order_by[] = $rules['order_by'];
-				if ($rules['joins']) {
-					foreach ($rules['joins'] as $j)
-						$joins[] = $j;
-				}
+				foreach (($rules['order_by'] ?? []) as $j)
+					$order_by[] = $j;
+				foreach (($rules['joins'] ?? []) as $j)
+					$joins[] = $j;
 			}
-			$order_by = implode(',', $order_by);
 		} else {
 			$order_by = $this->getPageOptions()['order_by'];
 		}
@@ -1153,7 +1151,7 @@ class Admin extends Module
 				$tableModel = Db::getConnection()->getTable($this->getPageOptions()['table']);
 				if (isset($tableModel->columns[$d->options['field']]) and $tableModel->columns[$d->options['field']]['type'] == 'enum') {
 					return [
-						'order_by' => [$d->options['field'], $dir],
+						'order_by' => [[$d->options['field'], $dir]],
 						'joins' => [],
 					];
 				}
@@ -1216,7 +1214,7 @@ class Admin extends Module
 				}
 			} else {
 				return [
-					'order_by' => [$d->options['field'], $dir],
+					'order_by' => [[$d->options['field'], $dir]],
 					'joins' => [],
 				];
 			}
@@ -1224,7 +1222,7 @@ class Admin extends Module
 			return null;
 		} else {
 			return [
-				'order_by' => [$field, $dir],
+				'order_by' => [[$field, $dir]],
 				'joins' => [],
 			];
 		}
