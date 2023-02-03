@@ -1591,9 +1591,9 @@ class Admin extends Module
 		]);
 
 		if ($element->lastAfterSaveData) {
-			$this->_flagSaving = true;
+			$element->_flagSaving = true;
 			$element->afterSave($element->lastAfterSaveData['previous_data'], $element->lastAfterSaveData['saving']);
-			$this->_flagSaving = false;
+			$element->_flagSaving = false;
 		}
 
 		$this->page->afterSave($element, $data);
