@@ -1581,7 +1581,15 @@ class Admin extends Module
 		$this->page->beforeSave($element, $data);
 
 		$pageOptions = $this->getPageOptions();
-		$data = array_merge($pageOptions['where'], $data);
+
+		$filteredWhere = [];
+		foreach (($pageOptions['where'] ?? []) as $k => $v) {
+			if (is_array($v) or is_object($v))
+				continue;
+			$filteredWhere[$k] = $v;
+		}
+
+		$data = array_merge($filteredWhere, $data);
 
 		$form = $this->getForm();
 
