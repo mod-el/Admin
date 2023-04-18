@@ -33,7 +33,7 @@ class AdminApiController extends Controller
 	}
 
 	/**
-	 * @return mixed|void
+	 * @return void
 	 */
 	public function get()
 	{
@@ -114,7 +114,7 @@ class AdminApiController extends Controller
 	}
 
 	/**
-	 * @return mixed|void
+	 * @return void
 	 */
 	public function post()
 	{
@@ -436,7 +436,7 @@ class AdminApiController extends Controller
 	/**
 	 * @param string $path
 	 */
-	private function loadRequest(string $path)
+	private function loadRequest(string $path): void
 	{
 		$mainRequest = implode('/', $this->model->getRequest());
 		$request = substr($mainRequest, strlen($path));
