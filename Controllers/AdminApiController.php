@@ -63,6 +63,64 @@ class AdminApiController extends Controller
 					$cleanPages = $this->cleanPages($pages);
 					$this->respond($cleanPages);
 
+				case 'rest':
+					$adminPage = $this->request[1] ?? null;
+					if (!$adminPage)
+						throw new \Exception('No page name defined', ['code' => 400]);
+
+					$this->model->_Admin->setPage($adminPage);
+
+					$id = $this->request[2] ?? null;
+					if ($id !== null and (!is_numeric($id) or $id < 0))
+						throw new \Exception('Id should be a number greater than or equal to 0', ['code' => 400]);
+
+					if ($id) {
+						$adminResponse = $this->model->_Admin->getElementData($id);
+
+						$response = [];
+						foreach ($adminResponse['data'] as $k => $v) {
+							$response[$k] = $v;
+							if (isset($adminResponse['fields'], $adminResponse['fields'][$k]) and $adminResponse['fields'][$k]['type'] === 'checkbox')
+								$response[$k] = (bool)$v;
+						}
+
+						foreach ($adminResponse['sublists'] as $sublist) {
+							$response[$sublist['name']] = [];
+							foreach ($sublist['list'] as $subItem)
+								$response[$sublist['name']][] = ['id' => $subItem['id'], ...$subItem['data']];
+						}
+					} else {
+						$list = $this->model->_Admin->getList([
+							'p' => (int)($_GET['page'] ?? 1),
+							'perPage' => (int)($_GET['per_page'] ?? 20),
+							'sortBy' => !empty($_GET['sort_by']) ? json_decode($_GET['sort_by'], true) : [],
+							'rest' => true,
+						]);
+
+						$response = [
+							'tot' => $list['tot'],
+							'pages' => $list['pages'],
+							'page' => $list['page'],
+							'list' => [],
+						];
+
+						foreach ($list['list'] as $item) {
+							$itemData = [
+								'id' => $item['element'][$item['element']->settings['primary']],
+							];
+							$form = $this->model->_Admin->getForm($item['element']);
+							foreach ($form->getDataset() as $k => $d) {
+								$itemData[$k] = $d->getJsValue(false);
+								if ($d->options['type'] === 'checkbox')
+									$itemData[$k] = (bool)$itemData[$k];
+							}
+
+							$response['list'][] = $itemData;
+						}
+					}
+
+					$this->respond($response);
+
 				case 'page':
 					$adminPage = $this->request[1] ?? null;
 					$action = $this->request[2] ?? null;
@@ -359,7 +417,8 @@ class AdminApiController extends Controller
 
 		http_response_code($code);
 
-		echo json_encode($response, JSON_INVALID_UTF8_IGNORE);
+		header('Content-Type: application/json');
+		echo json_encode($response, JSON_INVALID_UTF8_IGNORE | JSON_THROW_ON_ERROR | JSON_PARTIAL_OUTPUT_ON_ERROR);
 		die();
 	}
 
