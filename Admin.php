@@ -24,7 +24,7 @@ class Admin extends Module
 	/**
 	 * @param string $path
 	 */
-	public function setPath(string $path)
+	public function setPath(string $path): void
 	{
 		$this->path = $path;
 	}
@@ -39,7 +39,7 @@ class Admin extends Module
 	/**
 	 * @param string $rule
 	 */
-	public function setPage(string $rule)
+	public function setPage(string $rule): void
 	{
 		if ($this->page)
 			return;
@@ -598,7 +598,7 @@ class Admin extends Module
 	 * @param array $column
 	 * @return string|null
 	 */
-	private function getFieldNameFromColumn(array $column)
+	private function getFieldNameFromColumn(array $column): ?string
 	{
 		if ($column['display'] and is_string($column['display']))
 			return $column['display'];
@@ -760,10 +760,11 @@ class Admin extends Module
 			'perPage' => $pageOptions['perPage'],
 			'sortBy' => [],
 			'joins' => [],
+			'rest' => false,
 		], $options);
 
 		// save-many endpoint cannot work with pagination (it would delete any non-visible item)
-		if ($pageOptions['visualizer'] === 'FormList')
+		if ($pageOptions['visualizer'] === 'FormList' and !$options['rest'])
 			$options['perPage'] = 0;
 
 		$where = $options['where'];
@@ -1299,7 +1300,7 @@ class Admin extends Module
 		return $arr;
 	}
 
-	public function getParsedSublists(Element $element, array $pageOptions)
+	public function getParsedSublists(Element $element, array $pageOptions): array
 	{
 		$sublists = [];
 		foreach ($this->getSublists($pageOptions) as $sublistName => $sublist) {
@@ -1490,7 +1491,7 @@ class Admin extends Module
 	 * @param string $name
 	 * @param array|string $options
 	 */
-	public function field(string $name, $options = [])
+	public function field(string $name, array|string $options = []): void
 	{
 		if (!is_array($options))
 			$options = ['type' => $options];
@@ -1715,7 +1716,7 @@ class Admin extends Module
 	 * @param mixed $v
 	 * @return mixed
 	 */
-	private function checkSingleDatum(Field $d, $v)
+	private function checkSingleDatum(Field $d, mixed $v): mixed
 	{
 		if ($d->options['nullable'] and $v === '')
 			$v = null;
@@ -1737,7 +1738,7 @@ class Admin extends Module
 	 *
 	 * @param int $id
 	 */
-	public function delete(int $id)
+	public function delete(int $id): void
 	{
 		$pageOptions = $this->getPageOptions();
 		$element = $this->model->_ORM->one($pageOptions['element'] ?: 'Element', $id, [
@@ -1762,7 +1763,7 @@ class Admin extends Module
 	 * @param array $options
 	 * @deprecated use "sublists" option instead
 	 */
-	public function sublist(string $name, array $options = [])
+	public function sublist(string $name, array $options = []): void
 	{
 		$this->sublists[$name] = array_merge([
 			'visualizer' => 'FormList',
