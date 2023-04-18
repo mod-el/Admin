@@ -22,7 +22,7 @@ class AdminApiController extends Controller
 		if ($this->request[0] !== 'user' or $this->request[1] !== 'login') {
 			$this->token = Auth::getToken();
 			if (!$this->token)
-				$this->model->error('Invalid auth token', ['code' => 401]);
+				throw new \Exception('Invalid auth token', ['code' => 401]);
 
 			$this->model->_Admin->setPath($this->token['path']);
 
@@ -42,7 +42,7 @@ class AdminApiController extends Controller
 			switch ($request) {
 				case 'keep-alive':
 					$this->respond(['status' => true]);
-					break;
+
 				case 'user':
 					$subrequest = $this->request[1] ?? null;
 					switch ($subrequest) {
@@ -53,17 +53,16 @@ class AdminApiController extends Controller
 								'id' => $this->token['id'],
 								'username' => $this->model->_User_Admin->get($usernameColumn),
 							]);
-							break;
+
 						default:
-							$this->model->error('Unknown action', ['code' => 400]);
-							break;
+							throw new \Exception('Unknown action', ['code' => 400]);
 					}
-					break;
+
 				case 'pages':
 					$pages = $this->model->_Admin->getPages($this->token['path']);
 					$cleanPages = $this->cleanPages($pages);
 					$this->respond($cleanPages);
-					break;
+
 				case 'page':
 					$adminPage = $this->request[1] ?? null;
 					$action = $this->request[2] ?? null;
@@ -76,7 +75,7 @@ class AdminApiController extends Controller
 								'css' => [],
 							]);
 						} else {
-							$this->model->error('No page name defined', ['code' => 400]);
+							throw new \Exception('No page name defined', ['code' => 400]);
 						}
 					}
 
@@ -84,13 +83,13 @@ class AdminApiController extends Controller
 
 					$id = $this->request[3] ?? null;
 					if ($id !== null and (!is_numeric($id) or $id < 0))
-						$this->model->error('Id should be a number greater than or equal to 0', ['code' => 400]);
+						throw new \Exception('Id should be a number greater than or equal to 0', ['code' => 400]);
 
 					switch ($action) {
 						case null:
 							$response = $this->model->_Admin->getPageDetails();
 							$this->respond($response);
-							break;
+
 						case 'data':
 							$response = $this->model->_Admin->getElementData($id);
 
@@ -98,15 +97,14 @@ class AdminApiController extends Controller
 							$response['next-item'] = $this->model->_Admin->getAdjacentItem($id, 'next');
 
 							$this->respond($response);
-							break;
+
 						default:
 							$this->customAction($action, $id);
 							break;
 					}
-					break;
+
 				default:
-					$this->model->error('Unknown action', ['code' => 400]);
-					break;
+					throw new \Exception('Unknown action', ['code' => 400]);
 			}
 		} catch (\Exception $e) {
 			$this->respond(['error' => getErr($e), 'backtrace' => $e->getTrace()], (int)$e->getCode());
@@ -141,11 +139,11 @@ class AdminApiController extends Controller
 								]);
 								$this->respond(['token' => $token]);
 							} else {
-								$this->model->error('Wrong username or password', ['code' => 401]);
+								throw new \Exception('Wrong username or password', ['code' => 401]);
 							}
-							break;
+
 						default:
-							$this->model->error('Unknown action', ['code' => 400]);
+							throw new \Exception('Unknown action', ['code' => 400]);
 					}
 
 				case 'page':
@@ -160,7 +158,7 @@ class AdminApiController extends Controller
 								'css' => [],
 							]);
 						} else {
-							$this->model->error('No page name defined', ['code' => 400]);
+							throw new \Exception('No page name defined', ['code' => 400]);
 						}
 					}
 
@@ -168,7 +166,7 @@ class AdminApiController extends Controller
 
 					$id = $this->request[3] ?? null;
 					if ($id !== null and (!is_numeric($id) or $id < 0))
-						$this->model->error('Id should be a number greater than or equal to 0', ['code' => 400]);
+						throw new \Exception('Id should be a number greater than or equal to 0', ['code' => 400]);
 
 					switch ($action) {
 						case 'search':
@@ -210,7 +208,7 @@ class AdminApiController extends Controller
 
 							foreach ($fieldsList as $idx) {
 								if (!isset($fields['fields'][$idx]))
-									$this->model->error('"' . $idx . '" field not existing');
+									throw new \Exception('"' . $idx . '" field not existing');
 							}
 
 							foreach ($list['list'] as $item) {
@@ -248,7 +246,7 @@ class AdminApiController extends Controller
 							}
 
 							$this->respond($response);
-							break;
+
 						case 'file-save-begin':
 							$tmp_files_path = INCLUDE_PATH . 'app-data' . DIRECTORY_SEPARATOR . 'temp-admin-files';
 							if (!is_dir($tmp_files_path))
@@ -261,7 +259,7 @@ class AdminApiController extends Controller
 							} while (file_exists($tmp_files_path . DIRECTORY_SEPARATOR . $id));
 
 							$this->respond(['id' => $id]);
-							break;
+
 						case 'file-save-process':
 							if (empty($input['id']) or !isset($input['chunk']))
 								throw new \Exception('Missing data', 400);
@@ -273,7 +271,7 @@ class AdminApiController extends Controller
 							fclose($handle);
 
 							$this->respond(['success' => true]);
-							break;
+
 						case 'save':
 							$db->beginTransaction();
 
@@ -283,7 +281,7 @@ class AdminApiController extends Controller
 							$db->commit();
 
 							$this->respond(['id' => $newId]);
-							break;
+
 						case 'save-many':
 							$db->beginTransaction();
 
@@ -296,7 +294,7 @@ class AdminApiController extends Controller
 							$db->commit();
 
 							$this->respond(['success' => true]);
-							break;
+
 						case 'delete':
 							$ids = $input['ids'] ?? [];
 
@@ -308,37 +306,36 @@ class AdminApiController extends Controller
 							$db->commit();
 
 							$this->respond(['deleted' => $ids]);
-							break;
+
 						case 'duplicate':
 							$element = $this->model->_Admin->getElement($id);
 							if (!$element or !$element->exists())
-								$this->model->error('Error: attempting to duplicate a non existing element.');
+								throw new \Exception('Error: attempting to duplicate a non existing element.');
 
 							$newElement = $element->duplicate();
 							$this->respond(['id' => $newElement['id']]);
-							break;
+
 						case 'change-order':
 							$element = $this->model->_Admin->getElement($id);
 							if (!$element or !$element->exists())
-								$this->model->error('Error: attempting to change order to a non existing element.');
+								throw new \Exception('Error: attempting to change order to a non existing element.');
 
 							$to = $input['to'] ?? null;
 							if (!$to or !is_numeric($to))
-								$this->model->error('Bad parameters');
+								throw new \Exception('Bad parameters');
 
 							if ($element->changeOrder($to))
 								$this->respond(['success' => true]);
 							else
 								throw new \Exception('Error while changing order');
-							break;
+
 						default:
 							$this->customAction($action, $id, $input);
 							break;
 					}
-					break;
+
 				default:
-					$this->model->error('Unknown action', ['code' => 400]);
-					break;
+					throw new \Exception('Unknown action', ['code' => 400]);
 			}
 		} catch (\Exception $e) {
 			if ($db->inTransaction())
@@ -355,14 +352,14 @@ class AdminApiController extends Controller
 	 * @param array $response
 	 * @param int $code
 	 */
-	private function respond(array $response, int $code = 200)
+	private function respond(array $response, int $code = 200): never
 	{
 		if ($code <= 0)
 			$code = 500;
 
 		http_response_code($code);
 
-		echo json_encode($response);
+		echo json_encode($response, JSON_INVALID_UTF8_IGNORE);
 		die();
 	}
 
@@ -371,20 +368,20 @@ class AdminApiController extends Controller
 	 * @param int|null $id
 	 * @param array $input
 	 */
-	private function customAction(?string $action = null, ?int $id = null, array $input = [])
+	private function customAction(?string $action = null, ?int $id = null, array $input = []): void
 	{
 		if ($action === null)
-			$this->model->error('No action provided', ['code' => 400]);
+			throw new \Exception('No action provided', ['code' => 400]);
 
 		if (!$this->model->_Admin->page)
-			$this->model->error('No admin page loaded', ['code' => 500]);
+			throw new \Exception('No admin page loaded', ['code' => 500]);
 
 		$action = str_replace(' ', '', lcfirst(ucwords(str_replace('-', ' ', $action))));
 
 		if (method_exists($this->model->_Admin->page, $action)) {
 			$element = $id !== null ? $this->model->_Admin->getElement($id) : null;
 			if ($id !== null and !$element)
-				$this->model->error('Element does not exist.');
+				throw new \Exception('Element does not exist.');
 
 			$response = $this->model->_Admin->page->{$action}($input, $element);
 			$this->respond($response);
@@ -393,7 +390,7 @@ class AdminApiController extends Controller
 			if ($db->inTransaction())
 				$db->rollBack();
 
-			$this->model->error('Unrecognized action', ['code' => 400]);
+			throw new \Exception('Unrecognized action', ['code' => 400]);
 		}
 	}
 
