@@ -22,7 +22,7 @@ class AdminApiController extends Controller
 		if ($this->request[0] !== 'user' or $this->request[1] !== 'login') {
 			$this->token = Auth::getToken();
 			if (!$this->token)
-				throw new \Exception('Invalid auth token', ['code' => 401]);
+				throw new \Exception('Invalid auth token', 401);
 
 			$this->model->_Admin->setPath($this->token['path']);
 
@@ -55,7 +55,7 @@ class AdminApiController extends Controller
 							]);
 
 						default:
-							throw new \Exception('Unknown action', ['code' => 400]);
+							throw new \Exception('Unknown action', 400);
 					}
 
 				case 'pages':
@@ -66,13 +66,13 @@ class AdminApiController extends Controller
 				case 'rest':
 					$adminPage = $this->request[1] ?? null;
 					if (!$adminPage)
-						throw new \Exception('No page name defined', ['code' => 400]);
+						throw new \Exception('No page name defined', 400);
 
 					$this->model->_Admin->setPage($adminPage);
 
 					$id = $this->request[2] ?? null;
 					if ($id !== null and (!is_numeric($id) or $id < 0))
-						throw new \Exception('Id should be a number greater than or equal to 0', ['code' => 400]);
+						throw new \Exception('Id should be a number greater than or equal to 0', 400);
 
 					if ($id) {
 						$adminResponse = $this->model->_Admin->getElementData($id);
@@ -133,7 +133,7 @@ class AdminApiController extends Controller
 								'css' => [],
 							]);
 						} else {
-							throw new \Exception('No page name defined', ['code' => 400]);
+							throw new \Exception('No page name defined', 400);
 						}
 					}
 
@@ -141,7 +141,7 @@ class AdminApiController extends Controller
 
 					$id = $this->request[3] ?? null;
 					if ($id !== null and (!is_numeric($id) or $id < 0))
-						throw new \Exception('Id should be a number greater than or equal to 0', ['code' => 400]);
+						throw new \Exception('Id should be a number greater than or equal to 0', 400);
 
 					switch ($action) {
 						case null:
@@ -162,7 +162,7 @@ class AdminApiController extends Controller
 					}
 
 				default:
-					throw new \Exception('Unknown action', ['code' => 400]);
+					throw new \Exception('Unknown action', 400);
 			}
 		} catch (\Exception $e) {
 			$this->respond(['error' => getErr($e), 'backtrace' => $e->getTrace()], (int)$e->getCode());
@@ -197,11 +197,11 @@ class AdminApiController extends Controller
 								]);
 								$this->respond(['token' => $token]);
 							} else {
-								throw new \Exception('Wrong username or password', ['code' => 401]);
+								throw new \Exception('Wrong username or password', 401);
 							}
 
 						default:
-							throw new \Exception('Unknown action', ['code' => 400]);
+							throw new \Exception('Unknown action', 400);
 					}
 
 				case 'page':
@@ -216,7 +216,7 @@ class AdminApiController extends Controller
 								'css' => [],
 							]);
 						} else {
-							throw new \Exception('No page name defined', ['code' => 400]);
+							throw new \Exception('No page name defined', 400);
 						}
 					}
 
@@ -224,7 +224,7 @@ class AdminApiController extends Controller
 
 					$id = $this->request[3] ?? null;
 					if ($id !== null and (!is_numeric($id) or $id < 0))
-						throw new \Exception('Id should be a number greater than or equal to 0', ['code' => 400]);
+						throw new \Exception('Id should be a number greater than or equal to 0', 400);
 
 					switch ($action) {
 						case 'search':
@@ -393,7 +393,7 @@ class AdminApiController extends Controller
 					}
 
 				default:
-					throw new \Exception('Unknown action', ['code' => 400]);
+					throw new \Exception('Unknown action', 400);
 			}
 		} catch (\Exception $e) {
 			if ($db->inTransaction())
@@ -430,10 +430,10 @@ class AdminApiController extends Controller
 	private function customAction(?string $action = null, ?int $id = null, array $input = []): void
 	{
 		if ($action === null)
-			throw new \Exception('No action provided', ['code' => 400]);
+			throw new \Exception('No action provided', 400);
 
 		if (!$this->model->_Admin->page)
-			throw new \Exception('No admin page loaded', ['code' => 500]);
+			throw new \Exception('No admin page loaded', 500);
 
 		$action = str_replace(' ', '', lcfirst(ucwords(str_replace('-', ' ', $action))));
 
@@ -449,7 +449,7 @@ class AdminApiController extends Controller
 			if ($db->inTransaction())
 				$db->rollBack();
 
-			throw new \Exception('Unrecognized action', ['code' => 400]);
+			throw new \Exception('Unrecognized action', 400);
 		}
 	}
 
