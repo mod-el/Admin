@@ -2003,4 +2003,21 @@ class Admin extends Module
 		}
 		return null;
 	}
+
+	public function getExportProviders(): array
+	{
+		$config = $this->retrieveConfig();
+
+		$providers = [];
+		if (isset($config['url']) and is_array($config['url'])) {
+			foreach ($config['url'] as $u) {
+				if (is_array($u) and $u['path'] === $this->path) {
+					$providers = $u['export_providers'] ?? [];
+					break;
+				}
+			}
+		}
+
+		return ['\\Model\\Admin\\ExportProvider', ...$providers];
+	}
 }

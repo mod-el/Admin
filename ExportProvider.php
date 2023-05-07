@@ -4,9 +4,10 @@ use Model\Exporter\DataProvider;
 
 class ExportProvider implements DataProvider
 {
-	private array $searchOptions;
+	public static string $name = 'Semplice';
+	protected array $searchOptions;
 
-	public function __construct(private readonly Admin $adminModule, private readonly array $exportPayload, private readonly array $searchPayload)
+	public function __construct(protected readonly Admin $adminModule, protected readonly array $exportPayload, protected readonly array $searchPayload)
 	{
 		$searchQuery = $this->adminModule->makeSearchQuery(
 			$this->searchPayload['search'] ?? '',
@@ -32,18 +33,13 @@ class ExportProvider implements DataProvider
 
 	public function getTot(int $paginate): int
 	{
-		$tmpOptions = $this->searchOptions;
-		$tmpOptions['perPage'] = $paginate;
-		$list = $this->adminModule->getList($tmpOptions);
+		$list = $this->getAdminList($paginate, 1);
 		return $list['pages'];
 	}
 
 	public function getNext(int $paginate, int $current): \Generator
 	{
-		$tmpOptions = $this->searchOptions;
-		$tmpOptions['perPage'] = $paginate;
-		$tmpOptions['p'] = $current;
-		$list = $this->adminModule->getList($tmpOptions);
+		$list = $this->getAdminList($paginate, $current);
 
 		$columns = $this->getColumns();
 
@@ -83,7 +79,15 @@ class ExportProvider implements DataProvider
 		}
 	}
 
-	private function getColumns(): array
+	protected function getAdminList(int $paginate, int $current): array
+	{
+		$tmpOptions = $this->searchOptions;
+		$tmpOptions['perPage'] = $paginate;
+		$tmpOptions['p'] = $current;
+		return $this->adminModule->getList($tmpOptions);
+	}
+
+	protected function getColumns(): array
 	{
 		$totalFields = $this->adminModule->getColumnsList();
 		$columnNames = (count($this->searchPayload['fields'] ?? []) > 0) ? $this->searchPayload['fields'] : $totalFields['default'];
