@@ -1,5 +1,6 @@
 <?php namespace Model\Admin\Controllers;
 
+use model\Admin\AdminRest;
 use Model\Admin\Auth;
 use Model\Core\Controller;
 use Model\Core\Model;
@@ -32,9 +33,6 @@ class AdminApiController extends Controller
 		}
 	}
 
-	/**
-	 * @return void
-	 */
 	public function get()
 	{
 		$request = $this->request[0] ?? '';
@@ -68,55 +66,20 @@ class AdminApiController extends Controller
 					if (!$adminPage)
 						throw new \Exception('No page name defined', 400);
 
-					$this->model->_Admin->setPage($adminPage);
+					$helper = new AdminRest($this->model, $adminPage);
 
 					$id = $this->request[2] ?? null;
 					if ($id !== null and (!is_numeric($id) or $id < 0))
 						throw new \Exception('Id should be a number greater than or equal to 0', 400);
 
 					if ($id) {
-						$adminResponse = $this->model->_Admin->getElementData($id);
-
-						$response = [];
-						foreach ($adminResponse['data'] as $k => $v) {
-							$response[$k] = $v;
-							if (isset($adminResponse['fields'], $adminResponse['fields'][$k]) and $adminResponse['fields'][$k]['type'] === 'checkbox')
-								$response[$k] = (bool)$v;
-						}
-
-						foreach ($adminResponse['sublists'] as $sublist) {
-							$response[$sublist['name']] = [];
-							foreach ($sublist['list'] as $subItem)
-								$response[$sublist['name']][] = ['id' => $subItem['id'], ...$subItem['data']];
-						}
+						$response = $helper->get($id);
 					} else {
-						$list = $this->model->_Admin->getList([
-							'p' => (int)($_GET['page'] ?? 1),
-							'perPage' => (int)($_GET['per_page'] ?? 20),
-							'sortBy' => !empty($_GET['sort_by']) ? json_decode($_GET['sort_by'], true) : [],
-							'rest' => true,
+						$response = $helper->list([
+							'page' => (int)($_GET['page'] ?? 1),
+							'per_page' => (int)($_GET['per_page'] ?? 20),
+							'sort_by' => !empty($_GET['sort_by']) ? json_decode($_GET['sort_by'], true) : [],
 						]);
-
-						$response = [
-							'tot' => $list['tot'],
-							'pages' => $list['pages'],
-							'page' => $list['page'],
-							'list' => [],
-						];
-
-						foreach ($list['list'] as $item) {
-							$itemData = [
-								'id' => $item['element'][$item['element']->settings['primary']],
-							];
-							$form = $this->model->_Admin->getForm($item['element']);
-							foreach ($form->getDataset() as $k => $d) {
-								$itemData[$k] = $d->getJsValue(false);
-								if ($d->options['type'] === 'checkbox')
-									$itemData[$k] = (bool)$itemData[$k];
-							}
-
-							$response['list'][] = $itemData;
-						}
 					}
 
 					$this->respond($response);
@@ -171,9 +134,6 @@ class AdminApiController extends Controller
 		}
 	}
 
-	/**
-	 * @return void
-	 */
 	public function post()
 	{
 		$db = Db::getConnection();
@@ -391,6 +351,98 @@ class AdminApiController extends Controller
 							$this->customAction($action, $id, $input);
 							break;
 					}
+
+				case 'rest':
+					$adminPage = $this->request[1] ?? null;
+					if (!$adminPage)
+						throw new \Exception('No page name defined', 400);
+
+					$helper = new AdminRest($this->model, $adminPage);
+
+					$db->beginTransaction();
+					$id = $helper->save(0, $input);
+					$db->commit();
+
+					$this->respond($helper->get($id));
+
+				default:
+					throw new \Exception('Unknown action', 400);
+			}
+		} catch (\Exception $e) {
+			if ($db->inTransaction())
+				$db->rollBack();
+			$this->respond(['error' => getErr($e), 'backtrace' => $e->getTrace()], (int)$e->getCode());
+		} catch (\Error $e) {
+			if ($db->inTransaction())
+				$db->rollBack();
+			$this->respond(['error' => $e->getMessage() . ' in file ' . $e->getFile() . ' at line ' . $e->getLine()], 500);
+		}
+	}
+
+	public function put()
+	{
+		$db = Db::getConnection();
+
+		try {
+			$request = $this->request[0] ?? '';
+			$input = Model::getInput();
+
+			switch ($request) {
+				case 'rest':
+					$adminPage = $this->request[1] ?? null;
+					if (!$adminPage)
+						throw new \Exception('No page name defined', 400);
+
+					$helper = new AdminRest($this->model, $adminPage);
+
+					$id = $this->request[2] ?? null;
+					if ($id !== null and (!is_numeric($id) or $id <= 0))
+						throw new \Exception('Id should be a number greater than 0', 400);
+
+					$db->beginTransaction();
+					$helper->save($id, $input);
+					$db->commit();
+
+					$this->respond($helper->get($id));
+
+				default:
+					throw new \Exception('Unknown action', 400);
+			}
+		} catch (\Exception $e) {
+			if ($db->inTransaction())
+				$db->rollBack();
+			$this->respond(['error' => getErr($e), 'backtrace' => $e->getTrace()], (int)$e->getCode());
+		} catch (\Error $e) {
+			if ($db->inTransaction())
+				$db->rollBack();
+			$this->respond(['error' => $e->getMessage() . ' in file ' . $e->getFile() . ' at line ' . $e->getLine()], 500);
+		}
+	}
+
+	public function delete()
+	{
+		$db = Db::getConnection();
+
+		try {
+			$request = $this->request[0] ?? '';
+
+			switch ($request) {
+				case 'rest':
+					$adminPage = $this->request[1] ?? null;
+					if (!$adminPage)
+						throw new \Exception('No page name defined', 400);
+
+					$helper = new AdminRest($this->model, $adminPage);
+
+					$id = $this->request[2] ?? null;
+					if ($id !== null and (!is_numeric($id) or $id <= 0))
+						throw new \Exception('Id should be a number greater than 0', 400);
+
+					$db->beginTransaction();
+					$helper->delete($id);
+					$db->commit();
+
+					$this->respond(['success' => true]);
 
 				default:
 					throw new \Exception('Unknown action', 400);
