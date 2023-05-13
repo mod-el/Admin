@@ -1,7 +1,6 @@
 <?php namespace Model\Admin;
 
 use Model\Core\Core;
-use Model\Db\Db;
 
 class AdminRest
 {
