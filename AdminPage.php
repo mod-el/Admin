@@ -60,4 +60,13 @@ class AdminPage
 	public function afterDelete(int $id, Element $element)
 	{
 	}
+
+	/**
+	 * @param array $init_data
+	 * @return array
+	 */
+	public function initData(array $init_data = []): array
+	{
+		return $init_data;
+	}
 }

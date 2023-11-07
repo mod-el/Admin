@@ -1520,6 +1520,10 @@ class Admin extends Module
 					$options['required'] = true;
 				$form->add($name, $options);
 			}
+
+			$init_data = json_decode($_GET['init_data'] ?? '[]', true) ?? [];
+			$init_data = $this->page->initData($init_data);
+			$form->setValues($init_data);
 		}
 
 		return $form;
