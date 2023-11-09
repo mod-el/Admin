@@ -378,7 +378,7 @@ class Admin extends Module
 			$fields[] = $k;
 		}
 
-		if (class_exists('\\Model\\Multilang\\Ml') and ($mlTableOptions = \Model\Multilang\Ml::getTableOptionsFor(\Model\Db\Db::getConnection(), $options['table']))) {
+		if (class_exists('\\Model\\Multilang\\Ml') and ($mlTableOptions = \Model\Multilang\Ml::getTableOptionsFor(Db::getConnection(), $options['table']))) {
 			$mlTable = $options['table'] . $mlTableOptions['table_suffix'];
 			$mlTableModel = Db::getConnection()->getTable($mlTable);
 			foreach ($mlTableModel->columns as $k => $col) {
@@ -664,7 +664,7 @@ class Admin extends Module
 		if ($search) {
 			$columns = $tableModel->columns;
 
-			if (class_exists('\\Model\\Multilang\\Ml') and ($mlTableOptions = \Model\Multilang\Ml::getTableOptionsFor(\Model\Db\Db::getConnection(), $options['table']))) {
+			if (class_exists('\\Model\\Multilang\\Ml') and ($mlTableOptions = \Model\Multilang\Ml::getTableOptionsFor(Db::getConnection(), $options['table']))) {
 				$mlTable = $options['table'] . $mlTableOptions['table_suffix'];
 				$mlTableModel = Db::getConnection()->getTable($mlTable);
 				foreach ($mlTableModel->columns as $k => $col) {
@@ -1149,7 +1149,8 @@ class Admin extends Module
 		if (isset($form[$field])) {
 			$d = $form[$field];
 			if (in_array($d->options['type'], ['select', 'radio', 'select-cascade'])) {
-				$tableModel = Db::getConnection()->getTable($this->getPageOptions()['table']);
+				$db = Db::getConnection();
+				$tableModel = $db->getTable($this->getPageOptions()['table']);
 				if (isset($tableModel->columns[$d->options['field']]) and $tableModel->columns[$d->options['field']]['type'] == 'enum') {
 					return [
 						'order_by' => [[$d->options['field'], $dir]],
@@ -1158,6 +1159,8 @@ class Admin extends Module
 				}
 
 				if ($d->options['table'] and $d->options['text-field']) {
+					$joinedTableModel = $db->getTable($d->options['table']);
+
 					if (is_array($d->options['text-field']))
 						$text_fields = $d->options['text-field'];
 					elseif (is_string($d->options['text-field']))
@@ -1165,21 +1168,42 @@ class Admin extends Module
 					else
 						return null;
 
+					$mlOptions = class_exists('\\Model\\Multilang\\Ml') ? \Model\Multilang\Ml::getTableOptionsFor($db, $d->options['table']) : null;
+
 					$order_by = [];
 					$join_fields = [];
+					$ml_join_fields = [];
+
 					foreach ($text_fields as $cf => $tf) {
 						$order_by[] = ['ord' . $idx . '_' . $cf . '_' . $tf, $dir];
-						$join_fields[$tf] = 'ord' . $idx . '_' . $cf . '_' . $tf;
+						if ($mlOptions and in_array($tf, $mlOptions['fields']))
+							$ml_join_fields[$tf] = 'ord' . $idx . '_' . $cf . '_' . $tf;
+						else
+							$join_fields[$tf] = 'ord' . $idx . '_' . $cf . '_' . $tf;
 					}
+
+					$joins = [];
+					if ($join_fields) {
+						$joins[] = [
+							'type' => 'LEFT',
+							'table' => $d->options['table'],
+							'on' => [$field => $joinedTableModel->primary[0]],
+							'fields' => $join_fields,
+						];
+					}
+					if ($ml_join_fields) {
+						$joins[] = [
+							'type' => 'LEFT',
+							'table' => $d->options['table'] . $mlOptions['table_suffix'],
+							'on' => [$field => $mlOptions['parent_field']],
+							'where' => [$mlOptions['lang_field'] => \Model\Multilang\Ml::getLang()],
+							'fields' => $ml_join_fields,
+						];
+					}
+
 					return [
 						'order_by' => $order_by,
-						'joins' => [
-							[
-								'type' => 'LEFT',
-								'table' => $d->options['table'],
-								'fields' => $join_fields,
-							],
-						],
+						'joins' => $joins,
 					];
 				}
 
