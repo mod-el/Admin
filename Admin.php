@@ -540,10 +540,14 @@ class Admin extends Module
 				$elaborated['text'] = $elaborated['value'] !== null ? makePrice($elaborated['value']) : '';
 			} elseif (isset($form[$column['display']])) {
 				$d = $form[$column['display']];
-				$elaborated['text'] = $d->getText(['preview' => true]) ?: '';
+				$elaborated['text'] = $d->getText(['preview' => true]);
 			} else {
-				$elaborated['text'] = $el[$column['display']] ?: '';
+				$elaborated['text'] = $el[$column['display']];
 			}
+
+			if ($elaborated['text'] === null or $elaborated['text'] === false)
+				$elaborated['text'] = '';
+			$elaborated['text'] = (string)$elaborated['text'];
 
 			if (strlen($elaborated['text']) > 150)
 				$elaborated['text'] = textCutOff($elaborated['text'], 150);
