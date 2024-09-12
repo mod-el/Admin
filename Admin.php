@@ -704,7 +704,8 @@ class Admin extends Module
 					case 'text':
 					case 'tinytext':
 					case 'enum':
-						$arr[] = [$k, 'REGEXP', '(^|[^a-z0-9])' . preg_quote($search)];
+						if (!$col['length'] or strlen($search) < $col['length'])
+							$arr[] = [$k, 'REGEXP', '(^|[^a-z0-9])' . preg_quote($search)];
 						break;
 				}
 			}
