@@ -689,12 +689,9 @@ class Admin extends Module
 					case 'int':
 					case 'mediumint':
 					case 'bigint':
-						if (is_numeric($search))
-							$arr[] = [$k, '=', $search];
-						break;
 					case 'decimal':
 						if (is_numeric($search))
-							$arr[] = [$k, 'LIKE', $search . '.%'];
+							$arr[] = [$k, '=', $search];
 						break;
 					case 'varchar':
 					case 'char':
