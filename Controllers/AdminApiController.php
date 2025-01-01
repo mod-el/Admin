@@ -1,6 +1,6 @@
 <?php namespace Model\Admin\Controllers;
 
-use model\Admin\AdminRest;
+use Model\Admin\AdminRest;
 use Model\Admin\Auth;
 use Model\Core\Controller;
 use Model\Core\Model;
@@ -20,10 +20,12 @@ class AdminApiController extends Controller
 		$config = $this->model->_Admin->retrieveConfig();
 		$this->loadRequest($config['api-path'] ?? 'admin-api');
 
-		if ($this->request[0] !== 'user' or $this->request[1] !== 'login') {
+		if ($this->request[0] === 'openapi') {
+			$this->model->_Admin->setPath($this->request[1] ?? '');
+		} elseif (!($this->request[0] === 'user' and $this->request[1] === 'login')) {
 			$this->token = Auth::getToken();
 			if (!$this->token)
-				throw new \Exception('Invalid auth token', 401);
+				$this->respond(['error' => 'Invalid auth token'], 401);
 
 			$this->model->_Admin->setPath($this->token['path']);
 
