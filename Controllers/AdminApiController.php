@@ -87,7 +87,7 @@ class AdminApiController extends Controller
 					$this->respond($response);
 
 				case 'openapi':
-					$pages = $this->cleanPages($this->model->_Admin->getPages());
+					$pages = $this->model->_Admin->getPages();
 					$pages = $this->extractRestPages($pages);
 
 					$openapi = [
@@ -674,7 +674,6 @@ class AdminApiController extends Controller
 			$cleanPages[] = [
 				'icon' => file_exists(INCLUDE_PATH . $iconPath) ? PATH . $iconPath : null,
 				'name' => $p['name'] ?? '',
-				'page' => $p['page'] ?? null,
 				'path' => $rule,
 				'direct' => $p['direct'] ?? null,
 				'sub' => $sub,
@@ -699,6 +698,9 @@ class AdminApiController extends Controller
 	{
 		$cleanPages = [];
 		foreach ($pages as $p) {
+			if ($p['hidden'] ?? false)
+				continue;
+
 			if ($p['page']) {
 				$pageOptions = $this->model->_Admin->getPageOptions($p['page']);
 				if (!($pageOptions['table'] ?? null) and !($pageOptions['element'] ?? null))
@@ -707,13 +709,13 @@ class AdminApiController extends Controller
 					continue;
 
 				$cleanPages[] = [
-					'name' => $p['name'],
-					'path' => $p['path'],
+					'name' => $p['name'] ?? '',
+					'path' => $p['rule'] ?? null,
 					'options' => $pageOptions,
 				];
 			}
 
-			$cleanPages = array_merge($cleanPages, $this->extractRestPages($p['sub']));
+			$cleanPages = array_merge($cleanPages, $this->extractRestPages($p['sub'] ?? []));
 		}
 		return $cleanPages;
 	}
