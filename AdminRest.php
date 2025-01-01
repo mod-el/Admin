@@ -6,12 +6,11 @@ class AdminRest
 {
 	public function __construct(private Core $model, private string $pageName)
 	{
+		$this->model->_Admin->setPage($this->pageName);
 	}
 
 	public function list(array $query = []): array
 	{
-		$this->model->_Admin->setPage($this->pageName);
-
 		$list = $this->model->_Admin->getList([
 			'p' => (int)($query['page'] ?? 1),
 			'perPage' => (int)($query['per_page'] ?? 20),
