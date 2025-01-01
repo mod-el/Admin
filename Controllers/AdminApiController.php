@@ -84,6 +84,142 @@ class AdminApiController extends Controller
 
 					$this->respond($response);
 
+				case 'openapi':
+					$pages = $this->cleanPages($this->model->_Admin->getPages());
+					$pages = $this->extractRestPages($pages);
+
+					$openapi = [
+						'openapi' => '3.0.4',
+						'info' => [
+							'title' => APP_NAME,
+							'version' => '1.0.0',
+						],
+						'paths' => [],
+					];
+
+					foreach ($pages as $page) {
+						$openapi['paths']['/' . $page['path']] = [
+							'get' => [
+								'operationId' => 'list_' . $page['path'],
+								'description' => 'List ' . $page['name'],
+								'parameters' => [
+									[
+										'name' => 'page',
+										'in' => 'query',
+										'description' => 'Page to retrieve; if not specified, it defaults to 1',
+										'required' => false,
+										'schema' => [
+											'type' => 'integer',
+										],
+									],
+									[
+										'name' => 'per_page',
+										'in' => 'query',
+										'description' => 'Items per page; if not specified, it defaults to 20',
+										'required' => false,
+										'schema' => [
+											'type' => 'integer',
+										],
+									],
+								],
+								'responses' => [
+									'200' => [
+										'description' => 'Successful response',
+										'content' => [
+											'application/json' => [
+												'schema' => [
+													'type' => 'object',
+													'properties' => [
+														'tot' => [
+															'type' => 'integer',
+														],
+														'pages' => [
+															'type' => 'integer',
+														],
+														'page' => [
+															'type' => 'integer',
+														],
+														'list' => [
+															'type' => 'array',
+															'items' => [
+																'$ref' => '#/components/schemas/' . $page['path'],
+															],
+														],
+													],
+												],
+											],
+										],
+									],
+								],
+							],
+							'post' => [
+								'operationId' => 'create_' . $page['path'],
+								'description' => 'Create ' . $page['name'],
+								'requestBody' => [
+									'required' => true,
+									'content' => [
+										'application/json' => [
+											'schema' => [
+												'$ref' => '#/components/schemas/' . $page['path'],
+											],
+										],
+									],
+								],
+								'responses' => [
+									'200' => [
+										'description' => 'Successful response',
+										'content' => [
+											'application/json' => [
+												'schema' => [
+													'$ref' => '#/components/schemas/' . $page['path'],
+												],
+											],
+										],
+									],
+								],
+							],
+						];
+
+						$openapi['components']['schemas'][$page['path']] = [
+							'type' => 'object',
+							'properties' => [
+								'id' => [
+									'type' => 'integer',
+									'readOnly' => true,
+								],
+							],
+						];
+
+						$dummy = $this->model->_ORM->loadMainElement($page['options']['element'] ?: 'Element', false, ['table' => $page['options']['table']]);
+						$form = $this->model->_Admin->getForm($dummy);
+
+						foreach ($form->getDataset() as $k => $d) {
+							$converted = [
+								'type' => match ($d->options['type']) {
+									'number' => 'number',
+									'checkbox' => 'boolean',
+									default => 'string',
+								},
+							];
+
+							switch ($d->options['type']) {
+								case 'select':
+									$converted['enum'] = array_values(array_filter(array_keys($d->options['options']), fn($k) => !!$k));
+									break;
+								case 'date':
+									$converted['format'] = 'date';
+									break;
+								case 'datetime':
+									$converted['format'] = 'date-time';
+									break;
+							}
+
+							$openapi['components']['schemas'][$page['path']]['properties'][$k] = $converted;
+						}
+					}
+
+					$this->respond($openapi);
+
 				case 'page':
 					$adminPage = $this->request[1] ?? null;
 					$action = $this->request[2] ?? null;
@@ -536,6 +672,7 @@ class AdminApiController extends Controller
 			$cleanPages[] = [
 				'icon' => file_exists(INCLUDE_PATH . $iconPath) ? PATH . $iconPath : null,
 				'name' => $p['name'] ?? '',
+				'page' => $p['page'] ?? null,
 				'path' => $rule,
 				'direct' => $p['direct'] ?? null,
 				'sub' => $sub,
@@ -554,5 +691,28 @@ class AdminApiController extends Controller
 		if ($request[0] === '/')
 			$request = substr($request, 1);
 		$this->request = explode('/', $request);
+	}
+
+	private function extractRestPages(array $pages): array
+	{
+		$cleanPages = [];
+		foreach ($pages as $p) {
+			if ($p['page']) {
+				$pageOptions = $this->model->_Admin->getPageOptions($p['page']);
+				if (!($pageOptions['table'] ?? null) and !($pageOptions['element'] ?? null))
+					continue;
+				if (!($pageOptions['openapi'] ?? false))
+					continue;
+
+				$cleanPages[] = [
+					'name' => $p['name'],
+					'path' => $p['path'],
+					'options' => $pageOptions,
+				];
+			}
+
+			$cleanPages = array_merge($cleanPages, $this->extractRestPages($p['sub']));
+		}
+		return $cleanPages;
 	}
 }
