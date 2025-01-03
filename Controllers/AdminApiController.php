@@ -96,6 +96,11 @@ class AdminApiController extends Controller
 							'title' => APP_NAME,
 							'version' => '1.0.0',
 						],
+						'servers' => [
+							[
+								'url' => 'https://' . $_SERVER['HTTP_HOST'] . PATH . 'admin-api/rest/',
+							],
+						],
 						'paths' => [],
 					];
 
@@ -182,6 +187,114 @@ class AdminApiController extends Controller
 							],
 						];
 
+						$openapi['paths']['/' . $page['path'] . '/{id}'] = [
+							'get' => [
+								'operationId' => 'get_' . $page['path'],
+								'description' => 'Get ' . $page['name'],
+								'parameters' => [
+									[
+										'name' => 'id',
+										'in' => 'path',
+										'description' => 'ID of the ' . $page['name'] . ' to get',
+										'required' => true,
+										'schema' => [
+											'type' => 'integer',
+										],
+									],
+								],
+								'responses' => [
+									'200' => [
+										'description' => 'Successful response',
+										'content' => [
+											'application/json' => [
+												'schema' => [
+													'$ref' => '#/components/schemas/' . $page['path'],
+												],
+											],
+										],
+									],
+									'404' => [
+										'description' => 'Element not found',
+									],
+								],
+							],
+							'put' => [
+								'operationId' => 'update_' . $page['path'],
+								'description' => 'Update ' . $page['name'],
+								'parameters' => [
+									[
+										'name' => 'id',
+										'in' => 'path',
+										'description' => 'ID of the ' . $page['name'] . ' to update',
+										'required' => true,
+										'schema' => [
+											'type' => 'integer',
+										],
+									],
+								],
+								'requestBody' => [
+									'required' => true,
+									'content' => [
+										'application/json' => [
+											'schema' => [
+												'$ref' => '#/components/schemas/' . $page['path'],
+											],
+										],
+									],
+								],
+								'responses' => [
+									'200' => [
+										'description' => 'Successful response',
+										'content' => [
+											'application/json' => [
+												'schema' => [
+													'$ref' => '#/components/schemas/' . $page['path'],
+												],
+											],
+										],
+									],
+									'404' => [
+										'description' => 'Element not found',
+									],
+								],
+							],
+							'delete' => [
+								'operationId' => 'delete_' . $page['path'],
+								'description' => 'Delete ' . $page['name'],
+								'parameters' => [
+									[
+										'name' => 'id',
+										'in' => 'path',
+										'description' => 'ID of the ' . $page['name'] . ' to delete',
+										'required' => true,
+										'schema' => [
+											'type' => 'integer',
+										],
+									],
+								],
+								'responses' => [
+									'200' => [
+										'description' => 'Successful response',
+										'content' => [
+											'application/json' => [
+												'schema' => [
+													'type' => 'object',
+													'properties' => [
+														'success' => [
+															'type' => 'boolean',
+														],
+													],
+												],
+											],
+										],
+									],
+									'404' => [
+										'description' => 'Element not found',
+									],
+								],
+							],
+						];
+
 						$openapi['components']['schemas'][$page['path']] = [
 							'type' => 'object',
 							'properties' => [
@@ -190,6 +303,7 @@ class AdminApiController extends Controller
 									'readOnly' => true,
 								],
 							],
+							'required' => [],
 						];
 
 						$dummy = $this->model->_ORM->loadMainElement($page['options']['element'] ?: 'Element', false, ['table' => $page['options']['table']]);
@@ -217,6 +331,9 @@ class AdminApiController extends Controller
 							}
 
 							$openapi['components']['schemas'][$page['path']]['properties'][$k] = $converted;
+
+							if ($d->options['required'])
+								$openapi['components']['schemas'][$page['path']]['required'][] = $k;
 						}
 					}
 
@@ -509,7 +626,13 @@ class AdminApiController extends Controller
 		} catch (\Exception $e) {
 			if ($db->inTransaction())
 				$db->rollBack();
-			$this->respond(['error' => getErr($e), 'backtrace' => $e->getTrace()], (int)$e->getCode());
+
+			$this->respond([
+				'error' => getErr($e),
+				...(DEBUG_MODE ? [
+					'backtrace' => $e->getTrace(),
+				] : []),
+			], (int)$e->getCode());
 		} catch (\Error $e) {
 			if ($db->inTransaction())
 				$db->rollBack();

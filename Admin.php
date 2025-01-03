@@ -1623,6 +1623,7 @@ class Admin extends Module
 		$data = array_merge($filteredWhere, $data);
 
 		$form = $this->getForm();
+		$form->validate($data, ['check-mandatory' => !$element->exists()]);
 
 		$mainElementId = $this->subsave($element, $data, [
 			'form' => $form,
