@@ -824,7 +824,7 @@ class AdminApiController extends Controller
 			if ($p['hidden'] ?? false)
 				continue;
 
-			if ($p['page']) {
+			if ($p['page'] ?? null) {
 				$pageOptions = $this->model->_Admin->getPageOptions($p['page']);
 				if (!($pageOptions['table'] ?? null) and !($pageOptions['element'] ?? null))
 					continue;

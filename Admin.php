@@ -346,10 +346,10 @@ class Admin extends Module
 	/**
 	 * Automatic field  extraction
 	 *
-	 * @param array $options
+	 * @param array|null $options
 	 * @return array
 	 */
-	public function getAllFieldsList(array $options = null): array
+	public function getAllFieldsList(?array $options = null): array
 	{
 		if ($options === null)
 			$options = $this->getPageOptions();
