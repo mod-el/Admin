@@ -46,7 +46,9 @@ class AdminRest
 	{
 		$adminResponse = $this->model->_Admin->getElementData($id);
 
-		$response = [];
+		$response = [
+			'id' => $id,
+		];
 		foreach ($adminResponse['data'] as $k => $v) {
 			$response[$k] = $v;
 			if (isset($adminResponse['fields'], $adminResponse['fields'][$k]) and $adminResponse['fields'][$k]['type'] === 'checkbox')
