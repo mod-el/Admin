@@ -295,45 +295,22 @@ class AdminApiController extends Controller
 							],
 						];
 
-						$openapi['components']['schemas'][$page['path']] = [
-							'type' => 'object',
-							'properties' => [
-								'id' => [
-									'type' => 'integer',
-									'readOnly' => true,
-								],
-							],
-							'required' => [],
-						];
-
 						$dummy = $this->model->_ORM->loadMainElement($page['options']['element'] ?: 'Element', false, ['table' => $page['options']['table']]);
 						$form = $this->model->_Admin->getForm($dummy);
 
-						foreach ($form->getDataset() as $k => $d) {
-							$converted = [
-								'type' => match ($d->options['type']) {
-									'number' => 'number',
-									'checkbox' => 'boolean',
-									default => 'string',
-								},
+						$openapi['components']['schemas'][$page['path']] = $this->convertFormToOpenApi($form);
+
+						foreach (($page['options']['sublists'] ?? []) as $sublist) {
+							$dummyChild = $dummy->create($sublist);
+							$dummyChildForm = $dummyChild->getForm(true);
+							$dummyChildForm->remove($dummy->getChildrenOptions($sublist)['field']);
+
+							$childConvertedForm = $this->convertFormToOpenApi($dummyChildForm);
+
+							$openapi['components']['schemas'][$page['path']]['properties'][$sublist] = [
+								'type' => 'array',
+								'items' => $childConvertedForm,
 							];
-
-							switch ($d->options['type']) {
-								case 'select':
-									$converted['enum'] = array_values(array_filter(array_keys($d->options['options']), fn($k) => !!$k));
-									break;
-								case 'date':
-									$converted['format'] = 'date';
-									break;
-								case 'datetime':
-									$converted['format'] = 'date-time';
-									break;
-							}
-
-							$openapi['components']['schemas'][$page['path']]['properties'][$k] = $converted;
-
-							if ($d->options['required'])
-								$openapi['components']['schemas'][$page['path']]['required'][] = $k;
 						}
 					}
 
@@ -841,5 +818,52 @@ class AdminApiController extends Controller
 			$cleanPages = array_merge($cleanPages, $this->extractRestPages($p['sub'] ?? []));
 		}
 		return $cleanPages;
+	}
+
+	private function convertFormToOpenApi(\Model\Form\Form $form): array
+	{
+		$response = [
+			'type' => 'object',
+			'properties' => [
+				'id' => [
+					'type' => 'integer',
+					'readOnly' => true,
+				],
+			],
+			'required' => [],
+		];
+
+		foreach ($form->getDataset() as $k => $d) {
+			$converted = [
+				'type' => match ($d->options['type']) {
+					'number' => 'number',
+					'checkbox' => 'boolean',
+					'instant-search' => 'integer',
+					default => 'string',
+				},
+			];
+
+			switch ($d->options['type']) {
+				case 'select':
+					if ($d->options['table'])
+						$converted['type'] = 'integer';
+					elseif ($d->options['options'])
+						$converted['enum'] = array_values(array_filter(array_keys($d->options['options']), fn($k) => $k !== null and $k !== ''));
+					break;
+				case 'date':
+					$converted['format'] = 'date';
+					break;
+				case 'datetime':
+					$converted['format'] = 'date-time';
+					break;
+			}
+
+			$response['properties'][$k] = $converted;
+
+			if ($d->options['required'])
+				$response['required'][] = $k;
+		}
+
+		return $response;
 	}
 }
