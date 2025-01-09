@@ -4,7 +4,7 @@ use Model\Core\Module_Config;
 
 class Config extends Module_Config
 {
-	public $configurable = true;
+	public bool $configurable = true;
 
 	/**
 	 * @param array $data
@@ -30,7 +30,7 @@ class Config extends Module_Config
 	/**
 	 *
 	 */
-	protected function assetsList()
+	protected function assetsList(): void
 	{
 		$this->addAsset('data', 'cache.php', function () {
 			$arr = [
