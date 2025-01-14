@@ -1727,13 +1727,17 @@ class Admin extends Module
 
 				$element->reloadChildren($relationship);
 
-				foreach ($element->{$relationship} as $item) {
+				foreach ($element->{$relationship} as $item_idx => $item) {
 					if (!empty($item->options['assoc'])) {
-						if (!in_array($item->options['assoc']['id'], $ids))
+						if (!in_array($item->options['assoc']['id'], $ids)) {
 							Db::getConnection()->delete($item->settings['assoc']['table'], $item->options['assoc'][$item->settings['assoc']['primary'] ?? 'id']);
+							unset($element->children_ar[$relationship][$item_idx]);
+						}
 					} else {
-						if (!in_array($item['id'], $ids))
+						if (!in_array($item['id'], $ids)) {
 							$item->delete();
+							unset($element->children_ar[$relationship][$item_idx]);
+						}
 					}
 				}
 			}
@@ -1753,6 +1757,9 @@ class Admin extends Module
 			$v = null;
 		if (!$d->options['nullable'] and $v === null)
 			$v = '';
+
+		if ($d->options['type'] === 'checkbox' and is_bool($v))
+			$v = (int)$v;
 
 		if ($d->options['type'] === 'password') {
 			if ($v)
