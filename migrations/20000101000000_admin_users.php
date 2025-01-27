@@ -7,7 +7,7 @@ class AdminUsers extends AbstractMigration
 	public function change()
 	{
 		if (!$this->hasTable('admin_users')) {
-			$this->table('admin_profiles', ['signed' => false])
+			$this->table('admin_profiles', ['signed' => true])
 				->addColumn('name', 'string', ['null' => false])
 				->create();
 
@@ -16,7 +16,7 @@ class AdminUsers extends AbstractMigration
 				'name' => 'admin',
 			])->saveData();
 
-			$this->table('admin_users', ['signed' => false])
+			$this->table('admin_users', ['signed' => true])
 				->addColumn('username', 'string', ['null' => false])
 				->addColumn('password', 'string', ['null' => false])
 				->addColumn('profile', 'integer', ['null' => true])
@@ -30,7 +30,7 @@ class AdminUsers extends AbstractMigration
 				'profile' => 1,
 			])->saveData();
 
-			$this->table('admin_privileges', ['signed' => false])
+			$this->table('admin_privileges', ['signed' => true])
 				->addColumn('page', 'string', ['null' => true])
 				->addColumn('subpage', 'string', ['null' => true])
 				->addColumn('profile', 'integer', ['null' => true])
