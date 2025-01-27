@@ -7,23 +7,23 @@ class AdminUsers extends AbstractMigration
 	public function change()
 	{
 		if (!$this->hasTable('admin_users')) {
-			$profiles = $this->table('admin_profiles')
+			$this->table('admin_profiles')
 				->addColumn('name', 'string', ['null' => false])
 				->create();
 
-			$profiles->insert([
+			$this->table('admin_profiles')->insert([
 				'id' => 1,
 				'name' => 'admin',
 			])->saveData();
 
-			$users = $this->table('admin_users')
+			$this->table('admin_users')
 				->addColumn('username', 'string', ['null' => false])
 				->addColumn('password', 'string', ['null' => false])
 				->addColumn('profile', 'integer', ['null' => true])
 				->addForeignKey('profile', 'admin_profiles', 'id', ['delete' => 'RESTRICT', 'update' => 'CASCADE'])
 				->create();
 
-			$users->insert([
+			$this->table('admin_users')->insert([
 				'id' => 1,
 				'username' => 'admin',
 				'password' => password_hash('admin', PASSWORD_DEFAULT),
