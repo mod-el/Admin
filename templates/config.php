@@ -221,7 +221,7 @@
 				</td>
 				<td>
 					[<a href="#" onclick="configPages('<?= $idx ?>'); return false"> config pages </a>]
-					<input type="hidden" name="<?= $idx ?>-pages" value="<?= entities(json_encode($url['pages'], JSON_PRETTY_PRINT)) ?>"/>
+					<input type="hidden" name="<?= $idx ?>-pages" value="<?= entities(json_encode(array_values($url['pages']), JSON_PRETTY_PRINT)) ?>"/>
 				</td>
 			</tr>
 			<?php
