@@ -1432,7 +1432,7 @@ class Admin extends Module
 
 					$itemForm = $item->getForm(true);
 					foreach ($dummyDataset as $k => $d)
-						$itemArr['data'][$k] = $itemForm[$k]->getJsValue(false);
+						$itemArr['data'][$k] = isset($itemForm[$k]) ? $itemForm[$k]->getJsValue(false) : $item[$k];
 
 					if (!empty($sublist['admin-page'])) {
 						$itemSublists = $this->getParsedSublists($item, $sublistAdminPageOptions);
