@@ -727,15 +727,20 @@ class AdminApiController extends Controller
 
 		$action = str_replace(' ', '', lcfirst(ucwords(str_replace('-', ' ', $action))));
 
+		$db = Db::getConnection();
+
 		if (method_exists($this->model->_Admin->page, $action)) {
 			$element = $id !== null ? $this->model->_Admin->getElement($id) : null;
 			if ($id !== null and !$element)
 				throw new \Exception('Element does not exist.');
 
 			$response = $this->model->_Admin->page->{$action}($input, $element);
+
+			if ($db->inTransaction())
+				$db->commit();
+
 			$this->respond($response);
 		} else {
-			$db = Db::getConnection();
 			if ($db->inTransaction())
 				$db->rollBack();
 
