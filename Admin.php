@@ -119,7 +119,7 @@ class Admin extends Module
 			$options['table'] = $this->model->_ORM->getTableFor($options['element']);
 
 		if ($options['table']) {
-			if ($options['order_by'] === false) {
+			if (empty($options['order_by'])) {
 				$tableModel = Db::getConnection()->getTable($options['table']);
 				$options['order_by'] = $tableModel->primary[0] . ' DESC';
 
@@ -130,6 +130,8 @@ class Admin extends Module
 						foreach ($elementData['order_by']['depending_on'] as $field)
 							$options['order_by'][] = $field . ' ASC';
 						$options['order_by'][] = $elementData['order_by']['field'] . ' ASC';
+						foreach (($elementData['order_by']['additional_fields'] ?? []) as $field)
+							$options['order_by'][] = $field . ' ASC';
 
 						$options['order_by'] = implode(',', $options['order_by']);
 					}
