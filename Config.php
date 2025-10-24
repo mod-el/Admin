@@ -242,28 +242,6 @@ $config = ' . var_export($config, true) . ';
 	}
 
 	/**
-	 * Admin pages rules
-	 *
-	 * @return array
-	 * @throws \Exception
-	 */
-	public function getRules(): array
-	{
-		$config = $this->retrieveConfig();
-
-		$ret = [
-			'rules' => [
-				'api' => $config['api-path'] ?? 'admin-api',
-			],
-			'controllers' => [
-				'AdminApi',
-			],
-		];
-
-		return $ret;
-	}
-
-	/**
 	 * @return bool
 	 */
 	public function postUpdate_1_2_0(): bool

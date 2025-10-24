@@ -1867,26 +1867,6 @@ class Admin extends Module
 	}
 
 	/**
-	 * We need to return the controller name in order for the API to work
-	 *
-	 * @param array $request
-	 * @param mixed $rule
-	 * @return array|null
-	 */
-	public function getController(array $request, string $rule): ?array
-	{
-		$config = $this->retrieveConfig();
-
-		if ($rule === 'api' and $config['api-path'] === $request[0]) {
-			return [
-				'controller' => 'AdminApi',
-			];
-		} else {
-			return null;
-		}
-	}
-
-	/**
 	 * @return string
 	 */
 	public function getApiPath(): string

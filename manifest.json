@@ -1,9 +1,9 @@
 {
 	"name": "Admin",
 	"description": "A highly configurable CMS",
-	"version": "4.0.0",
+	"version": "5.0.0",
 	"dependencies": {
-		"Core": ">=2.10.0",
+		"Core": ">=4.0.0",
 		"Db": ">=5.0.0",
 		"ORM": ">=3.0.0",
 		"Form": ">=1.5.0",
