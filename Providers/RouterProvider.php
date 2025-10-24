@@ -11,7 +11,7 @@ class RouterProvider extends AbstractRouterProvider
 
 		return [
 			[
-				'pattern' => '/' . ($config['api-path'] ?? 'admin-api'),
+				'pattern' => ($config['api-path'] ?? 'admin-api'),
 				'controller' => 'AdminApi',
 			],
 		];
