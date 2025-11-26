@@ -14,7 +14,7 @@ class Config extends Module_Config
 	{
 		if ($this->model->isCLI())
 			return true;
-		if ($data === null or !$this->model->moduleExists('Db'))
+		if ($data === null)
 			return false;
 
 		if (isset($data['api-path'])) {
