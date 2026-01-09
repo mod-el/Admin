@@ -662,6 +662,8 @@ class Admin extends Module
 		$options = $this->getPageOptions();
 
 		$where = $options['where'];
+		if (is_callable($where))
+			$where = $where();
 		$joins = [];
 
 		$tableModel = Db::getConnection()->getTable($options['table']);
@@ -772,6 +774,9 @@ class Admin extends Module
 			$options['perPage'] = 0;
 
 		$where = $options['where'];
+		if (is_callable($where))
+			$where = $where();
+
 		$joins = array_merge($pageOptions['joins'], $options['joins']);
 
 		// Count how many total elements there are
@@ -1615,8 +1620,12 @@ class Admin extends Module
 
 		$pageOptions = $this->getPageOptions();
 
+		$pageWhere = $pageOptions['where'] ?? [];
+		if (is_callable($pageWhere))
+			$pageWhere = $pageWhere();
+
 		$filteredWhere = [];
-		foreach (($pageOptions['where'] ?? []) as $k => $v) {
+		foreach ($pageWhere as $k => $v) {
 			if (is_array($v) or is_object($v))
 				continue;
 			$filteredWhere[$k] = $v;
