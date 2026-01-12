@@ -1976,40 +1976,46 @@ class Admin extends Module
 		}
 
 		$usersAdminPage = 'AdminUsers';
+		$modElManaged = true;
 		if (isset($config['url']) and is_array($config['url'])) {
 			foreach ($config['url'] as $u) {
-				if (is_array($u) and $u['path'] == $path and ($u['admin-page'] ?? '')) {
-					$usersAdminPage = $u['admin-page'];
+				if (is_array($u) and $u['path'] == $path) {
+					if ($u['admin-page'] ?? '')
+						$usersAdminPage = $u['admin-page'];
+					if (!$u['model-managed'])
+						$modElManaged = false;
 					break;
 				}
 			}
 		}
 
-		$pages[] = [
-			'name' => 'Users',
-			'page' => $usersAdminPage,
-			'rule' => 'admin-users',
-			'direct' => null,
-			'hidden' => false,
-			'sub' => [
-				[
-					'name' => 'Privileges',
-					'page' => 'AdminPrivileges',
-					'rule' => 'admin-privileges',
-					'direct' => null,
-					'hidden' => false,
-					'sub' => [],
+		if ($modElManaged) {
+			$pages[] = [
+				'name' => 'Users',
+				'page' => $usersAdminPage,
+				'rule' => 'admin-users',
+				'direct' => null,
+				'hidden' => false,
+				'sub' => [
+					[
+						'name' => 'Privileges',
+						'page' => 'AdminPrivileges',
+						'rule' => 'admin-privileges',
+						'direct' => null,
+						'hidden' => false,
+						'sub' => [],
+					],
+					[
+						'name' => 'Profiles',
+						'page' => 'AdminProfiles',
+						'rule' => 'admin-profiles',
+						'direct' => null,
+						'hidden' => false,
+						'sub' => [],
+					],
 				],
-				[
-					'name' => 'Profiles',
-					'page' => 'AdminProfiles',
-					'rule' => 'admin-profiles',
-					'direct' => null,
-					'hidden' => false,
-					'sub' => [],
-				],
-			],
-		];
+			];
+		}
 
 		return $pages;
 	}
