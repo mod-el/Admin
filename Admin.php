@@ -502,7 +502,7 @@ class Admin extends Module
 					$this->model->error('Can\'t assign id to column with label "' . entities($column['label']) . '"');
 			}
 
-			$column['sortable'] = $getSortingRules and (bool)$this->getSortingRulesFor($column, 'ASC', 0);
+			$column['sortable'] = ($getSortingRules and (bool)$this->getSortingRulesFor($column, 'ASC', 0));
 			$new_columns[$k] = $column;
 		}
 
