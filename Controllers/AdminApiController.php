@@ -456,9 +456,9 @@ class AdminApiController extends Controller
 							else
 								$fieldsList = $fields['default'];
 
-							foreach ($fieldsList as $idx) {
-								if (!isset($fields['fields'][$idx]))
-									throw new \Exception('"' . $idx . '" field not existing');
+							foreach ($fieldsList as $idx => $field_identifier) {
+								if (!isset($fields['fields'][$field_identifier]))
+									unset($fieldsList[$idx]);
 							}
 
 							foreach ($list['list'] as $item) {
