@@ -9,7 +9,6 @@ use Model\Form\Field;
 use Model\ORM\Element;
 use Model\Paginator\Paginator;
 use Model\User\User;
-use Model\Core\Globals;
 
 class Admin extends Module
 {
@@ -2019,8 +2018,8 @@ class Admin extends Module
 			}
 		}
 
-		if (isset(Globals::$data['adminAdditionalPages'])) {
-			foreach (Globals::$data['adminAdditionalPages'] as $p) {
+		foreach (\Model\ProvidersFinder\Providers::find('AdminProvider') as $provider) {
+			foreach ($provider['provider']::getAdditionalPages() as $p) {
 				$pages[] = array_merge([
 					'name' => '',
 					'rule' => '',
