@@ -666,15 +666,17 @@ class Admin extends Module
 			$where = $where();
 		$joins = [];
 
-		$tableModel = Db::getConnection()->getTable($options['table']);
+		$db = Db::getConnection();
+
+		$tableModel = $db->getTable($options['table']);
 
 		$search = trim($search);
 		if ($search) {
 			$columns = $tableModel->columns;
 
-			if (class_exists('\\Model\\Multilang\\Ml') and ($mlTableOptions = \Model\Multilang\Ml::getTableOptionsFor(Db::getConnection(), $options['table']))) {
+			if (class_exists('\\Model\\Multilang\\Ml') and ($mlTableOptions = \Model\Multilang\Ml::getTableOptionsFor($db, $options['table']))) {
 				$mlTable = $options['table'] . $mlTableOptions['table_suffix'];
-				$mlTableModel = Db::getConnection()->getTable($mlTable);
+				$mlTableModel = $db->getTable($mlTable);
 				foreach ($mlTableModel->columns as $k => $col) {
 					if (isset($columns[$k]) or $k == $mlTableOptions['parent_field'] or $k == $mlTableOptions['lang_field'])
 						continue;
@@ -711,9 +713,64 @@ class Admin extends Module
 				}
 			}
 
+			// For fk fields, join the target table and search in its text fields
+			if ($options['element']) {
+				$form = $this->getForm();
+				foreach ($form->getDataset() as $fieldName => $field) {
+					if (!($field instanceof Field) or !in_array($field->options['type'], ['instant-search', 'select']))
+						continue;
+					if (!isset($field->options['table'], $field->options['text-field']))
+						continue;
+					if ($searchFields and !in_array($fieldName, $searchFields))
+						continue;
+
+					$textFields = is_array($field->options['text-field']) ? $field->options['text-field'] : [$field->options['text-field']];
+					$joinedTableModel = $db->getTable($field->options['table']);
+					$mlOptions = class_exists('\\Model\\Multilang\\Ml') ? \Model\Multilang\Ml::getTableOptionsFor($db, $field->options['table']) : null;
+
+					$mainFields = [];
+					$mlFields = [];
+					foreach ($textFields as $tf) {
+						if ($mlOptions and in_array($tf, $mlOptions['fields']))
+							$mlFields[] = $tf;
+						else
+							$mainFields[] = $tf;
+					}
+
+					if ($mainFields) {
+						$joins[] = [
+							'type' => 'LEFT',
+							'table' => $field->options['table'],
+							'on' => [$fieldName => $joinedTableModel->primary[0]],
+						];
+						foreach ($mainFields as $tf) {
+							$joinedCol = $joinedTableModel->columns[$tf] ?? null;
+							if ($joinedCol and (!$joinedCol['length'] or strlen($search) < $joinedCol['length']))
+								$arr[] = [$field->options['table'] . '.' . $tf, 'REGEXP', '(^|[^a-z0-9])' . preg_quote($search)];
+						}
+					}
+
+					if ($mlFields) {
+						$mlTable = $field->options['table'] . $mlOptions['table_suffix'];
+						$mlTableModel = $db->getTable($mlTable);
+						$joins[] = [
+							'type' => 'LEFT',
+							'table' => $mlTable,
+							'on' => [$fieldName => $mlOptions['parent_field']],
+							'where' => [$mlOptions['lang_field'] => \Model\Multilang\Ml::getLang()],
+						];
+						foreach ($mlFields as $tf) {
+							$mlCol = $mlTableModel->columns[$tf] ?? null;
+							if ($mlCol and (!$mlCol['length'] or strlen($search) < $mlCol['length']))
+								$arr[] = [$mlTable . '.' . $tf, 'REGEXP', '(^|[^a-z0-9])' . preg_quote($search)];
+						}
+					}
+				}
+			}
+
 			if (count($searchFields) > 0 and count($arr) === 0) { // If specific columns are provided and no criteria matched, then it's impossible
 				return null;
-			} else {
+			} elseif (count($arr) > 0) {
 				$where = array_merge($where, [
 					['sub' => $arr, 'operator' => 'OR'],
 				]);
