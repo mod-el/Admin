@@ -737,31 +737,36 @@ class Admin extends Module
 					}
 
 					if ($mainFields) {
+						// Unique alias per field: multiple fks towards the same table would collide otherwise
+						$joinAlias = $fieldName . '_admin_search';
 						$joins[] = [
 							'type' => 'LEFT',
 							'table' => $field->options['table'],
+							'alias' => $joinAlias,
 							'on' => [$fieldName => $joinedTableModel->primary[0]],
 						];
 						foreach ($mainFields as $tf) {
 							$joinedCol = $joinedTableModel->columns[$tf] ?? null;
 							if ($joinedCol and (!$joinedCol['length'] or strlen($search) < $joinedCol['length']))
-								$arr[] = [$field->options['table'] . '.' . $tf, 'REGEXP', '(^|[^a-z0-9])' . preg_quote($search)];
+								$arr[] = [$joinAlias . '.' . $tf, 'REGEXP', '(^|[^a-z0-9])' . preg_quote($search)];
 						}
 					}
 
 					if ($mlFields) {
 						$mlTable = $field->options['table'] . $mlOptions['table_suffix'];
 						$mlTableModel = $db->getTable($mlTable);
+						$mlJoinAlias = $fieldName . '_admin_search_ml';
 						$joins[] = [
 							'type' => 'LEFT',
 							'table' => $mlTable,
+							'alias' => $mlJoinAlias,
 							'on' => [$fieldName => $mlOptions['parent_field']],
 							'where' => [$mlOptions['lang_field'] => \Model\Multilang\Ml::getLang()],
 						];
 						foreach ($mlFields as $tf) {
 							$mlCol = $mlTableModel->columns[$tf] ?? null;
 							if ($mlCol and (!$mlCol['length'] or strlen($search) < $mlCol['length']))
-								$arr[] = [$mlTable . '.' . $tf, 'REGEXP', '(^|[^a-z0-9])' . preg_quote($search)];
+								$arr[] = [$mlJoinAlias . '.' . $tf, 'REGEXP', '(^|[^a-z0-9])' . preg_quote($search)];
 						}
 					}
 				}
