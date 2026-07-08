@@ -722,6 +722,10 @@ class Admin extends Module
 						continue;
 					if ($searchFields and !in_array($fieldName, $searchFields))
 						continue;
+					// The join "on" clause below qualifies the column with the main table, so it only works
+					// with its physical columns; linked tables columns are joined later in the final query
+					if (empty($tableModel->columns[$fieldName]['real']))
+						continue;
 
 					$textFields = is_array($field->options['text-field']) ? $field->options['text-field'] : [$field->options['text-field']];
 					$joinedTableModel = $db->getTable($field->options['table']);
