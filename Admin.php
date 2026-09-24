@@ -1082,8 +1082,9 @@ class Admin extends Module
 		if (count($filter) !== 3 or !array_key_exists('filter', $filter) or !array_key_exists('type', $filter) or !array_key_exists('value', $filter))
 			return null;
 
+		// The operator is passed as second argument, so a virtual filter can be declared with >=/<= pairs like a real column
 		if ($customFilterExists and !empty($customFilterExists['custom']) and is_callable($customFilterExists['custom']))
-			return call_user_func($customFilterExists['custom'], $filter['value']);
+			return call_user_func($customFilterExists['custom'], $filter['value'], $filter['type']);
 
 		$k = $filter['filter'];
 
